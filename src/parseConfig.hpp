@@ -4,7 +4,7 @@
 #include <sstream>
 
 
-#include "../includes/ServerConfig.hpp"
+#include "ServerConfig.hpp"
 
 namespace parseConfig {
 	enum tokenType {

@@ -7,7 +7,7 @@ INCLUDES	= -Iincludes
 OBJ_DIR		= objects
 SRC_DIR		= src
 
-SRC			= main.cpp ServerConfig.cpp
+SRC			= main.cpp ServerConfig.cpp parseConfig.cpp
 OBJ			= $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o))
 
 ARG			= config/default.conf

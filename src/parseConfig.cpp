@@ -51,6 +51,8 @@ std::vector<ServerConfig> parseConfig::parseConfig(char *filePath){
     std::vector<token> tokens = tokenizer(stream);
 
     std::vector<token>::iterator it =  tokens.begin();
+
+    (void)it;
     // for(;it != tokens.end(); it++)
     // {
     //     std::string tp;
