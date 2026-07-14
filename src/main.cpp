@@ -1,12 +1,24 @@
-#include "../includes/ServerConfig.hpp"
-#include <vector>
+#include <iostream>
+#include <cstdlib>
+#include <exception>
 
+#include "ServerConfig.hpp"
 #include "parseConfig.hpp"
 
-int main(int argc, char **argv)
+int	main(int argc, char** argv)
 {
-    if(argc != 2 || !argv[1][0])
-        return 1;
+	if (argc != 2) {
+		std::cerr << "Error: Usage -> ./webserv <config_file>\n";
+		return (EXIT_FAILURE);
+	}
+	(void)argv;
 
-    std::vector<ServerConfig> config = parseConfig::parseConfig(argv[1]);
+	try {
+		std::vector<ServerConfig>	webserv;
+		webserv = parseConfig::parseConfig(argv[1]);
+
+	} catch (const std::exception& e) {
+		std::cerr << "Error: " << e.what() << "\n";
+		return (EXIT_FAILURE);
+	}
 }
