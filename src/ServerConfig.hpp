@@ -5,7 +5,7 @@
 
 #include "Location.hpp"
 
-class ServerConfig{
+class ServerConfig {
 	private:
 		std::vector<Location>		locations;
 		std::vector<std::string>	errors;
@@ -14,4 +14,6 @@ class ServerConfig{
 		int							maxBodySize;
 
 	public:
+		int	getPort() const { return (port); }
+		int	getMaxBodySize() const { return (maxBodySize); }
 };
