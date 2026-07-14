@@ -19,6 +19,5 @@ namespace parseConfig {
 	    std::string value;
 	};
 
-	std::vector<token> tokenizer(std::stringstream &config);
 	std::vector<ServerConfig> parseConfig(char *filePath);
 }

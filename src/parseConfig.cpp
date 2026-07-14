@@ -1,11 +1,14 @@
+#include <exception>
 #include <iostream>
 #include <fstream>
+#include <stdexcept>
+#include <vector>
 
 #include "parseConfig.hpp"
 
 using namespace parseConfig;
 
-std::vector<token> parseConfig::tokenizer(std::stringstream &config)
+static std::vector<token> tokenizer(std::stringstream &config)
 {
     std::vector<token> ret;
     std::string tk;
@@ -24,9 +27,9 @@ std::vector<token> parseConfig::tokenizer(std::stringstream &config)
                 ret.push_back(tkn);
             }
             switch (delimiter) {
-                case '{' : tkn.type = OPEN_BRACKET; break;
-                case '}' : tkn.type = CLOSE_BRACKET; break;
-                case ';' : tkn.type = SEMICOLON; break;
+                case '{' : tkn.type = OPEN_BRACKET; tkn.value = tk;		break;
+                case '}' : tkn.type = CLOSE_BRACKET; tkn.value = tk;	break;
+                case ';' : tkn.type = SEMICOLON; tkn.value = tk;		break;
             }
         }
         else {
@@ -37,6 +40,16 @@ std::vector<token> parseConfig::tokenizer(std::stringstream &config)
     }
 
     return ret;
+}
+
+void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::const_iterator end){
+	if(cursor->value != "server")
+		throw std::runtime_error("Expected server");
+	cursor++;
+	if(cursor->type != parseConfig::OPEN_BRACKET)
+		throw std::runtime_error("Expected open bracket");
+	if(end->type != parseConfig::CLOSE_BRACKET)
+		throw std::runtime_error("Expected close bracket");
 }
 
 std::vector<ServerConfig> parseConfig::parseConfig(char *filePath){
@@ -50,9 +63,8 @@ std::vector<ServerConfig> parseConfig::parseConfig(char *filePath){
 
     std::vector<token> tokens = tokenizer(stream);
 
-    std::vector<token>::iterator it =  tokens.begin();
 
-    (void)it;
+    //(void)it;
     // for(;it != tokens.end(); it++)
     // {
     //     std::string tp;
@@ -67,6 +79,14 @@ std::vector<ServerConfig> parseConfig::parseConfig(char *filePath){
     //         std::cout << "(" << it->value << ")";
     //     std::cout << "\n";
     // }
+
+    std::vector<token>::const_iterator it =  tokens.begin();
+    for(;it != tokens.end(); it++)
+    {
+    	std::cout << it->type << "\n";
+    	if(it->value == "server")
+     		parseServer(it, tokens.end() - 1);
+    }
 
     return ret;
 }
