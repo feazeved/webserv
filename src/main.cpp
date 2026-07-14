@@ -3,6 +3,7 @@
 #include <exception>
 
 #include "ServerConfig.hpp"
+#include "parseConfig.hpp"
 
 int	main(int argc, char** argv)
 {
@@ -13,8 +14,8 @@ int	main(int argc, char** argv)
 	(void)argv;
 
 	try {
-		ServerConfig	webserv;
-
+		std::vector<ServerConfig>	webserv;
+		webserv = parseConfig::parseConfig(argv[1]);
 
 	} catch (const std::exception& e) {
 		std::cerr << "Error: " << e.what() << "\n";
