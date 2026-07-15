@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstddef>
 #include <cstdint>
 #include <climits>
@@ -32,8 +34,8 @@ typedef unsigned long	ulong;
 #define KPURE			__attribute__((const))			// Function depends only on its arguments (doesn't read from memory)
 #define PACKED			__attribute__((packed))			// Struct has no padding
 #define ALIGNED(n)		__attribute__((aligned(n)))
-#define COLD			__attribute__(cold)
-#define HOT				__attribute__(hot)
+#define COLD			__attribute__((cold))
+#define HOT				__attribute__((hot))
 #define FLATTEN			__attribute__((flatten))		// Function calls inside this function are aggressively inlined
 
 #define UNREACHABLE()	__builtin_unreachable()
@@ -104,7 +106,7 @@ typedef unsigned long	ulong;
 // === Generic Helpers =====================================
 #define ARRAY_SIZE(arr)		(sizeof(arr) / sizeof((arr)[0]))
 #define ARRAY_END(arr)		(&(arr)[ARRAY_SIZE(arr)])
-#define SWAP(a, b) 			({auto _swap_tmp_ = (a); (a) = (b); (b) = ___tmp; (void)0;})
+#define SWAP(a, b) 			({typeof(a) _swap_tmp_ = (a); (a) = (b); (b) = _swap_tmp_; (void)0;})
 
 #define STRINGIFY_(x)		#x
 #define STRINGIFY(x)		STRINGIFY_(x)
