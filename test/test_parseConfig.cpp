@@ -1,16 +1,16 @@
 #include "catch.hpp"
 #include <vector>
 #include "parseConfig.hpp"
-#include "ServerConfig.hpp"
+#include "Http.hpp"
 
 
 TEST_CASE("config file parsing basics", "[parser]") {
 
-	std::vector<ServerConfig> servers = parseConfig::parseConfig("config/default.conf");
+	std::vector<Http::ServerConfig> servers = parseConfig::parseConfig("config/default.conf");
 
-	ServerConfig	test = servers[0];
+	Http::ServerConfig	test = servers[0];
 
-	int	port = test.getPort();
+	int	port = test.port;
 
 	SECTION("Port validation logic") {
 		CHECK(port > 0);
