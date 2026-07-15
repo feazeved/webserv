@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "parseConfig.hpp"
+#include "Location.hpp"
+#include "ServerConfig.hpp"
 
 using namespace parseConfig;
 
@@ -42,6 +44,7 @@ static std::vector<token> tokenizer(std::stringstream &config)
     return ret;
 }
 
+
 void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::const_iterator end){
 	if(cursor->value != "server")
 		throw std::runtime_error("Expected server");
@@ -52,7 +55,20 @@ void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::
 		throw std::runtime_error("Expected close bracket");
 }
 
+void parseLocation(std::vector<token>::const_iterator cursor, std::vector<token>::const_iterator end){
+    Location loc;
+    if(cursor->value != "location")
+        throw std::runtime_error("Expected location");
+    cursor++;
+    if(cursor->type != parseConfig::WORD)
+        throw std::runtime_error("Expected location");
+    // else
+    //     alias
+
+}
+
 std::vector<ServerConfig> parseConfig::parseConfig(char *filePath){
+    ServerConfig    server;
     std::vector<ServerConfig> ret;
     std::stringstream   stream;
     std::ifstream inputFile(filePath);
@@ -86,6 +102,8 @@ std::vector<ServerConfig> parseConfig::parseConfig(char *filePath){
     	std::cout << it->type << "\n";
     	if(it->value == "server")
      		parseServer(it, tokens.end() - 1);
+        // else if(it->value == "location")
+        //     parseLocation(it, tokens.end() - 1);
     }
 
     return ret;
