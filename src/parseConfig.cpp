@@ -5,11 +5,8 @@
 #include <cstdlib>
 
 #include "parseConfig.hpp"
-#include "Location.hpp"
-#include "ServerConfig.hpp"
 
 using namespace parseConfig;
-using namespace Http;
 
 static std::vector<token> tokenizer(std::stringstream &config)
 {
@@ -60,7 +57,7 @@ void parseDirective(std::vector<token>::const_iterator &cursor, std::vector<toke
     dir.args = arguments;
 }
 
-void parseLocation(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator end, Location &loc){
+void parseLocation(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator end, Http::Location &loc){
     if(cursor->value != "location")
         throw std::runtime_error("Expected location");
     cursor++;
@@ -83,7 +80,7 @@ void parseLocation(std::vector<token>::const_iterator &cursor, std::vector<token
         throw std::runtime_error("Expected close bracket");
 }
 
-void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::const_iterator end, ServerConfig &server){
+void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::const_iterator end, Http::ServerConfig &server){
     if(cursor->value != "server")
         throw std::runtime_error("Expected server");
     cursor++;
@@ -96,7 +93,7 @@ void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::
         while (cursor != end) {
             if(cursor->value == "location")
             {
-                Location loc;
+                Http::Location loc;
                 parseLocation(cursor, end, loc);
             }
             //else
@@ -106,7 +103,7 @@ void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::
                 Directive dir;
                 parseDirective(cursor, end, dir);
                 // maybe a loop with fuction pointer to server's directive setters
-                server.setPort(std::atoi(dir.args.at(0).c_str()));
+                server.port = std::atoi(dir.args.at(0).c_str());
             }
             cursor++;
         }
@@ -115,8 +112,8 @@ void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::
         throw std::runtime_error("Expected close bracket");
 }
 
-std::vector<ServerConfig> parseConfig::parseConfig(char *filePath){
-    std::vector<ServerConfig> ret;
+std::vector<Http::ServerConfig> parseConfig::parseConfig(char *filePath){
+    std::vector<Http::ServerConfig> ret;
     std::stringstream   stream;
     std::ifstream inputFile(filePath);
 
@@ -150,7 +147,7 @@ std::vector<ServerConfig> parseConfig::parseConfig(char *filePath){
        	//std::cout << it->value << "\n";
        	if(it->value == "server")
         {
-            ServerConfig    serverConf;
+            Http::ServerConfig    serverConf;
             parseServer(it, tokens.end() - 1, serverConf);
             ret.push_back(serverConf);
         }
