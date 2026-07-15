@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 #include <sstream>
 
@@ -19,6 +20,9 @@ namespace parseConfig {
 	    std::string value;
 	};
 
-	std::vector<token> tokenizer(std::stringstream &config);
+	struct  Directive{ std::string name;
+		std::vector<std::string> args;
+	};
+
 	std::vector<ServerConfig> parseConfig(char *filePath);
 }
