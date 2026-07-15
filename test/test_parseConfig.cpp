@@ -1,5 +1,4 @@
 #include "catch.hpp"
-
 #include <vector>
 #include "parseConfig.hpp"
 #include "ServerConfig.hpp"
@@ -14,7 +13,7 @@ TEST_CASE("config file parsing basics", "[parser]") {
 	int	port = test.getPort();
 
 	SECTION("Port validation logic") {
-		REQUIRE(port > 0);
-		REQUIRE(port <= 65535);
+		CHECK(port > 0);
+		CHECK(port <= 65535);
 	}
 }

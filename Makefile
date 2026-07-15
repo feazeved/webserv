@@ -1,5 +1,5 @@
 NAME		= webserv
-TEST_NAME	= test_webserv
+TEST_NAME	= test_runner
 
 CC			= c++
 CFLAGS		= -Wall -Werror -Wextra -std=c++98
