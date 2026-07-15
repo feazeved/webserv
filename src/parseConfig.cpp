@@ -68,5 +68,9 @@ std::vector<ServerConfig> parseConfig::parseConfig(char *filePath){
     //     std::cout << "\n";
     // }
 
+    ServerConfig	test;
+    test.setPort(8080);
+
+    ret.push_back(test);
     return ret;
 }

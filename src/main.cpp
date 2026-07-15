@@ -15,7 +15,7 @@ int	main(int argc, char** argv)
 	try {
 		Server	server(parseConfig::parseConfig(argv[1]));
 
-		server.run();
+		// server.run();
 
 	} catch (const std::exception& e) {
 		std::cerr << "Error: " << e.what() << "\n";

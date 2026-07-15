@@ -14,6 +14,9 @@ class ServerConfig {
 		int							maxBodySize;
 
 	public:
-		int	getPort() const { return (port); }
-		int	getMaxBodySize() const { return (maxBodySize); }
+		int		getPort() const { return (port); }
+		void	setPort(const int p) { port = p; }
+
+		int		getMaxBodySize() const { return (maxBodySize); }
+		void	setMaxBodySize(const int mbs) { maxBodySize = mbs; }
 };
