@@ -11,7 +11,7 @@ TEST_DIR	= test
 OBJ_DIR		= objects
 
 MAIN_SRC	= main.cpp
-CORE_SRC	= ServerConfig.cpp parseConfig.cpp
+CORE_SRC	= parseConfig.cpp Server.cpp ServerManager.cpp
 TEST_SRC	= test_main.cpp test_parseConfig.cpp
 
 OBJ_CORE	= $(addprefix $(OBJ_DIR)/, $(CORE_SRC:.cpp=.o))

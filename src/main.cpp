@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <exception>
 
-#include "Server.hpp"
+#include "ServerManager.hpp"
 #include "parseConfig.hpp"
 
 int	main(int argc, char** argv)
@@ -13,9 +13,9 @@ int	main(int argc, char** argv)
 	}
 
 	try {
-		Server	server(parseConfig::parseConfig(argv[1]));
+		ServerManager	manager(parseConfig::parseConfig(argv[1]));
 
-		// server.run();
+		manager.run();
 
 	} catch (const std::exception& e) {
 		std::cerr << "Error: " << e.what() << "\n";

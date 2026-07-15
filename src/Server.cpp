@@ -1,17 +1,18 @@
 #include "Server.hpp"
 
-Server::Server(const std::vector<ServerConfig>& s) :
-	servers(s)
+Server::Server(const Http::ServerConfig& c) :
+	config(c), listenFd(-1)
 {
 	boot();
 }
 
-void	Server::run() const
+// Should close socket
+Server::~Server()
 {
-
 }
 
+// Should open socket
 void	Server::boot() const
 {
-
+	(void)listenFd;
 }

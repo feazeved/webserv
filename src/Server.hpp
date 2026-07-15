@@ -1,16 +1,15 @@
 #pragma once
 
-#include "ServerConfig.hpp"
+#include "Http.hpp"
 
 class Server {
 public:
-	Server(const std::vector<ServerConfig>& s);
+	Server(const Http::ServerConfig& c);
 	~Server();
 
-	void	run() const;
+	void	boot() const;
 
 private:
-	std::vector<ServerConfig>	servers;
-
-	void	boot() const;
+	Http::ServerConfig	config;
+	int					listenFd;
 };
