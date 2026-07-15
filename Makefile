@@ -2,8 +2,8 @@ NAME		= webserv
 TEST_NAME	= test_runner
 
 CC			= c++
-CFLAGS		= -Wall -Werror -Wextra -std=c++98
-TEST_FLAGS	= -Wall -Wextra -std=c++11
+CFLAGS		= -Wall -Werror -Wextra -std=c++98 -g
+TEST_FLAGS	= -Wall -Wextra -std=c++11 -g
 INCLUDES	= -Iincludes -I. -Itest -Isrc
 
 SRC_DIR		= src
@@ -34,8 +34,10 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
 $(OBJ_DIR)/%.o: $(TEST_DIR)/%.cpp | $(OBJ_DIR)
 	$(CC) $(TEST_FLAGS) $(INCLUDES) -c $< -o $@
 
-test: $(OBJ_CORE) $(OBJ_TEST)
+test_bin: $(OBJ_CORE) $(OBJ_TEST)
 	$(CC) $(TEST_FLAGS) $(INCLUDES) $(OBJ_CORE) $(OBJ_TEST) -o $(TEST_NAME)
+
+test: test_bin
 	./$(TEST_NAME)
 
 run:

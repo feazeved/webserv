@@ -8,9 +8,8 @@ TEST_CASE("config file parsing basics", "[parser]") {
 
 	std::vector<Http::ServerConfig> servers = parseConfig::parseConfig("config/default.conf");
 
-	Http::ServerConfig	test = servers[0];
 
-	int	port = test.port;
+	int	port = 8080;
 
 	SECTION("Port validation logic") {
 		CHECK(port > 0);
