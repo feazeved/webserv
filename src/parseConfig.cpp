@@ -42,7 +42,13 @@ static std::vector<token> tokenizer(std::stringstream &config)
     return ret;
 }
 
-void parseDirective(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator end, Directive &dir){
+void match(std::vector<token>::const_iterator &cursor, std::string value){
+    if(cursor->value != value)
+        throw std::runtime_error("Expected " + value);
+    cursor++;
+}
+
+void parseDirective(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator &end, Directive &dir){
     std::vector<std::string> arguments;
 
     dir.name = cursor->value;
@@ -57,21 +63,16 @@ void parseDirective(std::vector<token>::const_iterator &cursor, std::vector<toke
     dir.args = arguments;
 }
 
-void parseLocation(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator end, Http::Location &loc){
-    if(cursor->value != "location")
-        throw std::runtime_error("Expected location");
-    cursor++;
+void parseLocation(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator &end, Http::Location &loc){
+    match(cursor, "location");
     if(cursor->type != parseConfig::WORD)
         throw std::runtime_error("Expected location");
-    else
-        loc.path = cursor->value;
+    loc.path = cursor->value;
     cursor++;
-    if(cursor->type != parseConfig::OPEN_BRACKET)
-        throw std::runtime_error("Expected open bracket");
-    cursor++;
-    Directive dir;
+    match(cursor, "{");
     while(cursor != end && cursor->type != parseConfig::CLOSE_BRACKET)
     {
+        Directive dir;
         parseDirective(cursor, end, dir);
         //loop setter fuction pointer
         cursor++;
@@ -81,32 +82,25 @@ void parseLocation(std::vector<token>::const_iterator &cursor, std::vector<token
 }
 
 void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::const_iterator end, Http::ServerConfig &server){
-    if(cursor->value != "server")
-        throw std::runtime_error("Expected server");
-    cursor++;
+    match(cursor, "server");
     //function match to repetitive check, avoinding nests. Ex: expected(cursor, '{') { match ? cursor++ : throw}
-    if(cursor->type != parseConfig::OPEN_BRACKET)
-        throw std::runtime_error("Expected open bracket");
-    else
-    {
-        cursor++;
-        while (cursor != end) {
-            if(cursor->value == "location")
-            {
-                Http::Location loc;
-                parseLocation(cursor, end, loc);
-            }
-            //else
-            // parseDirective();
-            else if (cursor->value == "listen")
-            {
-                Directive dir;
-                parseDirective(cursor, end, dir);
-                // maybe a loop with fuction pointer to server's directive setters
-                server.port = std::atoi(dir.args.at(0).c_str());
-            }
-            cursor++;
+    match(cursor, "{");
+    while (cursor != end) {
+        if(cursor->value == "location")
+        {
+            Http::Location loc;
+            parseLocation(cursor, end, loc);
         }
+        //else
+        // parseDirective();
+        else if (cursor->value == "listen")
+        {
+            Directive dir;
+            parseDirective(cursor, end, dir);
+            // maybe a loop with fuction pointer to server's directive setters
+            server.port = std::atoi(dir.args.at(0).c_str());
+        }
+        cursor++;
     }
     if(end->type != parseConfig::CLOSE_BRACKET)
         throw std::runtime_error("Expected close bracket");
