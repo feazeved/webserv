@@ -4,8 +4,7 @@
 #include <vector>
 #include <sstream>
 
-
-#include "ServerConfig.hpp"
+#include "Http.hpp"
 
 namespace parseConfig {
 	enum tokenType {
@@ -20,9 +19,10 @@ namespace parseConfig {
 	    std::string value;
 	};
 
-	struct  Directive{ std::string name;
+	struct  Directive {
+		std::string name;
 		std::vector<std::string> args;
 	};
 
-	std::vector<ServerConfig> parseConfig(char *filePath);
+	std::vector<Http::ServerConfig>	parseConfig(char *filePath);
 }

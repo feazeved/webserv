@@ -9,6 +9,7 @@
 #include "ServerConfig.hpp"
 
 using namespace parseConfig;
+using namespace Http;
 
 static std::vector<token> tokenizer(std::stringstream &config)
 {
