@@ -39,8 +39,8 @@ std::vector<token> parseConfig::tokenizer(std::stringstream &config)
     return ret;
 }
 
-std::vector<ServerConfig> parseConfig::parseConfig(char *filePath){
-    std::vector<ServerConfig> ret;
+std::vector<Http::ServerConfig> parseConfig::parseConfig(char *filePath){
+    std::vector<Http::ServerConfig> ret;
     std::stringstream   stream;
     std::ifstream inputFile(filePath);
 

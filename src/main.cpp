@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <exception>
 
-#include "ServerConfig.hpp"
+#include "ServerManager.hpp"
 #include "parseConfig.hpp"
 
 int	main(int argc, char** argv)
@@ -11,11 +11,11 @@ int	main(int argc, char** argv)
 		std::cerr << "Error: Usage -> ./webserv <config_file>\n";
 		return (EXIT_FAILURE);
 	}
-	(void)argv;
 
 	try {
-		std::vector<ServerConfig>	webserv;
-		webserv = parseConfig::parseConfig(argv[1]);
+		ServerManager	manager(parseConfig::parseConfig(argv[1]));
+
+		manager.run();
 
 	} catch (const std::exception& e) {
 		std::cerr << "Error: " << e.what() << "\n";
