@@ -1,9 +1,8 @@
-#include <algorithm>
-#include <exception>
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
 #include <vector>
+#include <cstdlib>
 
 #include "parseConfig.hpp"
 #include "Location.hpp"
@@ -45,50 +44,75 @@ static std::vector<token> tokenizer(std::stringstream &config)
     return ret;
 }
 
+void parseDirective(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator end, Directive &dir){
+    std::vector<std::string> arguments;
+
+    dir.name = cursor->value;
+    cursor++;
+    while(cursor != end && cursor->type != parseConfig::SEMICOLON)
+    {
+        arguments.push_back(cursor->value);
+        cursor++;
+    }
+    if(cursor->type != parseConfig::SEMICOLON)
+        throw std::runtime_error("Expected semicolon");
+    dir.args = arguments;
+}
+
+void parseLocation(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator end, Location &loc){
+    if(cursor->value != "location")
+        throw std::runtime_error("Expected location");
+    cursor++;
+    if(cursor->type != parseConfig::WORD)
+        throw std::runtime_error("Expected location");
+    else
+        loc.path = cursor->value;
+    cursor++;
+    if(cursor->type != parseConfig::OPEN_BRACKET)
+        throw std::runtime_error("Expected open bracket");
+    cursor++;
+    Directive dir;
+    while(cursor != end && cursor->type != parseConfig::CLOSE_BRACKET)
+    {
+        parseDirective(cursor, end, dir);
+        //loop setter fuction pointer
+        cursor++;
+    }
+    if(cursor->type != parseConfig::CLOSE_BRACKET)
+        throw std::runtime_error("Expected close bracket");
+}
 
 void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::const_iterator end, ServerConfig &server){
     if(cursor->value != "server")
         throw std::runtime_error("Expected server");
     cursor++;
+    //function match to repetitive check, avoinding nests. Ex: expected(cursor, '{') { match ? cursor++ : throw}
     if(cursor->type != parseConfig::OPEN_BRACKET)
         throw std::runtime_error("Expected open bracket");
     else
     {
         cursor++;
-       	// if(cursor->value == "location")
-        //      parseLocation();
-        // else
-        //      parseDirective();
-        Directive dir;
-        std::vector<std::string> arguments;
-        if(cursor->value == "listen")
-        {
-            dir.name = cursor->value;
-            cursor++;
-            while(cursor->type != parseConfig::SEMICOLON)
+        while (cursor != end) {
+            if(cursor->value == "location")
             {
-                arguments.push_back(cursor->value);
-                cursor++;
+                Location loc;
+                parseLocation(cursor, end, loc);
             }
-            dir.args = arguments;
-
-            server.setPort(std::atoi(dir.args.at(0).c_str()));
+            //else
+            // parseDirective();
+            else if (cursor->value == "listen")
+            {
+                Directive dir;
+                parseDirective(cursor, end, dir);
+                // maybe a loop with fuction pointer to server's directive setters
+                server.setPort(std::atoi(dir.args.at(0).c_str()));
+            }
+            cursor++;
         }
     }
     if(end->type != parseConfig::CLOSE_BRACKET)
         throw std::runtime_error("Expected close bracket");
 }
-
-// void parseLocation(std::vector<token>::const_iterator cursor, std::vector<token>::const_iterator end){
-//     Location loc;
-//     if(cursor->value != "location")
-//         throw std::runtime_error("Expected location");
-//     cursor++;
-//     if(cursor->type != parseConfig::WORD)
-//         throw std::runtime_error("Expected location");
-//     // else
-//     //     alias
-// }
 
 std::vector<ServerConfig> parseConfig::parseConfig(char *filePath){
     std::vector<ServerConfig> ret;
