@@ -1,62 +1,96 @@
-NAME		= webserv
-TEST_NAME	= test_runner
+# Configuration ------------------------------- #
+NAME = webserv
+VPATH = src test
+MAIN_SRC = main.cpp
+CORE_SRC = parseConfig.cpp
+TEST_SRC = test_main.cpp test_parseConfig.cpp
+LDLIBS =
+ARG = config/default.conf
 
-CC			= c++
-CFLAGS		= -Wall -Werror -Wextra -std=c++98 -g
-TEST_FLAGS	= -Wall -Wextra -std=c++11 -g
-INCLUDES	= -Iincludes -I. -Itest -Isrc
+# Defaults ------------------------------------ #
+RM := rm -f
+BUILD_PATH = build
+INC_PATH = includes src test
+OBJ_PATH = $(BUILD_PATH)/obj
+BIN = build/$(NAME)
+TEST_BIN = $(BIN)_test
+OBJ_MAIN = $(addprefix $(OBJ_PATH)/, $(MAIN_SRC:.cpp=.o))
+OBJ_CORE = $(addprefix $(OBJ_PATH)/, $(CORE_SRC:.cpp=.o))
+OBJ_TEST = $(addprefix $(OBJ_PATH)/, $(TEST_SRC:.cpp=.o))
 
-SRC_DIR		= src
-TEST_DIR	= test
-OBJ_DIR		= objects
+# Flags --------------------------------------- #
+CXX = clang++
+CPPFLAGS = $(addprefix -I,$(INC_PATH))
+CXXFLAGS = -Wall -Wextra -std=c++98
+CXXFLAGS_TEST = -Wall -Wextra -std=c++11 -g
+LDFLAGS =
+DEBUG = -g -Wpedantic -Wcast-qual -Wfloat-equal -Wswitch-default -Wsign-conversion
+ASAN = -fsanitize=address,undefined,leak -fno-omit-frame-pointer
+TSAN = -fsanitize=thread -fno-omit-frame-pointer
+FAST = -march=native -O3 -ffast-math -fstrict-aliasing
 
-MAIN_SRC	= main.cpp
-CORE_SRC	= parseConfig.cpp
-TEST_SRC	= test_main.cpp test_parseConfig.cpp
+# Pattern Rules: Compilation ------------------ #
+$(OBJ_PATH)/%.o: %.cpp | $(OBJ_PATH)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+$(OBJ_TEST): CXXFLAGS = $(CXXFLAGS_TEST)
 
-OBJ_CORE	= $(addprefix $(OBJ_DIR)/, $(CORE_SRC:.cpp=.o))
-OBJ_MAIN	= $(addprefix $(OBJ_DIR)/, $(MAIN_SRC:.cpp=.o))
-OBJ_TEST	= $(addprefix $(OBJ_DIR)/, $(TEST_SRC:.cpp=.o))
+# Linking
+$(BIN): $(OBJ_MAIN) $(OBJ_CORE) | $(BUILD_PATH)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJ_MAIN) $(OBJ_CORE) $(LDLIBS)
 
-ARG			= config/default.conf
+$(TEST_BIN): $(OBJ_TEST) $(OBJ_CORE) | $(BUILD_PATH)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJ_TEST) $(OBJ_CORE) $(LDLIBS)
 
-all: $(NAME)
+# Directory
+$(OBJ_PATH):
+	@mkdir -p $@
+$(BUILD_PATH):
+	@mkdir -p $@
 
-$(NAME): $(OBJ_CORE) $(OBJ_MAIN)
-	$(CC) $(CFLAGS) $(INCLUDES) $(OBJ_CORE) $(OBJ_MAIN) -o $(NAME)
+# Phonies ------------------------------------- #
+all: $(BIN)
 
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
+test: $(TEST_BIN)
+	./$(TEST_BIN)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
-
-$(OBJ_DIR)/%.o: $(TEST_DIR)/%.cpp | $(OBJ_DIR)
-	$(CC) $(TEST_FLAGS) $(INCLUDES) -c $< -o $@
-
-test_bin: $(OBJ_CORE) $(OBJ_TEST)
-	$(CC) $(TEST_FLAGS) $(INCLUDES) $(OBJ_CORE) $(OBJ_TEST) -o $(TEST_NAME)
-
-test: test_bin
-	./$(TEST_NAME)
-
-run:
-	make re
+run: re
 	clear
-	./$(NAME) $(ARG)
+	./$(BIN) $(ARG)
 
-vrun:
-	make re
+vrun: re
 	clear
-	valgrind ./$(NAME) $(ARG)
+	valgrind ./$(BIN) $(ARG)
+
+compdb: | $(BUILD_PATH)
+	$(RM) $(BUILD_PATH)/compile_commands.json
+	bear --output $(BUILD_PATH)/compile_commands.json -- $(MAKE) clean asan
 
 clean:
-	rm -rf $(OBJ_DIR)
+	$(RM) -r $(OBJ_PATH)
 
 fclean: clean
-	rm -f $(NAME)
-	rm -f $(TEST_NAME)
+	$(RM) $(BIN)
+	$(RM) $(TEST_BIN)
 
 re: fclean all
 
-.PHONY: all clean fclean re run vrun test
+debug: CXXFLAGS += $(DEBUG)
+debug: clean $(BIN)
+
+asan: CXXFLAGS += $(DEBUG) $(ASAN)
+asan: LDFLAGS += $(ASAN)
+asan: clean $(BIN)
+
+tsan: CXXFLAGS += $(DEBUG) $(TSAN)
+tsan: LDFLAGS += $(TSAN)
+tsan: clean $(BIN)
+
+fast: CXXFLAGS += $(FAST)
+fast: LDFLAGS += -flto
+fast: clean $(BIN)
+
+ffast: CXXFLAGS += $(FAST) -Ofast
+ffast: LDFLAGS += -flto
+ffast: clean $(BIN)
+
+.PHONY: all test run vrun compdb clean fclean re debug asan tsan fast ffast
