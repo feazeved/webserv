@@ -17,9 +17,9 @@ public:
 	}
 
 	~Server() {
-		close(listenFd);
+		if (listenFd != -1)
+			close(listenFd);
 	}
-
 
 private:
 	Http::ServerConfig	config;
