@@ -4,10 +4,18 @@
 
 class Server {
 public:
-	Server(const Http::ServerConfig& c);
-	~Server();
+	Server(const Http::ServerConfig& c) : config(c), listenFd(-1) {
+		boot();
+	}
 
-	void	boot() const;
+	~Server() {
+		
+	}
+
+	void	boot() {
+		(void)listenFd;
+		
+	}
 
 private:
 	Http::ServerConfig	config;

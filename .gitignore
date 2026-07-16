@@ -39,6 +39,8 @@
 *.exe
 *.out
 *.app
+webserv
+test_runner
 
 # Build directories
 build/

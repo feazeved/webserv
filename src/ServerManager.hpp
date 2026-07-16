@@ -7,10 +7,22 @@
 
 class ServerManager {
 public:
-	ServerManager(const std::vector<Http::ServerConfig>& configs);
-	~ServerManager();
+	ServerManager(const std::vector<Http::ServerConfig>& configs) {
+		for (std::size_t i = 0; i < configs.size(); i++) {
+			Server*	serv = new Server(configs[i]);
 
-	void	run();
+			serv->boot();
+			servers.push_back(serv);
+		}
+	}
+
+	~ServerManager() {
+
+	}
+
+	void	run() {
+
+	}
 
 private:
 	std::vector<Server*>	servers;
