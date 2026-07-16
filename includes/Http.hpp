@@ -19,10 +19,10 @@ namespace Http {
 		std::map<int, std::string>	errors;
 		std::vector<Location>		locations;
 		std::string					host;
-		int							port;
-		int							maxBodySize;
+		long						port;
+		long						maxBodySize;
 
-		ServerConfig() : host("localhost"), port(8080), maxBodySize(100000) {}
+		ServerConfig() : host("localhost"), port(-1), maxBodySize(-1) {}
 	};
 
 }
