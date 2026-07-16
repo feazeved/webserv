@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
+#include <stdint.h>
 #include <climits>
 #define restrict __restrict__
 
