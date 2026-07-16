@@ -16,7 +16,7 @@ namespace Http {
 	};
 
 	struct ServerConfig {
-		std::map<int, std::string>	errors;
+		std::map<long, std::string>	errors;
 		std::vector<Location>		locations;
 		std::string					host;
 		long						port;
