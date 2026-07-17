@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
+#include <string>
 #include <vector>
 #include <cstdlib>
 
@@ -80,6 +81,17 @@ static long stt_strtol(std::string str)
     return (ret);
 }
 
+void setMethods(std::vector<std::string> &methods, Http::Location &location){
+    std::vector<std::string>::iterator it = methods.begin();
+
+    for(; it != methods.end(); it++)
+    {
+        if(*it != "GET" && *it != "POST" && *it != "DELETE")
+            throw std::runtime_error("Invalid method");
+        location.methods.push_back(*it);
+    }
+}
+
 void setLocationDirective(Directive &dir, Http::Location &location){
     if(dir.name == "root")
     {
@@ -92,6 +104,12 @@ void setLocationDirective(Directive &dir, Http::Location &location){
         if(dir.args.size() != 1 || (dir.args.at(0) != "on" && dir.args.at(0) != "off"))
             throw std::runtime_error("Invalid autoindex");
         location.autoindex = dir.args.at(0) == "on" ? true : false;
+    }
+    else if(dir.name == "allowed_methods")
+    {
+        if(dir.args.size() == 0)
+            throw std::runtime_error("No allowed methods defined");
+        setMethods(dir.args, location);
     }
 }
 
