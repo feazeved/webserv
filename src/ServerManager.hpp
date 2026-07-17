@@ -2,6 +2,7 @@
 
 #include <map>
 #include <stdexcept>
+#include <sys/socket.h>
 #include <vector>
 #include <cstring>
 #include <cerrno>
@@ -56,7 +57,10 @@ public:
 		while (running) {
 			event_count = epoll_wait(epoll_fd, events, s_max_events, 30000); // 30000 -> timeout, need to check this
 			for (i32 i = 0; i < event_count; i++) {
-				//std::alex();
+				if (listeningMap.count(events[i].data.fd) > 0)
+				{
+					// accept + add to epoll
+				}
 			}
 		}
 	}
