@@ -1,12 +1,12 @@
 #include "catch.hpp"
 #include <vector>
 #include "parseConfig.hpp"
-#include "Http.hpp"
+#include "HTTP.hpp"
 
 
 TEST_CASE("config file parsing basics", "[parser]") {
 
-	std::vector<Http::ServerConfig> servers = parseConfig::parseConfig("config/default.conf");
+	std::vector<HTTP::ServerConfig> servers = parseConfig::parseConfig("config/default.conf");
 
 
 	int	port = 8080;
