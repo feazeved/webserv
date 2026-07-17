@@ -2,6 +2,7 @@
 
 #include <map>
 #include <vector>
+#include <iostream>
 
 #include "Http.hpp"
 #include "Server.hpp"
@@ -31,7 +32,7 @@ public:
 	}
 
 	void	run() {
-
+		std::cout << "teste\n";
 	}
 
 private:
