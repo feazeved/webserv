@@ -3,12 +3,12 @@
 #include <map>
 #include <vector>
 
-#include "Http.hpp"
+#include "HTTP.hpp"
 #include "Server.hpp"
 
 class ServerManager {
 public:
-	ServerManager(const std::vector<Http::ServerConfig>& configs) {
+	ServerManager(const std::vector<HTTP::ServerConfig>& configs) {
 		try {
 			servers.reserve(configs.size());
 			for (std::size_t i = 0; i < configs.size(); i++) {

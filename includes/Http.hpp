@@ -4,7 +4,7 @@
 #include <vector>
 #include <map>
 
-namespace Http {
+namespace HTTP {
 
 	struct Location {
 		std::vector<std::string>	methods;
