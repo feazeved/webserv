@@ -10,19 +10,21 @@ namespace HTTP {
 		std::vector<std::string>	methods;
 		std::string					path;
 		std::string					root;
+		std::string					index;
+		std::string					upload_store;
 		bool						autoindex;
 
 		Location() : autoindex(false) {}
 	};
 
 	struct ServerConfig {
-		std::map<int, std::string>	errors;
+		std::map<long, std::string>	errors;
 		std::vector<Location>		locations;
 		std::string					host;
-		int							port;
-		int							maxBodySize;
+		long						port;
+		long						maxBodySize;
 
-		ServerConfig() : host("localhost"), port(8080), maxBodySize(100000) {}
+		ServerConfig() : host("localhost"), port(-1), maxBodySize(-1) {}
 	};
 
 }

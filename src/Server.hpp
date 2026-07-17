@@ -2,7 +2,7 @@
 
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <sys/_endian.h>
+#include <arpa/inet.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <stdexcept>
@@ -10,7 +10,7 @@
 #include <cerrno>
 #include <unistd.h>
 
-#include "Http.hpp"
+#include "HTTP.hpp"
 
 class Server {
 public:

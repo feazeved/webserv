@@ -2,9 +2,8 @@
 
 #include <string>
 #include <vector>
-#include <sstream>
 
-#include "Http.hpp"
+#include "HTTP.hpp"
 
 namespace parseConfig {
 	enum tokenType {
@@ -24,5 +23,5 @@ namespace parseConfig {
 		std::vector<std::string> args;
 	};
 
-	std::vector<Http::ServerConfig>	parseConfig(char *filePath);
+	std::vector<HTTP::ServerConfig>	parseConfig(char *filePath);
 }
