@@ -124,6 +124,7 @@ void parseLocation(std::vector<token>::const_iterator &cursor, std::vector<token
     {
         Directive dir;
         parseDirective(cursor, end, dir);
+        setLocationDirective(dir, loc);
         cursor++;
     }
     if(cursor->type != parseConfig::CLOSE_BRACKET)
@@ -182,6 +183,48 @@ void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::
         throw std::runtime_error("Expected close bracket");
 }
 
+void tokenizerDump(std::vector<token> &tokens){
+    std::vector<token>::iterator it =  tokens.begin();
+    std::cout << "---Print tokens---\n\n";
+    for(;it != tokens.end(); it++)
+    {
+        std::string tp;
+        switch (it->type) {
+            case OPEN_BRACKET: tp = "open bracket"; break;
+            case CLOSE_BRACKET: tp = "close bracket"; break;
+            case SEMICOLON: tp = "semicolon"; break;
+            case WORD: tp = "word"; break;
+        }
+        std::cout << tp ;
+        if(tp == "word")
+            std::cout << "(" << it->value << ")";
+        std::cout << "\n";
+    }
+}
+
+void configDump(std::vector<Http::ServerConfig> &config){
+    std::vector<Http::ServerConfig>::iterator it =  config.begin();
+    std::cout << "---Print Config---\n\n";
+    for(; it != config.end(); it++)
+    {
+        std::cout << "SERVER\n";
+        std::cout << "\tlisten: " << (*it).port << "\n";
+        std::cout << "\thost: " << (*it).host << "\n";
+        std::cout << "\tmax_body_size: " << (*it).maxBodySize << "\n";
+        std::cout << "\n";
+
+        std::vector<Http::Location>::iterator itl =  (*it).locations.begin();
+        for(; itl != (*it).locations.end(); itl++)
+        {
+            std::cout << "\tLOCATION " << (*itl).path << "\n";
+            std::cout << "\t\troot: " << (*itl).root << "\n";
+            std::cout << "\t\tautoindex: " << ((*itl).autoindex ? "on " : "off ") << "\n";
+            std::cout << "\n";
+        }
+    }
+
+}
+
 std::vector<Http::ServerConfig> parseConfig::parseConfig(char *filePath){
     std::vector<Http::ServerConfig> ret;
     std::stringstream   stream;
@@ -192,25 +235,9 @@ std::vector<Http::ServerConfig> parseConfig::parseConfig(char *filePath){
     inputFile.close();
 
     std::vector<token> tokens = tokenizer(stream);
-
     std::vector<token>::iterator it =  tokens.begin();
 
-    //  std::cout << "---Print tokens---\n\n";
-    // for(;it != tokens.end(); it++)
-    // {
-    //     std::string tp;
-    //     switch (it->type) {
-    //         case OPEN_BRACKET: tp = "open bracket"; break;
-    //         case CLOSE_BRACKET: tp = "close bracket"; break;
-    //         case SEMICOLON: tp = "semicolon"; break;
-    //         case WORD: tp = "word"; break;
-    //     }
-    //     std::cout << tp ;
-    //     if(tp == "word")
-    //         std::cout << "(" << it->value << ")";
-    //     std::cout << "\n";
-    // }
-    // it =  tokens.begin();
+    //tokenizerDump(tokens);
 
     while(it != tokens.end())
     {
@@ -223,6 +250,8 @@ std::vector<Http::ServerConfig> parseConfig::parseConfig(char *filePath){
         }
         it++;
     }
+
+    //configDump(ret);
 
     return ret;
 }
