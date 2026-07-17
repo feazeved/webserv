@@ -10,6 +10,8 @@ namespace Http {
 		std::vector<std::string>	methods;
 		std::string					path;
 		std::string					root;
+		std::string					index;
+		std::string					upload_store;
 		bool						autoindex;
 
 		Location() : autoindex(false) {}
