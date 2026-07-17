@@ -14,7 +14,7 @@
 
 class Server {
 public:
-	Server(const Http::ServerConfig& c) : config(c), listenFd(-1) {
+	Server(const HTTP::ServerConfig& c) : config(c), listenFd(-1) {
 		listenFd = socket(AF_INET, SOCK_STREAM, 0);
 		if (listenFd == -1)
 			throw std::runtime_error(std::strerror(errno));
@@ -45,10 +45,10 @@ public:
 	}
 
 	int	getFd() const { return (listenFd); }
-	const Http::ServerConfig&	getConfig() const { return (config); }
+	const HTTP::ServerConfig&	getConfig() const { return (config); }
 
 private:
-	Http::ServerConfig	config;
+	HTTP::ServerConfig	config;
 	int					listenFd;
 
 
