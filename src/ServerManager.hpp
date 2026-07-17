@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <vector>
 
 #include "Http.hpp"
@@ -8,16 +9,25 @@
 class ServerManager {
 public:
 	ServerManager(const std::vector<Http::ServerConfig>& configs) {
-		for (std::size_t i = 0; i < configs.size(); i++) {
-			Server*	serv = new Server(configs[i]);
-
-			serv->boot();
-			servers.push_back(serv);
+		try {
+			servers.reserve(configs.size());
+			for (std::size_t i = 0; i < configs.size(); i++) {
+				servers.push_back(new Server(configs[i]));
+				listeningMap[servers[i]->getFd()] = servers[i];
+			}
+		} catch (...) {
+			for (std::size_t i = 0; i < servers.size(); i++) {
+				delete servers[i];
+			}
+			servers.clear();
+			throw ;
 		}
 	}
 
 	~ServerManager() {
-
+		for (std::size_t i = 0; i < servers.size(); i++) {
+			delete servers[i];
+		}
 	}
 
 	void	run() {
@@ -25,5 +35,6 @@ public:
 	}
 
 private:
+	std::map<int, Server*>	listeningMap;
 	std::vector<Server*>	servers;
 };
