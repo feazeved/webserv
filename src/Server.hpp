@@ -3,7 +3,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <arpa/inet.h>
 #include <fcntl.h>
 #include <stdexcept>
 #include <cstring>
@@ -11,15 +10,16 @@
 #include <unistd.h>
 
 #include "HTTP.hpp"
+#include "core.hpp"
 
 class Server {
 public:
-	Server(const HTTP::ServerConfig& c) : config(c), listenFd(-1) {
+	Server(const HTTP::ServerConfig& c) : config(c) {
 		listenFd = socket(AF_INET, SOCK_STREAM, 0);
 		if (listenFd == -1)
 			throw std::runtime_error(std::strerror(errno));
 
-		int opt = 1;
+		i32	opt = 1;
 		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
 			closeAndThrow("setsockopt");
 
@@ -40,16 +40,15 @@ public:
 	}
 
 	~Server() {
-		if (listenFd != -1)
-			close(listenFd);
+		close(listenFd);
 	}
 
-	int	getFd() const { return (listenFd); }
+	i32	getFd() const { return (listenFd); }
 	const HTTP::ServerConfig&	getConfig() const { return (config); }
 
 private:
 	HTTP::ServerConfig	config;
-	int					listenFd;
+	i32					listenFd;
 
 
 	void	closeAndThrow(const std::string& where) {
