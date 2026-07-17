@@ -5,9 +5,10 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
+#include <sstream>
 
 #include "parseConfig.hpp"
-#include "Http.hpp"
+#include "HTTP.hpp"
 #include "Server.hpp"
 
 using namespace parseConfig;
@@ -81,7 +82,7 @@ static long stt_strtol(std::string str)
 	return (ret);
 }
 
-void setMethods(std::vector<std::string> &methods, Http::Location &location){
+void setMethods(std::vector<std::string> &methods, HTTP::Location &location){
 	std::vector<std::string>::iterator it = methods.begin();
 
 	for(; it != methods.end(); it++)
@@ -92,7 +93,7 @@ void setMethods(std::vector<std::string> &methods, Http::Location &location){
 	}
 }
 
-void setLocationDirective(Directive &dir, Http::Location &location){
+void setLocationDirective(Directive &dir, HTTP::Location &location){
 	if(dir.name == "root"){
 		if(dir.args.size() != 1)
 			throw std::runtime_error("Invalid root");
@@ -122,7 +123,7 @@ void setLocationDirective(Directive &dir, Http::Location &location){
 		throw std::runtime_error("Invalid location directive");
 }
 
-void parseLocation(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator &end, Http::Location &loc){
+void parseLocation(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator &end, HTTP::Location &loc){
 	match(cursor, "location");
 	if(cursor->type != parseConfig::WORD)
 		throw std::runtime_error("Expected location");
@@ -142,7 +143,7 @@ void parseLocation(std::vector<token>::const_iterator &cursor, std::vector<token
 
 
 
-void setServerDirective(Directive &dir, Http::ServerConfig &server){
+void setServerDirective(Directive &dir, HTTP::ServerConfig &server){
 	if(dir.name == "listen")
 	{
 		if(server.port != -1 || dir.args.size() != 1)
@@ -172,13 +173,13 @@ void setServerDirective(Directive &dir, Http::ServerConfig &server){
 		throw std::runtime_error("Invalid server directive");
 }
 
-void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::const_iterator end, Http::ServerConfig &server){
+void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::const_iterator end, HTTP::ServerConfig &server){
 	match(cursor, "server");
 	match(cursor, "{");
 	while (cursor != end) {
 		if(cursor->value == "location")
 		{
-			Http::Location loc;
+			HTTP::Location loc;
 			parseLocation(cursor, end, loc);
 			server.locations.push_back(loc);
 		}
@@ -213,8 +214,8 @@ void tokenizerDump(std::vector<token> &tokens){
 	}
 }
 
-void configDump(std::vector<Http::ServerConfig> &config){
-	std::vector<Http::ServerConfig>::iterator it =  config.begin();
+void configDump(std::vector<HTTP::ServerConfig> &config){
+	std::vector<HTTP::ServerConfig>::iterator it =  config.begin();
 	std::cout << "---Print Config---\n\n";
 	for(; it != config.end(); it++)
 	{
@@ -224,7 +225,7 @@ void configDump(std::vector<Http::ServerConfig> &config){
 		std::cout << "\tmax_body_size: " << (*it).maxBodySize << "\n";
 		std::cout << "\n";
 
-		std::vector<Http::Location>::iterator itl =  (*it).locations.begin();
+		std::vector<HTTP::Location>::iterator itl =  (*it).locations.begin();
 		for(; itl != (*it).locations.end(); itl++)
 		{
 			std::cout << "\tLOCATION " << (*itl).path << "\n";
@@ -238,8 +239,8 @@ void configDump(std::vector<Http::ServerConfig> &config){
 
 }
 
-std::vector<Http::ServerConfig> parseConfig::parseConfig(char *filePath){
-	std::vector<Http::ServerConfig> ret;
+std::vector<HTTP::ServerConfig> parseConfig::parseConfig(char *filePath){
+	std::vector<HTTP::ServerConfig> ret;
 	std::stringstream   stream;
 	std::ifstream inputFile(filePath);
 
@@ -257,7 +258,7 @@ std::vector<Http::ServerConfig> parseConfig::parseConfig(char *filePath){
 		//std::cout << it->value << "\n";
 		if(it->value == "server")
 		{
-			Http::ServerConfig    serverConf;
+			HTTP::ServerConfig    serverConf;
 			parseServer(it, tokens.end() - 1, serverConf);
 			ret.push_back(serverConf);
 		}
