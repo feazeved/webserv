@@ -13,6 +13,7 @@
 #include "Server.hpp"
 #include "Request.hpp"
 #include "core.hpp"
+#include "BlockVector.hpp"
 
 class Request;
 
@@ -95,10 +96,10 @@ public:
 	}
 
 private:
-	std::vector<Server*>		servers;
-	std::vector<HTTP::Request*>	requests;
-	i32							epoll_fd;
-	bool						running;
+	BlockVector<Server, 16, 16>				servers;
+	BlockVector<HTTP::Connection, 64, 64>	connections;
+	i32										epoll_fd;
+	bool									running;
 
 	static const usize		s_max_events = 16;
 

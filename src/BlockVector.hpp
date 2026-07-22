@@ -1,8 +1,10 @@
+#pragma once
+
 #include "core.hpp"
 #include <new>
 #include <unistd.h>
 
-// Class template 
+// Class template
 template <typename Type, usize blockSize, usize maxBlocks>
 class BlockVector
 {
