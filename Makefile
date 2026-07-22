@@ -10,7 +10,7 @@ ARG = config/default.conf
 # Defaults ------------------------------------ #
 RM := rm -f
 BUILD_PATH = build
-INC_PATH = includes src test
+INC_PATH = includes src test src/http
 OBJ_PATH = $(BUILD_PATH)/obj
 BIN = build/$(NAME)
 TEST_BIN = $(BIN)_test

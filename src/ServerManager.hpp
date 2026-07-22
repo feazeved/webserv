@@ -1,6 +1,5 @@
 #pragma once
 
-#include <map>
 #include <stdexcept>
 #include <sys/socket.h>
 #include <vector>
@@ -12,7 +11,10 @@
 
 #include "HTTP.hpp"
 #include "Server.hpp"
+#include "Request.hpp"
 #include "core.hpp"
+
+class Request;
 
 class ServerManager {
 public:
@@ -40,9 +42,10 @@ public:
 
 	~ServerManager() {
 		instance() = NULL;
-		for (usize i = 0; i < servers.size(); i++) {
+		for (usize i = 0; i < servers.size(); i++)
 			delete servers[i];
-		}
+		for (usize i = 0; i < requests.size(); i++)
+			closeConnection(requests[i]);
 		close(epoll_fd);
 	}
 
@@ -52,14 +55,14 @@ public:
 		signal(SIGPIPE, SIG_IGN);
 
 		for (usize i = 0; i < servers.size(); i++) {
-			addToEpoll(servers[i]->getFd(), servers[i]);
+			addToEpoll(servers[i]->getFd(), EPOLLIN, servers[i]);
 		}
 
 		struct epoll_event	events[s_max_events];
 		running = true;
 
 		while (running) {
-			i32	event_count = epoll_wait(epoll_fd, events, s_max_events, -1); // 30000 -> timeout, need to check this
+			i32	event_count = epoll_wait(epoll_fd, events, s_max_events, -1);
 
 			if (event_count == -1) {
 				if (errno == EINTR)
@@ -72,21 +75,30 @@ public:
 
 				if (isListeningSocket(ptr)) {
 					handleNewConnection(static_cast<Server*>(ptr));
-				}
-				else if (events[i].events & (EPOLLIN | EPOLLOUT)) {
-					Connection*	conn = static_cast<Connection*>(ptr);
+				} else {
+					HTTP::Request*	req = static_cast<HTTP::Request*>(ptr);
+					HTTP::RequestAction	action = req->handleEvent(events[i].events);
 
-					conn->handleEvent(events[i].events);
+					switch (action) {
+						case HTTP::REQ_CLOSE:
+							closeConnection(req);
+							break ;
+						case HTTP::REQ_WRITE:
+							modifyEpollEvent(req->fd, EPOLLOUT, req);
+							break ;
+						case HTTP::REQ_CONTINUE:
+							break ;
+					}
 				}
 			}
 		}
 	}
 
 private:
-	std::vector<Server*>	servers;
-	// vector de conexoes ?
-	i32						epoll_fd;
-	bool					running;
+	std::vector<Server*>		servers;
+	std::vector<HTTP::Request*>	requests;
+	i32							epoll_fd;
+	bool						running;
 
 	static const usize		s_max_events = 16;
 
@@ -130,13 +142,17 @@ private:
 		if (clientFd == -1) {
 			if (errno != EAGAIN && errno != EWOULDBLOCK)
 				std::cerr << "accept error: " << std::strerror(errno) << "\n";
+			return ;
 		}
 
-		Connection*	conn = new Connection(clientFd, server->getConfig());
-
-		connections.push_back(conn);
-
-		addToEpoll(clientFd, EPOLLIN, conn);
+		if (fcntl(clientFd, F_SETFL, O_NONBLOCK) == -1) {
+			std::cerr << "fcntl error: " << std::strerror(errno) << "\n";
+			close(clientFd);
+			return ;
+		}
+		HTTP::Request*	req = new HTTP::Request(clientFd);
+		requests.push_back(req);
+		addToEpoll(clientFd, EPOLLIN, req);
 	}
 
 	// To prevent copying
@@ -154,16 +170,15 @@ public:
 			std::cerr << "epoll_ctl MOD error: " << std::strerror(errno) << "\n";
 	}
 
-	void	closeConnection(Connection* conn) {
-		for (usize i = 0; i < connections.size(); i++) {
-			if (connections[i] == conn) {
-				removeFromEpoll(conn->getFd());
-				delete connections[i];
-				connections.erase(connections.begin() + i);
-
+	void	closeConnection(HTTP::Request* req) {
+		for (usize i = 0; i < requests.size(); i++) {
+			if (requests[i] == req) {
+				removeFromEpoll(req->fd);
+				close(req->fd);
+				delete requests[i];
+				requests.erase(requests.begin() + static_cast<long>(i));
 				break ;
 			}
 		}
-
 	}
 };

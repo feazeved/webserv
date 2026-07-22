@@ -4,10 +4,16 @@
 #include "Buffer.hpp"
 #include <cctype>
 #include <cstring>
-#include <stdexcept>
+#include <sys/epoll.h>
 #include "Request_helpers.hpp"
 
 namespace HTTP {
+
+enum RequestAction {
+	REQ_CONTINUE,
+	REQ_CLOSE,
+	REQ_WRITE
+};
 
 // Class has a read call that consumes lines
 class Request
@@ -93,7 +99,27 @@ i32 parseTarget(const char *str, const char *end){
     return 0;
 }
 
-i32 parseHost(const char *str, const char *end); // Host doesnt need to be stored if its resolved immediately
+// FUNCTION DONE BY FELIPE
+HTTP::RequestAction	handleEvent(u32 events) {
+	if (events & EPOLLIN) {
+		isize	n = read(BUFFER_CAPACITY);
+		if (n <= 0) {
+			return (REQ_CLOSE);
+		}
+	}
+	if (events & EPOLLOUT) {
+		// write  response
+		//
+		// if everything sent -> return (REQ_CLOSE)
+	}
+	return (REQ_CONTINUE);
+}
+
+// changed this to compile
+i32 parseHost(const char *str, const char *end) {
+	(void)str, (void)end;
+	return (0);
+} // Host doesnt need to be stored if its resolved immediately
 
 i32 parseFirstLine(usize length);
 i32 parseLine(usize length);

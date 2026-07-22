@@ -29,11 +29,11 @@ inline i32 HTTP::Request::parseFirstLine(usize length)
 	const char *arg = str;
 	while (str < end && *str != ' ')
 		str++;
-	i32 rvalue = parseArg(arg, str);
+	i32 rvalue = parseTarget(arg, str);
 	if (rvalue < 0)
 		return rvalue;
 
-	if (str + 9 == end 
+	if (str + 9 == end
 		&& std::memcmp(str, " HTTP/1.", 8) == 0
 		&& (str[8] == '0' || str[8] == '1'))
 	{
