@@ -11,59 +11,49 @@
 
 #include "HTTP.hpp"
 #include "Server.hpp"
-#include "Request.hpp"
+#include "Connection.hpp"
 #include "core.hpp"
 #include "BlockVector.hpp"
-
-class Request;
 
 class ServerManager {
 public:
 	ServerManager(const std::vector<HTTP::ServerConfig>& configs)
 		: epoll_fd(-1), running(false) {
 
+		if (s_serverBlockSize == 0 || s_connectionBlockSize == 0)
+			throw std::runtime_error("invalid BlockVector size");
 		instance() = this;
-		servers.reserve(configs.size());
-
-		try {
-			for (usize i = 0; i < configs.size(); i++) {
-				servers.push_back(new Server(configs[i]));
-			}
-			epoll_fd = epoll_create(1);
-			if (epoll_fd == -1)
-				throw std::runtime_error(std::strerror(errno));
-		} catch (...) {
-			for (usize i = 0; i < servers.size(); i++) {
-				delete servers[i];
-			}
-			servers.clear();
-			throw ;
+		usize numServers = configs.size();
+		while (servers.allocdSize() < numServers) {
+			if (!servers.grow())
+				throw std::bad_alloc();
 		}
+		for (usize i = 0; i < numServers; i++) {
+			servers[i].init(configs[i]);
+		}
+		epoll_fd = epoll_create(1);
+		if (epoll_fd == -1)
+			throw std::runtime_error(std::strerror(errno));
 	}
 
 	~ServerManager() {
 		instance() = NULL;
-		for (usize i = 0; i < servers.size(); i++)
-			delete servers[i];
-		for (usize i = 0; i < requests.size(); i++)
-			closeConnection(requests[i]);
 		close(epoll_fd);
 	}
 
-	// maybe need to worry with signal?
 	void	run() {
 		signal(SIGINT, handleSignal);
 		signal(SIGPIPE, SIG_IGN);
 
-		for (usize i = 0; i < servers.size(); i++) {
-			addToEpoll(servers[i]->getFd(), EPOLLIN, servers[i]);
+		for (usize i = 0; i < servers.allocdSize() && servers[i].getFd() != -1; i++) {
+			addToEpoll(servers[i].getFd(), EPOLLIN, &servers[i]);
 		}
 
-		struct epoll_event	events[s_max_events];
+		struct epoll_event	events[s_maxEvents];
 		running = true;
 
 		while (running) {
-			i32	event_count = epoll_wait(epoll_fd, events, s_max_events, -1);
+			i32	event_count = epoll_wait(epoll_fd, events, s_maxEvents, -1);
 
 			if (event_count == -1) {
 				if (errno == EINTR)
@@ -77,15 +67,15 @@ public:
 				if (isListeningSocket(ptr)) {
 					handleNewConnection(static_cast<Server*>(ptr));
 				} else {
-					HTTP::Request*	req = static_cast<HTTP::Request*>(ptr);
-					HTTP::RequestAction	action = req->handleEvent(events[i].events);
+					HTTP::Connection*	conn = static_cast<HTTP::Connection*>(ptr);
+					HTTP::RequestAction	action = conn->request.handleEvent(events[i].events);
 
 					switch (action) {
 						case HTTP::REQ_CLOSE:
-							closeConnection(req);
+							closeConnection(conn);
 							break ;
 						case HTTP::REQ_WRITE:
-							modifyEpollEvent(req->fd, EPOLLOUT, req);
+							modifyEpollEvent(conn->request.fd, EPOLLOUT, conn);
 							break ;
 						case HTTP::REQ_CONTINUE:
 							break ;
@@ -96,12 +86,15 @@ public:
 	}
 
 private:
-	BlockVector<Server, 16, 16>				servers;
-	BlockVector<HTTP::Connection, 64, 64>	connections;
-	i32										epoll_fd;
-	bool									running;
+	static const usize											s_maxEvents = 16;
+	static const usize											s_serverBlockSize = 8;
+	static const usize											s_connectionBlockSize = 32;
 
-	static const usize		s_max_events = 16;
+	BlockVector<Server, s_serverBlockSize, 16>					servers;
+	BlockVector<HTTP::Connection, s_connectionBlockSize, 64>	connections;
+	i32															epoll_fd;
+	volatile bool												running;
+
 
 	static ServerManager*&	instance() {
 		static ServerManager*	inst = NULL;
@@ -126,9 +119,17 @@ private:
 		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
 	}
 
+	void	modifyEpollEvent(i32 fd, u32 events, void* ptr) {
+		struct epoll_event	ev;
+		ev.events = events;
+		ev.data.ptr = ptr;
+		if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &ev) == -1)
+			std::cerr << "epoll_ctl MOD error: " << std::strerror(errno) << "\n";
+	}
+
 	bool	isListeningSocket(void* ptr) {
-		for (usize i = 0; i < servers.size(); i++) {
-			if (ptr == servers[i])
+		for (usize i = 0; i < servers.allocdSize(); i++) {
+			if (ptr == &servers[i])
 				return (true);
 		}
 		return (false);
@@ -151,35 +152,40 @@ private:
 			close(clientFd);
 			return ;
 		}
-		HTTP::Request*	req = new HTTP::Request(clientFd);
-		requests.push_back(req);
-		addToEpoll(clientFd, EPOLLIN, req);
+
+		usize	index;
+		if (getFreeConnection(index) == false) {
+			close(clientFd);
+			throw std::bad_alloc();
+		}
+		connections[index].init(clientFd);
+		addToEpoll(clientFd, EPOLLIN, &connections[index]);
+	}
+
+	void	closeConnection(HTTP::Connection* conn) {
+		for (usize i = 0; i < connections.allocdSize(); i++) {
+			if (&connections[i] == conn) {
+				removeFromEpoll(conn->request.fd);
+				break ;
+			}
+		}
+	}
+
+	bool	getFreeConnection(usize& index) {
+		usize i;
+		for (i = 0; i < connections.allocdSize(); i++) {
+			if (connections[i].request.fd == -1) {
+				index = i;
+				return (true);
+			}
+		}
+		if (connections.grow() == false)
+			return (false);
+		index = i;
+		return (true);
 	}
 
 	// To prevent copying
 	ServerManager(const ServerManager&);
 	ServerManager& operator=(const ServerManager&);
-
-// functions that I think Alex will need
-public:
-	// function doesnt throw on error, only logs
-	void	modifyEpollEvent(i32 fd, u32 events, void* ptr) {
-		struct epoll_event	ev;
-		ev.events = events;
-		ev.data.ptr = ptr;
-		if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &ev) == -1)
-			std::cerr << "epoll_ctl MOD error: " << std::strerror(errno) << "\n";
-	}
-
-	void	closeConnection(HTTP::Request* req) {
-		for (usize i = 0; i < requests.size(); i++) {
-			if (requests[i] == req) {
-				removeFromEpoll(req->fd);
-				close(req->fd);
-				delete requests[i];
-				requests.erase(requests.begin() + static_cast<long>(i));
-				break ;
-			}
-		}
-	}
 };

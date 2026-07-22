@@ -49,6 +49,12 @@ public:
 		return true;
 	}
 
+	// Added this so that I don't go out of bounds. it's not size() because this would imply its the number of initialized items
+	usize	allocdSize()
+	{
+		return (blockSize * blockCount);
+	}
+
 	Type& operator[](usize index)
 	{
 		return blocks[index / blockSize][index % blockSize];

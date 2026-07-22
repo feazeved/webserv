@@ -14,7 +14,19 @@
 
 class Server {
 public:
-	Server(const HTTP::ServerConfig& c) : config(c) {
+	Server(const HTTP::ServerConfig& c) : listenFd(-1) {
+		init(c);
+	}
+
+	Server() : listenFd(-1) {}
+
+	~Server() {
+		if (listenFd != -1)
+			close(listenFd);
+	}
+
+	void init(const HTTP::ServerConfig& c) {
+		config = c;
 		listenFd = socket(AF_INET, SOCK_STREAM, 0);
 		if (listenFd == -1)
 			throw std::runtime_error(std::strerror(errno));
@@ -24,7 +36,7 @@ public:
 			closeAndThrow("setsockopt");
 
 		sockaddr_in	addr;
-		std::memset(&addr, 0, sizeof(addr));
+		MEMSET_BUILTIN(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET;
 		addr.sin_port = htons(config.port);
 
@@ -37,10 +49,6 @@ public:
 			closeAndThrow("listen");
 		if (fcntl(listenFd, F_SETFL, O_NONBLOCK) == -1)
 			closeAndThrow("fcntl");
-	}
-
-	~Server() {
-		close(listenFd);
 	}
 
 	i32	getFd() const { return (listenFd); }
