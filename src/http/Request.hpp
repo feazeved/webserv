@@ -2,9 +2,6 @@
 
 #include "core.hpp"
 #include "Buffer.hpp"
-#include <cctype>
-#include <cstring>
-#include <stdexcept>
 #include "Request_helpers.hpp"
 
 namespace HTTP {
@@ -46,55 +43,8 @@ isize read(usize bytes)
 	return bytesRead;	// Actually should return something more useful like request status (processing, etc)
 }
 
-// Split path/query at the first ?. V
-// Reject whitespace and control characters. V
-// Reject malformed encodings such as %, %2, or %GG. V
-// Reject decoded NUL bytes such as %00. V
-// Normalize or reject . and .. before filesystem access.
-// Ensure the final resolved filesystem path remains inside the configured root.
-// Do not blindly convert %2F into /; that can change path structure.
-// Apply a request-target length limit and return 414 URI Too Long when exceeded
-// Needs to validate the target based on above reqs
-i32 parseTarget(const char *str, const char *end){
-    if (str >= end)
-        return -1;
-
-    const char *p = str;
-    const char *questionMark = NULL;
-
-    while (p < end)
-    {
-        if(*p <= 32)
-            return -1;
-        if(*p == '?')
-        {
-            if(!questionMark)
-                questionMark = p;
-            else
-                return -1;
-        }
-        if(*p == '%' && p + 2 < end)
-        {
-            if(!std::isxdigit(*(p+1)) || !std::isxdigit(*(p+2))
-                ||(*(p+1) == '0' && *(p+2) == '0'))
-                return -1;
-        }
-        p++;
-    }
-    pathOffset = str - (const char *)buffer.data;
-    if (questionMark)
-    {
-        pathSize = questionMark - str;
-        queryOffset = (questionMark + 1) - (const char *)buffer.data;
-        querySize = end - (questionMark + 1);
-    }
-    else
-        pathSize = end - str;
-    return 0;
-}
-
+i32 parseTarget(const char *str, const char *end);
 i32 parseHost(const char *str, const char *end); // Host doesnt need to be stored if its resolved immediately
-
 i32 parseFirstLine(usize length);
 i32 parseLine(usize length);
 
