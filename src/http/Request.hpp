@@ -57,7 +57,7 @@ isize read(usize bytes)
 // Needs to validate the target based on above reqs
 i32 parseTarget(const char *str, const char *end){
     if (str >= end)
-        throw std::runtime_error("Invalid target");
+        return -1;
 
     const char *p = str;
     const char *questionMark = NULL;
@@ -65,19 +65,19 @@ i32 parseTarget(const char *str, const char *end){
     while (p < end)
     {
         if(*p <= 32)
-            throw std::runtime_error ("Invalid target");
+            return -1;
         if(*p == '?')
         {
             if(!questionMark)
                 questionMark = p;
             else
-                throw std::runtime_error("Invalid target");
+                return -1;
         }
         if(*p == '%' && p + 2 < end)
         {
             if(!std::isxdigit(*(p+1)) || !std::isxdigit(*(p+2))
                 ||(*(p+1) == '0' && *(p+2) == '0'))
-                throw std::runtime_error("Invalid target");
+                return -1;
         }
         p++;
     }
@@ -90,7 +90,7 @@ i32 parseTarget(const char *str, const char *end){
     }
     else
         pathSize = end - str;
-    return (1);
+    return 0;
 }
 
 i32 parseHost(const char *str, const char *end); // Host doesnt need to be stored if its resolved immediately
