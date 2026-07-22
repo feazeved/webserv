@@ -99,18 +99,26 @@ i32 parseTarget(const char *str, const char *end){
     return 0;
 }
 
-// FUNCTION DONE BY FELIPE
+// its called by ServerManager.run().
+// return values:
+// 		REQ_CONTINUE: response is not ready.
+// 		REQ_CLOSE:	  close the connection (will remove fd from epoll)
+// 		REQ_WRITE:	  says you're ready to write the response and ServerManager will modify its epoll so that you write
+//
+// TODO: check when to return REQ_CLOSE. Maybe should check for events & (EPOLLHUP | EPOLLERR) to close the connection properly.
+// Maybe should close according to something in the request? Maybe need to close if EPOLLIN && (rvalue = read()) == 0
 HTTP::RequestAction	handleEvent(u32 events) {
 	if (events & EPOLLIN) {
 		isize	n = read(BUFFER_CAPACITY);
 		if (n <= 0) {
 			return (REQ_CLOSE);
 		}
+
+		// if ready to write
+		// return (REQ_WRITE);
 	}
 	if (events & EPOLLOUT) {
 		// write  response
-		//
-		// if everything sent -> return (REQ_CLOSE)
 	}
 	return (REQ_CONTINUE);
 }
