@@ -104,6 +104,14 @@ typedef unsigned long	ulong;
 // === Math Helpers ========================================
 #define LOG2(x)				(63u - CLZ(x))	// TODO: maybe math helpers dont belong in this
 
+// === ASCII Helpers =====================================
+#define IS_ASCII(x)       ((x) >= 0 && (x) < 128)
+#define IS_DIGIT(x)       ((x) >= '0' && (x) <= '9')
+#define IS_UPPER(x)       ((x) >= 'A' && (x) <= 'Z')
+#define IS_LOWER(x)       ((x) >= 'a' && (x) <= 'z')
+#define IS_ALPHA(x)       (IS_UPPER(x) || IS_LOWER(x))
+#define IS_ALNUM(x)       (IS_ALPHA(x) || IS_DIGIT(x))
+
 // === Generic Helpers =====================================
 #define ARRAY_SIZE(arr)		(sizeof(arr) / sizeof((arr)[0]))
 #define ARRAY_END(arr)		(&(arr)[ARRAY_SIZE(arr)])

@@ -6,6 +6,7 @@
 
 // Class assigns a stack buffer and uses heap if growth is needed.
 // Auto handles reads
+// template <usize stackCapacity>
 class Buffer
 {
 public:

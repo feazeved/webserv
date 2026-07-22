@@ -1,8 +1,7 @@
 #pragma once
 #include "Request.hpp"
 #include "core.hpp"
-#include <cctype>
-#include <cstring>
+#include "http/Request_helpers.hpp"
 
 // Split path/query at the first ?. V
 // Reject whitespace and control characters. V
@@ -15,7 +14,7 @@
 // Needs to validate the target based on above reqs
 inline i32 HTTP::Request::parseTarget(const char *str, const char *end)
 {
-	if (str >= end)
+	if (str >= end)	// REVIEW: str < end is guaranteed at function call
 		return -1;
 
 	const char *p = str;
@@ -32,33 +31,33 @@ inline i32 HTTP::Request::parseTarget(const char *str, const char *end)
 			else
 				return -1;
 		}
-		if(*p == '%' && p + 2 < end)
+		if(*p == '%' && p + 2 < end)	// REVIEW: p + 2 is not needed because \r\n is guaranteed to exist after end ptr
 		{
-			if(!std::isxdigit(*(p+1)) || !std::isxdigit(*(p+2))
+			if(!IS_DIGIT(*(p+1)) || !IS_DIGIT(*(p+2))	// REVIEW: (personal preference) but i think something like p[1] and p[2] looks cleaner
 				||(*(p+1) == '0' && *(p+2) == '0'))
 				return -1;
 		}
 		p++;
 	}
-	pathOffset = str - (const char *)buffer.data;
+	vars.path.index = str - (const char *)buffer;
 	if (questionMark)
 	{
-		pathSize = questionMark - str;
-		queryOffset = (questionMark + 1) - (const char *)buffer.data;
-		querySize = end - (questionMark + 1);
+		vars.path.size = questionMark - str;
+		vars.query.index = (questionMark + 1) - (const char *)buffer;
+		vars.query.size = end - (questionMark + 1);
 	}
 	else
-		pathSize = end - str;
+		vars.path.size = end - str;
 	return 0;
 }
 
 inline i32 HTTP::Request::parseFirstLine(usize length)
 {
-	const char *str = (const char*) buffer.data;
+	const char *str = (const char*) buffer;
 	const char *end = str + length;
 
 	if (length < 14)
-		return -1;	// Bad request "GET / HTTP/1.0" shortest possible
+		return -1;	// ERROR: Bad request "GET / HTTP/1.0" shortest possible
 	if (MEMCMP_BUILTIN(str, "GET ", 4) == 0)
 	{
 		type |= 1;	// TODO: create enum
@@ -75,23 +74,21 @@ inline i32 HTTP::Request::parseFirstLine(usize length)
 		str += 7;
 	}
 	else
-		return -1;	// Invalid method
+		return -1;	// ERROR: Invalid method
 
 	const char *arg = str;
-	while (str < end && *str != ' ')
-		str++;
+	str = end - 10;
+	if (str - arg > 4096)	// TODO: Fix mixup
+		return -1;
+	if (MEMCMP_BUILTIN(str, " HTTP/1.", 8) == 0	&& (str[8] == '0' || str[8] == '1'))
+		type |= (str[8] - '0') << 3;	// TODO: get proper enum bitfield representation
+	else
+		return -1; // ERROR: Invalid version, TODO: what happens to the class once it is recognized as bad?
+
 	i32 rvalue = parseTarget(arg, str);	// TODO: meaningful return
 	if (rvalue < 0)
 		return rvalue;
 
-	if (str + 9 == end 
-		&& MEMCMP_BUILTIN(str, " HTTP/1.", 8) == 0
-		&& (str[8] == '0' || str[8] == '1'))
-	{
-		type |= (str[8] - '0') << 3;	// TODO: get proper enum bitfield representation
-	}
-	else
-		return -1; // Invalid version, TODO: what happens to the class once it is recognized as bad?
 	return 0;	// No problems (YET, return code for success only happens when finally executing the method)
 }
 
@@ -100,34 +97,37 @@ inline i32 HTTP::Request::parseLine(usize length)
 	if (line_count == 0)
 		return parseFirstLine(length);
 
-	const char *str = (char*) buffer.data + readOffset;
+	const char *str = (char*) buffer + readOffset;
 	const char *end = str + length;
 
-	if (s_compareCase(str, end, "host:", 5) == 0)
+	if (s_compareCase(str, end, "host:", 5) == true)
 	{
-		// Insert check here to see if host was already resolved
-		return parseHost(str, end);
+		if (type & 16)
+			return -1;	// ERROR: Multiple hosts
+		if (s_compareCase(str, end, "localhost", 9) == false)
+			return -1;	// ERROR: Invalid host
+		s_compareCase(str, end, ":8080", 5);
+		type |= 16;
 	}
-	else if (s_compareCase(str, end, "content-length:", 15) == 0)	// needs length checks, or could pad
+	else if (s_compareCase(str, end, "content-length:", 15) == true)	// needs length checks, or could pad
 	{
 		if (type >= 128 || requestSize != SIZE_MAX)
-			return -1; // bad request, transfer method had already been set
+			return -1; // ERROR: bad request, transfer method had already been set
 
 		requestSize = s_readDigits(str, end);
-		if (requestSize == SIZE_MAX || str != end)
-			return -1;	// Garbage after request
+		if (requestSize == SIZE_MAX)
+			return -1;	// ERROR: Garbage after request
 	}
-	else if (s_compareCase(str, end, "transfer-encoding:", 18) == 0)	// TODO: what if its empty?
+	else if (s_compareCase(str, end, "transfer-encoding:", 18) == true)	// TODO: what if its empty?
 	{
 		if (type >= 128 || requestSize != SIZE_MAX)
-			return -1; // bad request, transfer method had already been set
+			return -1; // ERROR: bad request, transfer method had already been set
 
-		if (s_compareCase(str, end, "chunked", 7) != 0)
-			return -1; // bad request, transfer encoding isnt chunked
-
-		if (str != end)
-			return -1; // bad request, garbage after field value
+		if (s_compareCase(str, end, "chunked", 7) == false)
+			return -1; // ERROR: bad request, transfer encoding isnt chunked
 		type |= 128;	// TODO: get proper enum for bitfield
 	}
+	if (str != end)
+		return -1; // ERROR: bad request, garbage after field value
 	return 0;
 }
