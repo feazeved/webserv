@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <cerrno>
+#include <cstddef>
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
@@ -15,16 +17,24 @@ using namespace parseConfig;
 
 static std::vector<token> tokenizer(std::stringstream &config)
 {
-	std::vector<token> ret;
+    std::vector<token> ret;
 	std::string tk;
 	token tkn;
+	int braces = 0;
+
+	if(config.peek() == EOF){
+        throw std::runtime_error("Empty file");
+    }
 
 	while (config >> tk)
 	{
 		size_t pos = tk.find_first_of("{};");
 		if(pos != std::string::npos)
 		{
-			char delimiter = tk[pos];
+		    char delimiter = tk[pos];
+		    if(pos + 1 != tk.size()){
+			   throw std::runtime_error("Sintax error");
+			}
 			if(pos != 0)
 			{
 				tkn.type = WORD;
@@ -32,9 +42,23 @@ static std::vector<token> tokenizer(std::stringstream &config)
 				ret.push_back(tkn);
 			}
 			switch (delimiter) {
-				case '{' : tkn.type = OPEN_BRACKET; tkn.value = '{';	break;
-				case '}' : tkn.type = CLOSE_BRACKET; tkn.value = '}';	break;
-				case ';' : tkn.type = SEMICOLON; tkn.value = ';';		break;
+				case '{' :
+				    tkn.type = OPEN_BRACKET;
+					tkn.value = '{';
+					braces++;
+					break;
+				case '}' :
+				    tkn.type = CLOSE_BRACKET;
+					tkn.value = '}';
+					if(--braces < 0)
+	                    throw std::runtime_error("Extraneous closing brace ('}')");
+					break;
+				case ';' :
+    				if(tkn.type == SEMICOLON)
+                        throw std::runtime_error("Extraneous semicolon (';')");
+    				tkn.type = SEMICOLON;
+    				tkn.value = ';';
+    				break;
 				default: throw std::runtime_error("Invalid delimiter"); break;
 			}
 		}
@@ -44,14 +68,23 @@ static std::vector<token> tokenizer(std::stringstream &config)
 		}
 		ret.push_back(tkn);
 	}
+	if(braces)
+            throw std::runtime_error("Expected '}' to math previous '{'");
 
 	return ret;
 }
 
 void match(std::vector<token>::const_iterator &cursor, std::string value){
 	if(cursor->value != value)
-		throw std::runtime_error("Expected " + value);
+		throw std::runtime_error("Unexpected token");
 	cursor++;
+}
+
+void advance(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator &end)
+{
+    if(cursor == end)
+        throw std::runtime_error("Invalid read");
+    cursor++;
 }
 
 void parseDirective(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator &end, Directive &dir){
@@ -62,10 +95,11 @@ void parseDirective(std::vector<token>::const_iterator &cursor, std::vector<toke
 	while(cursor != end && cursor->type != parseConfig::SEMICOLON)
 	{
 		arguments.push_back(cursor->value);
-		cursor++;
+		advance(cursor, end);
+		//cursor++;
 	}
 	if(cursor->type != parseConfig::SEMICOLON)
-		throw std::runtime_error("Expected semicolon");
+		throw std::runtime_error("Unexpected token");
 	dir.args = arguments;
 }
 
@@ -138,7 +172,7 @@ void parseLocation(std::vector<token>::const_iterator &cursor, std::vector<token
 		cursor++;
 	}
 	if(cursor->type != parseConfig::CLOSE_BRACKET)
-		throw std::runtime_error("Expected close bracket");
+		throw std::runtime_error("Unexpected token");
 }
 
 
@@ -147,7 +181,7 @@ void setServerDirective(Directive &dir, HTTP::ServerConfig &server){
 	if(dir.name == "listen")
 	{
 		if(server.port != -1 || dir.args.size() != 1)
-			throw std::runtime_error("Duplicate port definition");
+			throw std::runtime_error("Invalid port definition");
 		server.port = stt_strtol(dir.args.at(0));
 		if(server.port < 1 || server.port > 65535)
 			throw std::runtime_error("Invalid port");
@@ -155,7 +189,7 @@ void setServerDirective(Directive &dir, HTTP::ServerConfig &server){
 	else if(dir.name == "client_max_body_size")
 	{
 		if(server.maxBodySize != -1 || dir.args.size() != 1)
-			throw std::runtime_error("Duplicate max body size definition");
+			throw std::runtime_error("Invalid max body size definition");
 		server.maxBodySize = stt_strtol(dir.args.at(0));
 		if(server.maxBodySize < 1 || server.maxBodySize > 20)
 			throw std::runtime_error("Invalid max body size");
@@ -173,9 +207,12 @@ void setServerDirective(Directive &dir, HTTP::ServerConfig &server){
 		throw std::runtime_error("Invalid server directive");
 }
 
+
 void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::const_iterator end, HTTP::ServerConfig &server){
 	match(cursor, "server");
 	match(cursor, "{");
+	if (cursor == end || cursor->value == "}")
+        throw std::runtime_error("Empty server block");
 	while (cursor != end) {
 		if(cursor->value == "location")
 		{
@@ -189,10 +226,11 @@ void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::
 			parseDirective(cursor, end, dir);
 			setServerDirective(dir, server);
 		}
-		cursor++;
+		advance(cursor, end);
+		//cursor++;
 	}
 	if(end->type != parseConfig::CLOSE_BRACKET)
-		throw std::runtime_error("Expected close bracket");
+		throw std::runtime_error("Unexpected token");
 }
 
 void tokenizerDump(std::vector<token> &tokens){
@@ -239,6 +277,33 @@ void configDump(std::vector<HTTP::ServerConfig> &config){
 
 }
 
+size_t scopeEnd(std::vector<token>::iterator &begin, std::vector<token>::iterator &end)
+{
+    std::vector<token>::iterator it = begin;
+    bool startedCount = false;
+    int braces = 0;
+    size_t distance = 0;
+
+    while(it != end)
+    {
+        if(it->type == parseConfig::OPEN_BRACKET)
+        {
+            startedCount = true;
+            braces++;
+        }
+        else if(it->type == parseConfig::CLOSE_BRACKET)
+        {
+            startedCount = true;
+            braces--;
+        }
+        if(!braces && startedCount)
+            break;
+        it++;
+        distance++;
+    }
+    return distance;
+}
+
 std::vector<HTTP::ServerConfig> parseConfig::parseConfig(char *filePath){
 	std::vector<HTTP::ServerConfig> ret;
 	std::stringstream   stream;
@@ -250,18 +315,22 @@ std::vector<HTTP::ServerConfig> parseConfig::parseConfig(char *filePath){
 
 	std::vector<token> tokens = tokenizer(stream);
 	std::vector<token>::iterator it =  tokens.begin();
+	std::vector<token>::iterator end =  tokens.end();
 
 	//tokenizerDump(tokens);
 
-	while(it != tokens.end())
+	while(it != end)
 	{
-		//std::cout << it->value << "\n";
 		if(it->value == "server")
 		{
-			HTTP::ServerConfig    serverConf;
-			parseServer(it, tokens.end() - 1, serverConf);
+		    size_t distance = scopeEnd(it, end);
+		    HTTP::ServerConfig    serverConf;
+			parseServer(it, it + distance, serverConf);
 			ret.push_back(serverConf);
+			it = it + distance;
 		}
+		else
+            throw std::runtime_error("Unexpected token");
 		it++;
 	}
 
