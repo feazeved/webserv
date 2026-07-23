@@ -35,10 +35,10 @@ inline i32 HTTP::Request::parseTarget(const char *str, const char *end) {
 		}
 		p++;
 	}
-	vars.path.index = str - (const char *)buffer;
+	vars.path.index = str - (const char *)input.data;
 	if (questionMark) {
 		vars.path.size = questionMark - str;
-		vars.query.index = (questionMark + 1) - (const char *)buffer;
+		vars.query.index = (questionMark + 1) - (const char *)input.data;
 		vars.query.size = end - (questionMark + 1);
 	}
 	else
@@ -46,11 +46,8 @@ inline i32 HTTP::Request::parseTarget(const char *str, const char *end) {
 	return 0;
 }
 
-inline i32 HTTP::Request::parseFirstLine(usize length) {
-	const char *str = (const char*) buffer;
-	const char *end = str + length;
-
-	if (length < 14)
+inline i32 HTTP::Request::parseFirstLine(const char *str, const char *end) {
+	if (end - str < 14)
 		return -1;	// ERROR: Bad request "GET / HTTP/1.0" shortest possible
 	if (MEMCMP_BUILTIN(str, "GET ", 4) == 0) {
 		type |= HTTP::Attributes::METHOD_GET;	// TODO: create enum
@@ -69,7 +66,7 @@ inline i32 HTTP::Request::parseFirstLine(usize length) {
 
 	const char *arg = str;
 	str = end - 10;
-	if (str - arg > 4096)	// TODO: Fix mixup
+	if (str - arg > 4096)	// TODO: Fix mixup and magic number
 		return -1;
 	if (MEMCMP_BUILTIN(str, " HTTP/1.", 8) == 0	&& (str[8] == '0' || str[8] == '1'))
 		type |= str[8] == '1' ? (HTTP::Attributes::VERSION) : 0;	// REFACTOR: a bit confusing
@@ -83,34 +80,31 @@ inline i32 HTTP::Request::parseFirstLine(usize length) {
 	return 0;	// No problems (YET, return code for success only happens when finally executing the method)
 }
 
-inline i32 HTTP::Request::parseLine(usize length) {
-	if (line_count == 0)
-		return parseFirstLine(length);
+inline i32 HTTP::Request::parseLine(const char *str, const char *end, u32 lineCount) {
 
-	const char *str = (char*) buffer + readOffset;
-	const char *end = str + length;
-
-	if (s_compareCase(str, end, "host:", 5) == true) {
+	if (lineCount == 0)
+		return parseFirstLine(str, end);
+	if (s_compare_case(str, end, "host:", 5) == true) {
 		if (type & HTTP::Attributes::HOST)
 			return -1;	// ERROR: Multiple hosts
-		if (s_compareCase(str, end, "localhost", 9) == false)
+		if (s_compare_case(str, end, "localhost", 9) == false)
 			return -1;	// ERROR: Invalid host
-		s_compareCase(str, end, ":8080", 5);
+		s_compare_case(str, end, ":8080", 5);
 		type |= HTTP::Attributes::HOST;
 	}
-	else if (s_compareCase(str, end, "content-length:", 15) == true) { // needs length checks, or could pad
+	else if (s_compare_case(str, end, "content-length:", 15) == true) { // needs length checks, or could pad
 		if ((type & HTTP::Attributes::CHUNKED) || requestSize != SIZE_MAX)
 			return -1; // ERROR: bad request, transfer method had already been set
 
-		requestSize = s_readDigits(str, end);
+		requestSize = s_read_digits(str, end);
 		if (requestSize == SIZE_MAX)
 			return -1;	// ERROR: Garbage after request
 	}
-	else if (s_compareCase(str, end, "transfer-encoding:", 18) == true) { // TODO: what if its empty?
+	else if (s_compare_case(str, end, "transfer-encoding:", 18) == true) { // TODO: what if its empty?
 		if ((type & HTTP::Attributes::CHUNKED) || requestSize != SIZE_MAX)
 			return -1; // ERROR: bad request, transfer method had already been set
 
-		if (s_compareCase(str, end, "chunked", 7) == false)
+		if (s_compare_case(str, end, "chunked", 7) == false)
 			return -1; // ERROR: bad request, transfer encoding isnt chunked
 		type |= HTTP::Attributes::CHUNKED;	// TODO: get proper enum for bitfield
 	}

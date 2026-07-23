@@ -5,8 +5,6 @@
 #include "core.hpp"
 #include "Request.hpp"
 
-#define CLR_MASK(ref, value)	(~((typeof(ref)) (value)))
-
 namespace HTTP {
 
 class Connection {
@@ -33,6 +31,7 @@ public:
 	i8	handleEvent(usize bytes, u32 events)
 	{
 		i8 rvalue = 0;
+
 		while (request.syscalled == false)
 		{
 			switch (request.state)

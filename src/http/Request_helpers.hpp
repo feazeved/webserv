@@ -1,10 +1,10 @@
 #pragma once
-#include "Request.hpp"
+#include "core.hpp"
 
 // Compares a string with another ignoring case status;
 // If equal, consumes characters and skips valid spaces
 static inline
-bool s_compareCase(const char* &str, const char *end, const char* ref, u32 refLength)
+bool s_compare_case(const char* &str, const char *end, const char* ref, u32 refLength)
 {
 	if (str + refLength > end)
 		return false;
@@ -26,7 +26,7 @@ bool s_compareCase(const char* &str, const char *end, const char* ref, u32 refLe
 // basic atoi
 // consumes characters and skips valid spaces
 static inline
-usize s_readDigits(const char* &str, const char *end)
+usize s_read_digits(const char* &str, const char *end)
 {
 	while (*str == '0')
 		str++;
