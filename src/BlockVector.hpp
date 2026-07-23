@@ -1,8 +1,10 @@
+#pragma once
+
 #include "core.hpp"
 #include <new>
 #include <unistd.h>
 
-// Class template 
+// Class template
 template <typename Type, usize blockSize, usize maxBlocks>
 class BlockVector
 {
@@ -45,6 +47,12 @@ public:
 		delete[] blocks[blockCount];
 		blocks[blockCount] = NULL;
 		return true;
+	}
+
+	// Added this so that I don't go out of bounds. it's not size() because this would imply its the number of initialized items
+	usize	allocdSize()
+	{
+		return (blockSize * blockCount);
 	}
 
 	Type& operator[](usize index)
