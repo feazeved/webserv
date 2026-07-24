@@ -103,6 +103,7 @@ void parseDirective(std::vector<token>::const_iterator &cursor, std::vector<toke
 	dir.args = arguments;
 }
 
+// Alex: Lembra que se nao for referencia aqui ele cria copia
 static long stt_strtol(std::string str)
 {
 	const char *sptr = str.c_str();

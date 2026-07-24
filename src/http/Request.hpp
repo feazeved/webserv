@@ -16,6 +16,9 @@
 // Implement method actions to Request so that it can GET, POST, DELETE, CGI or ERROR
 	// This involves returning a HTTP Header with the appropriate status code and the payload
 
+// Create a separate Parser class that handles the reading of the header only
+	// It is supposed to output a struct containing all of the relevant metadata
+	// It does not own the buffer
 
 namespace HTTP {
 
@@ -35,13 +38,12 @@ typedef struct {
 class Request {
 public:
 	i32 fd;
-	Buffer<8192> input;
+	Buffer<8192> input, output;
 	u8 type; // bitfield: (-) (-) (CHUNKED) (HOST) (HTTP VERSION) (DELETE) (POST) (GET)
-	u8 state;
+	u8 state;	// TODO: transfer all of these to a metadata struct
 	u32 lineIndex, lineCount;
-	bool syscalled;
 	RequestVars vars;
-	u64 requestSize;
+	usize requestSize;
 
 // Reading state for the header, returns true when finished parsing the header
 i8 parse_header(usize bytes, u32 events) {
@@ -56,7 +58,7 @@ i8 parse_header(usize bytes, u32 events) {
 
 	const char *ptr = (const char *)input.data;
 	if (header_done)
-		state = (HTTP::Attributes::PROCESSING);
+		state = HTTP::Attributes::PROCESSING;
 
 	if (parseLine(ptr + lineIndex, ptr + lineEnd, lineCount) != 0)
 		return -1; // TODO: This also determines if the parsing is done, given errors exist
@@ -66,10 +68,13 @@ i8 parse_header(usize bytes, u32 events) {
 }
 
 // Reading state for the body
+// Here we are reading into the input buffer, but the newline requirement only applies to the content length
+// The body may well be over 8192 bytes, therefore it needs to be streamed appropriately
 i8 parse_body(usize bytes, u32 events) {
 	// if (input.read(bytes, events) < 0)
 	// 	return -1;	// ERROR: Failed reading
 
+	// if ()
 }
 
 isize exec(usize bytes, u32 events) {

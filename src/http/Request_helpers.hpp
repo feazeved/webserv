@@ -28,20 +28,46 @@ bool s_compare_case(const char* &str, const char *end, const char* ref, u32 refL
 static inline
 usize s_read_digits(const char* &str, const char *end)
 {
-	while (*str == '0')
-		str++;
+	static const i8 lut[256] = {
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1,
+		-1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+
+	usize numZeroes = 0;
+	while (str[numZeroes] == '0')
+		numZeroes++;
 
 	usize value = 0;
-	const char *ostr = str;
+	usize numberLength = numZeroes;
+	usize base = 10;
 
-	while (*str >= '0' && *str <= '9') // end is guaranteed to have \r\n
+	while (lut[(u8)str[numberLength]] >= 0) // end is guaranteed to have \r\n
 	{
-		value = value * 10 + (usize)(*str - '0');
-		str++;
+		if (lut[(u8)str[numberLength]] > 9)
+			base = 16;
+		numberLength++;
 	}
 
-	if (ostr == str || (usize) (str - ostr) > SIZE_MAX_BASE10_LENGTH - 1)	// TODO: set a proper limit
+	if (numberLength == 0 || numberLength - numZeroes > SIZE_MAX_BASE16_LENGTH - 1)	// TODO: set a proper limit
 		return SIZE_MAX;	// Request is too large or invalid
+
+	for (usize i = 0; i < numberLength; i++)
+		value += value * base + (usize) lut[(u8)str[numberLength]];
+
+	str += numberLength;
 	while (str < end && (*str == ' ' || *str == '\t'))
 		str++;
 	return value;

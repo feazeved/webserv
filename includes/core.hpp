@@ -9,6 +9,7 @@
 #define WORD_SIZE	sizeof(size_t)
 #define WORD_BITS	(WORD_SIZE * CHAR_BIT)
 #define SIZE_MAX_BASE10_LENGTH ((sizeof(size_t) * CHAR_BIT * 30103) / 100000 + 1)
+#define SIZE_MAX_BASE16_LENGTH ((sizeof(size_t) * CHAR_BIT + 3) / 4)
 
 // Types
 typedef int8_t			i8;

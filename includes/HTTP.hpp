@@ -44,6 +44,8 @@ enum State {
 	READING = 1 << 0,		// Reading header
 	PROCESSING = 1 << 1,	// Reading body
 	WRITING = 1 << 2,		// Writing
+
+	PROCESSING_LENGTH = 1 << 6, // Reading the header for the body
 	FIRST_LINE = 1 << 7
 };
 }
