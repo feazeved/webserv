@@ -68,9 +68,7 @@ inline i32 HTTP::Request::parseFirstLine(const char *str, const char *end) {
 	str = end - 10;
 	if (str - arg > 4096)	// TODO: Fix mixup and magic number
 		return -1;
-	if (MEMCMP_BUILTIN(str, " HTTP/1.", 8) == 0	&& (str[8] == '0' || str[8] == '1'))
-		type |= str[8] == '1' ? (HTTP::Attributes::VERSION) : 0;	// REFACTOR: a bit confusing
-	else
+	if (MEMCMP_BUILTIN(str, " HTTP/1.1", 9) != 0)
 		return -1; // ERROR: Invalid version, TODO: what happens to the class once it is recognized as bad?
 
 	i32 rvalue = parseTarget(arg, str);	// TODO: meaningful return

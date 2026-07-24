@@ -73,10 +73,48 @@ public:
 		return lineEnd;
 	}
 
+	template <usize N>
+	void append(const char (&string)[N]) {
+		MEMCPY_INLINE(data + writeOffset, string, N - 1);
+		writeOffset += N - 1;
+	}
+
+	void append(const u8 *ptr, u32 length) {
+		MEMCPY_BUILTIN(data + writeOffset, ptr, length);
+		writeOffset += length;
+	}
+
+	void append(usize number, bool isHex) {
+		char	buffer[24];
+		usize	base = isHex ? 16 : 10;
+		usize	length;
+		usize	i = sizeof(buffer);
+
+		buffer[--i] = '\n';
+		buffer[--i] = '\r';
+		do
+		{
+			buffer[--i] = (number % base) + '0';
+			number /= base;
+		}	while (number != 0);
+		length = sizeof(buffer) - i;
+		MEMCPY_BUILTIN(data + writeOffset, buffer + i, length);
+		writeOffset += length;
+	}
+
 	void clear() {
 		readOffset = 0;
 		writeOffset = 0;
 	}
 };
 
-// parseLine(readOffset - lineOffset);	// TODO: check for errors
+// #define BUFFER_INLINE_APPEND(buf, string)                      \
+// 	do                                                            \
+// 	{                                                             \
+// 		const usize length = sizeof(string) - 1;                  \
+// 		MEMCPY_INLINE(                                            \
+// 			(buf).data + (buf).writeOffset,                       \
+// 			(string),                                             \
+// 			length);                                              \
+// 		(buf).writeOffset += length;                              \
+// 	} while (0)

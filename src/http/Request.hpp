@@ -20,6 +20,9 @@
 	// It is supposed to output a struct containing all of the relevant metadata
 	// It does not own the buffer
 
+// Whenever status is deduced, it already loads the string into output buffer index 9 e.g. (HTTP/1.1 _)
+
+
 namespace HTTP {
 
 typedef struct {
@@ -39,13 +42,14 @@ class Request {
 public:
 	i32 fd;
 	Buffer<8192> input, output;
-	u8 type; // bitfield: (-) (-) (CHUNKED) (HOST) (HTTP VERSION) (DELETE) (POST) (GET)
+	u8 type; // bitfield: (-) (-) (-) (CHUNKED) (HOST) (DELETE) (POST) (GET)
 	u8 state;	// TODO: transfer all of these to a metadata struct
+	u32 status;
 	u32 lineIndex, lineCount;
 	RequestVars vars;
 	usize requestSize;
 
-// Reading state for the header, returns true when finished parsing the header
+// (Reentrant) Reading state for the header, returns true when finished parsing the header
 i8 parse_header(usize bytes, u32 events) {
 	i8 rvalue = input.read(fd, bytes, events);
 	if (rvalue < 0)
@@ -77,27 +81,30 @@ i8 parse_body(usize bytes, u32 events) {
 	// if ()
 }
 
-isize exec(usize bytes, u32 events) {
-
-}
-
 void close() {
 	// close operations
 	type = 0;
 	input.clear();
+	output.readOffset = 0;
+	output.writeOffset = 9;
 }
 
 i32 parseTarget(const char *str, const char *end);
 i32 parseFirstLine(const char *str, const char *end);
 i32 parseLine(const char *str, const char *end, u32 lineCount);
+void buildHeader();
 
 // ======== Constructors ====================
 Request() :
 	fd(-1),
-	input(),
+	input(),	// TODO: empty constructors for buffer
+	output(),
 	type(0),
 	state(0),
 	requestSize(SIZE_MAX) {
+		output.readOffset = 0;
+		output.writeOffset = 0;
+		output.append("HTTP/1.1 ");
 	}
 };
 }

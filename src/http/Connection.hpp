@@ -7,6 +7,11 @@
 
 namespace HTTP {
 
+// Connection will loop until either there is an unrecoverable error, or a syscall was made
+// The idea is that all information will be processed, and the limiting factor is the influx of new information
+// The new information goes both ways, input and output. A write buffer will only execute one write per connection call
+
+
 class Connection {
 public:
 	Request request;
