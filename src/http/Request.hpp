@@ -1,17 +1,23 @@
 #pragma once
 
-#include "core.hpp"
 #include <unistd.h>
 #include <sys/epoll.h>
+
+#include "core.hpp"
 #include "Request_helpers.hpp"
+#include "http/Buffer.hpp"
+
+// Implement a compact function so that if necessary, moves cookie to the end of query so that path + query + cookie < 8192
+
+// Implement state actions to Request so that it switches between reading and writing seamlessly
+	// It needs to set the epoll variables and confirm upon entry that it can write
+	// With chunked transfer encoding, it will constantly switch between read and write
+
+// Implement method actions to Request so that it can GET, POST, DELETE, CGI or ERROR
+	// This involves returning a HTTP Header with the appropriate status code and the payload
+
 
 namespace HTTP {
-
-enum RequestAction {
-	REQ_CONTINUE,
-	REQ_CLOSE,
-	REQ_WRITE
-};
 
 typedef struct {
 	struct
@@ -26,92 +32,68 @@ typedef struct {
 // Reading: Reading Header, Reading Body
 // Writing: 
 // Limits: ~8kb per line, ~4kb for the target
-class Request
-{
+class Request {
 public:
-	u8 buffer[32 * 1024];
-	u8 type;	// bitfield: (CHUNKED) () () (HOST) (HTTP VERSION) (DELETE) (POST) (GET)
-	u32 readOffset, curOffset, writeOffset;
-	u32 line_count;
+	i32 fd;
+	Buffer<8192> input;
+	u8 type; // bitfield: (-) (-) (CHUNKED) (HOST) (HTTP VERSION) (DELETE) (POST) (GET)
+	u8 state;
+	u32 lineIndex, lineCount;
+	bool syscalled;
 	RequestVars vars;
 	u64 requestSize;
-	i32 fd;
 
-// Methods
-isize read(usize bytes)
-{
-	if (writeOffset + bytes > sizeof(buffer))
-		return -1;	// ERROR: Line is too long
+// Reading state for the header, returns true when finished parsing the header
+i8 parse_header(usize bytes, u32 events) {
+	i8 rvalue = input.read(fd, bytes, events);
+	if (rvalue < 0)
+		return -1;	// ERROR: Failed reading
 
-	isize bytesRead = ::read(fd, buffer + writeOffset, bytes);	// TODO: check for errors
-	if (bytesRead <= 0)
-		return bytesRead;
+	bool header_done = false;
+	u32 lineEnd = input.find_line_end(header_done);
+	if (lineEnd == UINT32_MAX)	// Not done reading a line
+		return 0;
 
-	writeOffset += (usize) bytesRead;
-	while (curOffset < writeOffset - 1)
-	{
-		if (buffer[curOffset] == '\r' && buffer[curOffset + 1] == '\n')
-		{
-			// if (curOffset + 3 <= writeOffset && str[curOffset + 2] == '\r' && str[curOffset + 3] == '\n')
-			// 	header_done;
-			parseLine(curOffset - readOffset);	// TODO: check for errors
-			curOffset += 2;
-			readOffset = curOffset;
-			line_count++;
-		}
-		else
-			curOffset++;
-	}
-	return bytesRead;	// Actually should return something more useful like request status (processing, etc)
+	const char *ptr = (const char *)input.data;
+	if (header_done)
+		state = (HTTP::Attributes::PROCESSING);
+
+	if (parseLine(ptr + lineIndex, ptr + lineEnd, lineCount) != 0)
+		return -1; // TODO: This also determines if the parsing is done, given errors exist
+	lineCount++;
+	lineIndex = lineEnd;
+	return 0;	// Actually should return something more useful like request status (processing, etc)
 }
 
-void close()
-{
+// Reading state for the body
+i8 parse_body(usize bytes, u32 events) {
+	// if (input.read(bytes, events) < 0)
+	// 	return -1;	// ERROR: Failed reading
+
+}
+
+isize exec(usize bytes, u32 events) {
+
+}
+
+void close() {
 	// close operations
-	fd = -1;
-
-}
-
-// its called by ServerManager.run().
-// return values:
-// 		REQ_CONTINUE: response is not ready.
-// 		REQ_CLOSE:	  close the connection (will remove fd from epoll)
-// 		REQ_WRITE:	  says you're ready to write the response and ServerManager will modify its epoll so that you write
-//
-// TODO: check when to return REQ_CLOSE. Maybe should check for events & (EPOLLHUP | EPOLLERR) to close the connection properly.
-// Maybe should close according to something in the request? Maybe need to close if EPOLLIN && (rvalue = read()) == 0
-RequestAction	handleEvent(u32 events) {
-	if (events & EPOLLIN) {
-		isize	n = read(4096);
-		if (n <= 0) {
-			return (REQ_CLOSE);
-		}
-
-		// if ready to write
-		// return (REQ_WRITE);
-	}
-	if (events & EPOLLOUT) {
-		// write  response
-	}
-	return (REQ_CONTINUE);
+	type = 0;
+	input.clear();
 }
 
 i32 parseTarget(const char *str, const char *end);
-i32 parseFirstLine(usize length);
-i32 parseLine(usize length);
+i32 parseFirstLine(const char *str, const char *end);
+i32 parseLine(const char *str, const char *end, u32 lineCount);
 
 // ======== Constructors ====================
 Request() :
-	buffer(),
+	fd(-1),
+	input(),
 	type(0),
-	readOffset(0),
-	curOffset(0),
-	writeOffset(0),
-	line_count(0),
-	requestSize(SIZE_MAX),
-	fd(-1)
-{
-}
+	state(0),
+	requestSize(SIZE_MAX) {
+	}
 };
 }
 
