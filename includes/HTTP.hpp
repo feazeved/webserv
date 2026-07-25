@@ -23,8 +23,9 @@ struct ServerConfig {
 	std::string					host;
 	long						port;
 	long						maxBodySize;
+	bool						autoindex;
 
-	ServerConfig() : host("localhost"), port(-1), maxBodySize(-1) {}
+	ServerConfig() : host("localhost"), port(-1), maxBodySize(-1), autoindex(false) {}
 };
 
 namespace Attributes {

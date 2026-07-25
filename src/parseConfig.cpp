@@ -200,6 +200,11 @@ void setServerDirective(Directive &dir, HTTP::ServerConfig &server){
         if(server.maxBodySize < 1 || server.maxBodySize > 20)
             throw std::runtime_error("Invalid max body size");
     }
+    else if(dir.name == "autoindex"){
+        if(dir.args.size() != 1 || (dir.args.at(0) != "on" && dir.args.at(0) != "off"))
+            throw std::runtime_error("Invalid autoindex");
+        server.autoindex = dir.args.at(0) == "on" ? true : false;
+    }
     else if (dir.name == "error_page")
     {
         if(dir.args.size() != 2)
