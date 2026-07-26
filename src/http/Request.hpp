@@ -81,8 +81,15 @@ i8 parse_body(usize bytes, u32 events) {
 	// if ()
 }
 
+i8 upload(usize bytes, u32 events);
+
 void close() {
 	// close operations
+	if (fd > 0) {
+		::close(fd);
+		fd = -1;
+	}
+
 	type = 0;
 	input.clear();
 	output.readOffset = 0;

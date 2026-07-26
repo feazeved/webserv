@@ -11,7 +11,6 @@ namespace HTTP {
 // The idea is that all information will be processed, and the limiting factor is the influx of new information
 // The new information goes both ways, input and output. A write buffer will only execute one write per connection call
 
-
 class Connection {
 public:
 	Request request;
@@ -34,8 +33,7 @@ void	init(i32 fd) {
 //
 // TODO: check when to return REQ_CLOSE. Maybe should check for events & (EPOLLHUP | EPOLLERR) to close the connection properly.
 // Maybe should close according to something in the request? Maybe need to close if EPOLLIN && (rvalue = read()) == 0
-i8	handleEvent(usize bytes, u32 events)
-{
+i8	handleEvent(usize bytes, u32 events) {
 	i8 rvalue = 0;
 
 	while (syscalled == false)
@@ -49,7 +47,7 @@ i8	handleEvent(usize bytes, u32 events)
 				rvalue = request.parse_body(bytes, events);
 				break;
 			case HTTP::Attributes::WRITING:
-				rvalue = request.exec(bytes, events);
+				rvalue = request.upload(bytes, events);
 				break;
 			default: break;
 		}

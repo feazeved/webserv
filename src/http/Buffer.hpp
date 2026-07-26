@@ -35,8 +35,8 @@ public:
 		return 1;
 	}
 
-	i8 readFile(i8 *path, usize reqBytes);
-	i8 writeFile(i8 *path, usize reqBytes);
+	i8 read_file(char *path, usize reqBytes);
+	i8 write_file(char *path, usize reqBytes);
 
 	i8 write(i32 fd, usize bytes, u32 events) {
 		if ((events & EPOLLOUT) == 0)
@@ -85,18 +85,31 @@ public:
 	}
 
 	void append(usize number, bool isHex) {
+		static const char digits[16] = {
+			'0', '1', '2', '3', '4', '5', '6', '7',
+			'8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 		char	buffer[24];
-		usize	base = isHex ? 16 : 10;
 		usize	length;
 		usize	i = sizeof(buffer);
 
 		buffer[--i] = '\n';
 		buffer[--i] = '\r';
-		do
+		if (isHex)
 		{
-			buffer[--i] = (number % base) + '0';
-			number /= base;
-		}	while (number != 0);
+			do
+			{
+				buffer[--i] = digits[(number % 16)];
+				number /= 16;
+			}	while (number != 0);
+		}
+		else
+		{
+			do
+			{
+				buffer[--i] = digits[(number % 10)];
+				number /= 10;
+			}	while (number != 0);			
+		}
 		length = sizeof(buffer) - i;
 		MEMCPY_BUILTIN(data + writeOffset, buffer + i, length);
 		writeOffset += length;
