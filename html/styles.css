@@ -1,0 +1,89 @@
+html, body{
+	height: 100%;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+* {
+	font-family: "Playpen Sans", cursive;
+	text-shadow: rgb(0, 0, 0) 3px 0px 0px, rgb(0, 0, 0) 2.83487px 0.981584px 0px, rgb(0, 0, 0) 2.35766px 1.85511px 0px, rgb(0, 0, 0) 1.62091px 2.52441px 0px, rgb(0, 0, 0) 0.705713px 2.91581px 0px, rgb(0, 0, 0) -0.287171px 2.98622px 0px, rgb(0, 0, 0) -1.24844px 2.72789px 0px, rgb(0, 0, 0) -2.07227px 2.16926px 0px, rgb(0, 0, 0) -2.66798px 1.37182px 0px, rgb(0, 0, 0) -2.96998px 0.42336px 0px, rgb(0, 0, 0) -2.94502px -0.571704px 0px, rgb(0, 0, 0) -2.59586px -1.50383px 0px, rgb(0, 0, 0) -1.96093px -2.27041px 0px, rgb(0, 0, 0) -1.11013px -2.78704px 0px, rgb(0, 0, 0) -0.137119px -2.99686px 0px, rgb(0, 0, 0) 0.850987px -2.87677px 0px, rgb(0, 0, 0) 1.74541px -2.43999px 0px, rgb(0, 0, 0) 2.44769px -1.73459px 0px, rgb(0, 0, 0) 2.88051px -0.838247px 0px;
+}
+
+body {
+	background-image: url('images/background.webp');
+
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: cover;
+}
+
+.header{
+	overflow: hidden;
+	display: flex;
+	position: relative;
+	justify-content: center;
+	align-items: center;
+	color: white;
+	padding: 1rem;
+	background: linear-gradient(0deg,rgba(72, 171, 239, 1) 0%, rgba(0, 83, 176, 1) 70%);
+	border: 5px solid rgba(0, 83, 176, 1);
+	border-top: 0px;
+	border-bottom-left-radius: 2rem;
+	border-bottom-right-radius: 2rem;
+	-webkit-box-shadow: 0px 5px 13px 5px rgba(0,0,0,0.4);
+	box-shadow: 0px 5px 13px 5px rgba(0,0,0,0.4);
+}
+
+
+.logo {
+	left: 0px;
+	position: absolute;
+}
+
+.title{
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	h1, p {
+		margin: 0;
+	}
+	h1{
+		font-weight: 600;
+		font-size: 3rem;
+	}
+	p {
+		font-size: 1.5rem;
+	}
+}
+
+
+/* ----- Main Button ----- */
+.button {
+	border: 2px solid black;
+	color: white;
+	border-radius: 25px;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	font-size: 42px;
+	margin: 4px 2px;
+	cursor: pointer;
+	background: #48ABEF;
+	background: linear-gradient(0deg,rgba(72, 171, 239, 1) 0%, rgba(0, 83, 176, 1) 50%, rgba(72, 171, 239, 1) 100%);
+
+	position: absolute;
+	left: 50%;
+	top: 65%;
+	transform: translate(-50%, -50%);
+
+
+	padding-inline: 5rem;
+	padding-block: 0.75rem;
+}
+
+.button:hover {
+	background: #3b8dc4;
+	background: linear-gradient(0deg,rgba(59, 141, 196, 1) 0%, rgba(6, 60, 122, 1) 50%, rgba(59, 141, 196, 1) 100%);
+}
