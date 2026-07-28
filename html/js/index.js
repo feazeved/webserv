@@ -1,10 +1,7 @@
-document.getElementById('playbutton').addEventListener('click', () => {
-	document.body.classList.add('game-started');
+const playButton = document.getElementById("playButton");
 
-	document.getElementById('playbutton').style.display = 'none';
-
-	const canvas = document.getElementById('gameCanvas');
-	canvas.style.display = 'block';
+playButton.addEventListener('click', () => {
+	document.body.classList.add("game-started");
 
 	startGame();
 })

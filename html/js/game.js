@@ -27,13 +27,10 @@ function startGame() {
 	const canvas = document.getElementById('gameCanvas');
 	const ctx = canvas.getContext('2d');
 
-	ctx.fillStyle = '#48ABEF';
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	const image = new Image();
+	image.src = 'images/town.webp';
 
-	ctx.fillStyle = '#ffffff';
-	ctx.font = '30px sans-serif';
-	ctx.textAlign = 'center';
-	ctx.fillText('Game canvas is working!', canvas.width / 2, canvas.height / 2);
-
-	console.log('startGame() ran, canvas element:', canvas);
+	image.onload = () => {
+		ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+	};
 }
