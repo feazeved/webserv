@@ -11,7 +11,7 @@ html, body{
 }
 
 body {
-	background-image: url('images/background.webp');
+	background-image: url('../images/background.webp');
 
 	background-position: center;
 	background-repeat: no-repeat;
@@ -73,12 +73,6 @@ body {
 	background: #48ABEF;
 	background: linear-gradient(0deg,rgba(72, 171, 239, 1) 0%, rgba(0, 83, 176, 1) 50%, rgba(72, 171, 239, 1) 100%);
 
-	position: absolute;
-	left: 50%;
-	top: 65%;
-	transform: translate(-50%, -50%);
-
-
 	padding-inline: 5rem;
 	padding-block: 0.75rem;
 }
@@ -86,4 +80,25 @@ body {
 .button:hover {
 	background: #3b8dc4;
 	background: linear-gradient(0deg,rgba(59, 141, 196, 1) 0%, rgba(6, 60, 122, 1) 50%, rgba(59, 141, 196, 1) 100%);
+}
+
+.stage {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	min-height: 90vh;
+}
+
+#gameCanvas {
+	display: none;
+	border: 4px solid #1a1a2e;
+	border-radius: 12px;
+	box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+	background: #ffffff;
+	width: 800px;
+	height: 600px;
+}
+
+body.game-started {
+	background-color: #0a0a1a;
 }
