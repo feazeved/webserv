@@ -42,8 +42,8 @@ public:
 	}
 
 	void	run() {
-		signal(SIGINT, handleSignal);
-		signal(SIGPIPE, SIG_IGN);
+		(void)signal(SIGINT, handleSignal);
+		(void)signal(SIGPIPE, SIG_IGN);
 
 		for (usize i = 0; i < servers.allocdSize() && servers[i].getFd() != -1; i++) {
 			addToEpoll(servers[i].getFd(), EPOLLIN, &servers[i]);
@@ -67,10 +67,10 @@ public:
 				if (isListeningSocket(ptr)) {
 					handleNewConnection(static_cast<Server*>(ptr));
 				} else {
-					HTTP::Connection*	conn = static_cast<HTTP::Connection*>(ptr);
-					HTTP::RequestAction	action = conn->request.handleEvent(events[i].events);
+					HTTP::Connection*		conn  = static_cast<HTTP::Connection*>(ptr);
+					HTTP::Attributes::State	state = conn->handleEvent(0, events[i].events);
 
-					switch (action) {
+					switch (state) {
 						case HTTP::REQ_CLOSE:
 							closeConnection(conn);
 							break ;
