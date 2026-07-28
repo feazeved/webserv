@@ -3,6 +3,7 @@ html, body{
 	width: 100%;
 	margin: 0;
 	padding: 0;
+	overflow: hidden;
 }
 
 * {
@@ -75,6 +76,11 @@ body {
 
 	padding-inline: 5rem;
 	padding-block: 0.75rem;
+
+	position: absolute;
+	left: 50%;
+	top: 60%;
+	transform: translate(-50%, -50%);
 }
 
 .button:hover {
@@ -82,23 +88,27 @@ body {
 	background: linear-gradient(0deg,rgba(59, 141, 196, 1) 0%, rgba(6, 60, 122, 1) 50%, rgba(59, 141, 196, 1) 100%);
 }
 
-.stage {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	min-height: 90vh;
-}
-
 #gameCanvas {
 	display: none;
+
 	border: 4px solid #1a1a2e;
 	border-radius: 12px;
 	box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+
 	background: #ffffff;
 	width: 800px;
 	height: 600px;
+
+	position: absolute;
+	left: 50%;
+	top: 57.5%;
+	transform: translate(-50%, -50%);
 }
 
-body.game-started {
-	background-color: #0a0a1a;
+body.game-started .button {
+	display: none;
+}
+
+body.game-started #gameCanvas {
+	display: block;
 }

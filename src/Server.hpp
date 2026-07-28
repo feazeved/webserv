@@ -8,6 +8,7 @@
 #include <cstring>
 #include <cerrno>
 #include <unistd.h>
+#include <netdb.h>
 
 #include "HTTP.hpp"
 #include "core.hpp"
@@ -33,22 +34,16 @@ public:
 
 		i32	opt = 1;
 		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
-			closeAndThrow("setsockopt");
+			throw std::runtime_error(std::string("setsockopt: ") + std::strerror(errno));
 
-		sockaddr_in	addr;
-		MEMSET_BUILTIN(&addr, 0, sizeof(addr));
-		addr.sin_family = AF_INET;
-		addr.sin_port = htons(config.port);
+		sockaddr_in	addr = resolveHostAndPort(config.host, config.port);
 
-		std::string ip = resolveHost(config.host);
-		if (inet_pton(AF_INET, ip.c_str(), &addr.sin_addr) == -1)
-			closeAndThrow("inet_pton");
-		if (bind(listenFd, (sockaddr*)&addr, sizeof(addr)) == -1)
-			closeAndThrow("bind");
+		if (bind(listenFd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1)
+			throw std::runtime_error(std::string("bind: ") + std::strerror(errno));
 		if (listen(listenFd, SOMAXCONN) == -1)
-			closeAndThrow("listen");
+			throw std::runtime_error(std::string("listen: ") + std::strerror(errno));
 		if (fcntl(listenFd, F_SETFL, O_NONBLOCK) == -1)
-			closeAndThrow("fcntl");
+			throw std::runtime_error(std::string("fcntl: ") + std::strerror(errno));
 	}
 
 	i32	getFd() const { return (listenFd); }
@@ -58,16 +53,30 @@ private:
 	HTTP::ServerConfig	config;
 	i32					listenFd;
 
+	static sockaddr_in	resolveHostAndPort(const std::string& host, i64 port) {
+		std::string	hostToResolve = host.empty() ? "0.0.0.0" : host;
 
-	void	closeAndThrow(const std::string& where) {
-		close(listenFd);
-		listenFd = -1;
-		throw std::runtime_error(where + ": " + std::strerror(errno));
-	}
+		addrinfo hints;
+		MEMSET_BUILTIN(&hints, 0, sizeof(hints));
+		hints.ai_family = AF_INET;
+		hints.ai_socktype = SOCK_STREAM;
 
-	static std::string	resolveHost(const std::string& host) {
-		if (host != "localhost")
-			throw std::runtime_error("Server expected host 'localhost");
-		return ("127.0.0.1");
+		addrinfo*	result = NULL;
+		int			status;
+
+		status = getaddrinfo(hostToResolve.c_str(), NULL, &hints, &result);
+		if (status != 0) {
+			throw std::runtime_error("resolveHost '" + hostToResolve + "': " + gai_strerror(status));
+		}
+
+		sockaddr_in	addr;
+		MEMSET_BUILTIN(&addr, 0, sizeof(addr));
+		MEMCPY_BUILTIN(&addr, result->ai_addr, sizeof(sockaddr_in));
+
+		addr.sin_port = htons(port);
+
+		freeaddrinfo(result);
+
+		return (addr);
 	}
 };
