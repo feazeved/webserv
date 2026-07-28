@@ -7,6 +7,9 @@
 #include "HTTP.hpp"
 
 // TODO: add static assertions to sizeof(buffer) being power of two
+// TODO: minimize compaction by assessing distance from newline to writeoffset and memcpying
+	// So basically check if the tail is below 32 bytes and memcpy to beginning
+// TODO: only compact after execve, and only when necessary to avoid CoWs
 
 // There are two fds: the server will read from the clientFd to the input buffer,
 // and the server will read from clientFD to the output buffer
@@ -14,7 +17,7 @@ template <usize bufferSize>
 class Buffer {
 public:
 	u8 data[bufferSize - 2 * sizeof(u32)];
-	u32 readOffset, writeOffset;
+	u32 cursor, size;
 
 	// Methods
 	// 0) No reads, 1) Read, -1) Failed Reading, -2) Line is too big
@@ -22,16 +25,16 @@ public:
 		if ((events & EPOLLIN) == 0)
 			return -1;		// ERROR: Attempted to read but epoll was not set or ready
 
-		if (readOffset + 1 < writeOffset)
+		if (cursor + 1 < size)
 			return 0;
-		if (writeOffset + bytes > sizeof(data))
+		if (size + bytes > sizeof(data))
 			return -1;	// ERROR: Line is too long
 
-		isize bytesRead = ::read(fd, data + writeOffset, bytes);
+		isize bytesRead = ::read(fd, data + size, bytes);
 		if (bytesRead < 0)
 			return -2;	// TODO: Need to distinguish between first read fail and other read fails
 
-		writeOffset += (usize) bytesRead;	// TODO: what do we do on failures?
+		size += (usize) bytesRead;	// TODO: what do we do on failures?
 		return 1;
 	}
 
@@ -42,46 +45,40 @@ public:
 		if ((events & EPOLLOUT) == 0)
 			return -1;		// ERROR: Attempted to write but epoll was not set or ready
 
-		if (readOffset + 1 < writeOffset)
+		if (cursor + 1 < size)
 			return 0;	// Nothing to write, should be an error if the payload isnt 0
 
-		bytes = MIN(bytes, writeOffset - readOffset);
-		isize bytesWritten = ::write(fd, data + readOffset, bytes);	// TODO: The write here reads from a different FD, and from a different buffer too
+		bytes = MIN(bytes, size - cursor);
+		isize bytesWritten = ::write(fd, data + cursor, bytes);	// TODO: The write here reads from a different FD, and from a different buffer too
 		if (bytesWritten < 0)
 			return -1;
 		return 1;
 	}
 
-	// TODO: Passing state as reference is less clean because state is being mutated from a method outside of Request
-	u32 find_line_end(bool &header_done) {
+	u32 find_line_end() {
 
 		u32 lineEnd = UINT32_MAX;
-		while (readOffset < writeOffset - 1) {
-			if (data[readOffset] == '\r' && data[readOffset + 1] == '\n')
-			{
-				lineEnd = readOffset;
-				readOffset += 2;
-				if (readOffset < writeOffset - 1 && data[readOffset] == '\r' && data[readOffset + 1] == '\n') {
-					readOffset += 2;
-					header_done = true;
-					break;
-				}
+		while (cursor < size - 1) {
+			if (data[cursor] == '\r' && data[cursor + 1] == '\n') {
+				lineEnd = cursor;
+				cursor += 2;
+				break;
 			}
 			else
-				readOffset++;
+				cursor++;
 		}
 		return lineEnd;
 	}
 
 	template <usize N>
 	void append(const char (&string)[N]) {
-		MEMCPY_INLINE(data + writeOffset, string, N - 1);
-		writeOffset += N - 1;
+		MEMCPY_INLINE(data + size, string, N - 1);
+		size += N - 1;
 	}
 
 	void append(const u8 *ptr, u32 length) {
-		MEMCPY_BUILTIN(data + writeOffset, ptr, length);
-		writeOffset += length;
+		MEMCPY_BUILTIN(data + size, ptr, length);
+		size += length;
 	}
 
 	void append(usize number, bool isHex) {
@@ -111,13 +108,17 @@ public:
 			}	while (number != 0);			
 		}
 		length = sizeof(buffer) - i;
-		MEMCPY_BUILTIN(data + writeOffset, buffer + i, length);
-		writeOffset += length;
+		MEMCPY_BUILTIN(data + size, buffer + i, length);
+		size += length;
 	}
 
 	void clear() {
-		readOffset = 0;
-		writeOffset = 0;
+		cursor = 0;
+		size = 0;
+	}
+
+	usize capacity() {
+		return sizeof(data);
 	}
 };
 

@@ -32,17 +32,19 @@ typedef unsigned long	ulong;
 // Builtins
 #define ALWAYS_INLINE	static inline __attribute__((always_inline))
 #define NOINLINE		__attribute__((noinline))
-#define PURE			__attribute__((pure))			// Function produces no observable side effects (may read from memory)
 #define KPURE			__attribute__((const))			// Function depends only on its arguments (doesn't read from memory)
+#define PURE			__attribute__((pure))			// Function produces no observable side effects (may read from memory)
 #define PACKED			__attribute__((packed))			// Struct has no padding
 #define ALIGNED(n)		__attribute__((aligned(n)))
-#define COLD			__attribute__((cold))
-#define HOT				__attribute__((hot))
 #define FLATTEN			__attribute__((flatten))		// Function calls inside this function are aggressively inlined
 
+// Compiler Hints
+#define COLD			__attribute__((cold))
+#define HOT				__attribute__((hot))
 #define UNREACHABLE()	__builtin_unreachable()
 #define LIKELY(x)		__builtin_expect(!!(x), 1)
 #define UNLIKELY(x)		__builtin_expect(!!(x), 0)
+
 #if defined(__clang__)
 	#define ASSUME(x)	__builtin_assume(x)
 #elif defined(__GNUC__)
@@ -50,6 +52,7 @@ typedef unsigned long	ulong;
 #endif
 
 #define MEMCPY_BUILTIN(dst, src, n)		__builtin_memcpy(dst, src, n)
+#define STRLEN_BUILTIN(str) 			__builtin_strlen(str)
 #define MEMMOVE_BUILTIN(dst, src, n)	__builtin_memmove(dst, src, n)
 #define MEMSET_BUILTIN(dst, val, n)		__builtin_memset(dst, val, n)
 #define MEMCHR_BUILTIN(src, val, n)		__builtin_memchr(src, val, n)

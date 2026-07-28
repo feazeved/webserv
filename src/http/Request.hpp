@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <unistd.h>
 #include <sys/epoll.h>
 
@@ -22,6 +23,7 @@
 
 // Whenever status is deduced, it already loads the string into output buffer index 9 e.g. (HTTP/1.1 _)
 
+// Fake envp added to config for easy insertion
 
 namespace HTTP {
 
@@ -33,16 +35,41 @@ typedef struct {
 	}	path, query, cookie;
 }	RequestVars;
 
+namespace Attributes {
+
+enum Attributes {
+	METHOD_GET = 1 << 0,
+	METHOD_POST = 1 << 1,
+	METHOD_DELETE = 1 << 2,
+	CGI = 1 << 3,
+	HOST = 1 << 4,
+	CHUNKED = 1 << 5,
+	DONE = 1 << 7
+};
+
+enum State {
+	READING = 1 << 0,		// Reading header
+	PROCESSING = 1 << 1,	// Reading body
+	WRITING = 1 << 2,		// Writing
+	SKIPPING = 1 << 3,		// Skipping until new header
+
+	PROCESSING_LENGTH = 1 << 6, // Reading the header for the body
+	FIRST_LINE = 1 << 7
+};
+}
+
 // Class has a read call that consumes lines
 // Possible states:
 // Reading: Reading Header, Reading Body
 // Writing: 
 // Limits: ~8kb per line, ~4kb for the target
 class Request {
+	static const usize metadataSize = sizeof(i32) + 2 * sizeof(u8) + 4 * sizeof(u32) + sizeof(RequestVars) + sizeof(usize);
+
 public:
 	i32 fd;
-	Buffer<8192> input, output;
-	u8 type; // bitfield: (-) (-) (-) (CHUNKED) (HOST) (DELETE) (POST) (GET)
+	Buffer<16 * 1024 - metadataSize> input, output;
+	u8 type; // bitfield: (DONE) (-) (CHUNKED) (HOST) (CGI) (DELETE) (POST) (GET)
 	u8 state;	// TODO: transfer all of these to a metadata struct
 	u32 status;
 	u32 lineIndex, lineCount;
@@ -55,19 +82,15 @@ i8 parse_header(usize bytes, u32 events) {
 	if (rvalue < 0)
 		return -1;	// ERROR: Failed reading
 
-	bool header_done = false;
-	u32 lineEnd = input.find_line_end(header_done);
-	if (lineEnd == UINT32_MAX)	// Not done reading a line
-		return 0;
-
-	const char *ptr = (const char *)input.data;
-	if (header_done)
-		state = HTTP::Attributes::PROCESSING;
-
-	if (parseLine(ptr + lineIndex, ptr + lineEnd, lineCount) != 0)
-		return -1; // TODO: This also determines if the parsing is done, given errors exist
-	lineCount++;
-	lineIndex = lineEnd;
+	u32 lineEnd;
+	while ((lineEnd = input.find_line_end()) != UINT32_MAX) {
+		char *ptr = (char *) input.data;
+		parseLine(ptr + lineIndex, ptr + lineEnd, lineCount);
+		lineCount++;
+		lineIndex = lineEnd;
+		if (type & HTTP::Attributes::DONE)
+			return prepare();
+	}
 	return 0;	// Actually should return something more useful like request status (processing, etc)
 }
 
@@ -92,14 +115,16 @@ void close() {
 
 	type = 0;
 	input.clear();
-	output.readOffset = 0;
-	output.writeOffset = 9;
+	output.cursor = 0;
+	output.size = 9;
 }
 
-i32 parseTarget(const char *str, const char *end);
-i32 parseFirstLine(const char *str, const char *end);
-i32 parseLine(const char *str, const char *end, u32 lineCount);
+i32 parseTarget(char *str, char *end);
+i32 parseFirstLine(char *str, char *end);
+i32 parseLine(char *str, char *end, u32 lineCount);
+
 void buildHeader();
+i32 prepare();
 
 // ======== Constructors ====================
 Request() :
@@ -109,9 +134,8 @@ Request() :
 	type(0),
 	state(0),
 	requestSize(SIZE_MAX) {
-		output.readOffset = 0;
-		output.writeOffset = 0;
-		output.append("HTTP/1.1 ");
+		output.cursor = 0;
+		output.size = 0;
 	}
 };
 }

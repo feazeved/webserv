@@ -12,7 +12,18 @@
 // Do not blindly convert %2F into /; that can change path structure.
 // Apply a request-target length limit and return 414 URI Too Long when exceeded
 // Needs to validate the target based on above reqs
-inline i32 HTTP::Request::parseTarget(const char *str, const char *end) {
+
+// TODO: Modify boundaries inplace for multiple queries, for example:
+// Change ?q=abc&page=2&sort=date to ?q=abc\0page=2\0sort=date
+
+// TODO: Verify if its CGI, if its a valid CGI, etc
+// If the method is valid for the file path
+
+// TODO: Resolve the file path against cwd (Our fake env class will save CWD)
+	// Check if there is no escaping outside of allowed directory (ex: outside of /www)
+	// For example, a valid CGI path is inside the /cgi folder, but ../../cgi would give another path
+
+inline i32 HTTP::Request::parseTarget(char *str, char *end) {
 	if (str >= end)	// REVIEW: str < end is guaranteed at function call
 		return -1;
 
@@ -46,7 +57,7 @@ inline i32 HTTP::Request::parseTarget(const char *str, const char *end) {
 	return 0;
 }
 
-inline i32 HTTP::Request::parseFirstLine(const char *str, const char *end) {
+inline i32 HTTP::Request::parseFirstLine(char *str, char *end) {
 	if (end - str < 14)
 		return -1;	// ERROR: Bad request "GET / HTTP/1.0" shortest possible
 	if (MEMCMP_BUILTIN(str, "GET ", 4) == 0) {
@@ -64,24 +75,23 @@ inline i32 HTTP::Request::parseFirstLine(const char *str, const char *end) {
 	else
 		return -1;	// ERROR: Invalid method
 
-	const char *arg = str;
-	str = end - 10;
+	char *arg = str;
+	str = end - 9;
 	if (str - arg > 4096)	// TODO: Fix mixup and magic number
 		return -1;
-	if (MEMCMP_BUILTIN(str, " HTTP/1.1", 9) != 0)
+	if (MEMCMP_BUILTIN(str, "HTTP/1.1", 8) != 0)
 		return -1; // ERROR: Invalid version, TODO: what happens to the class once it is recognized as bad?
 
 	i32 rvalue = parseTarget(arg, str);	// TODO: meaningful return
 	if (rvalue < 0)
 		return rvalue;
-
 	return 0;	// No problems (YET, return code for success only happens when finally executing the method)
 }
 
-inline i32 HTTP::Request::parseLine(const char *str, const char *end, u32 lineCount) {
-
+inline i32 HTTP::Request::parseLine(char *str, char *end, u32 lineCount) {
 	if (lineCount == 0)
 		return parseFirstLine(str, end);
+
 	if (s_compare_case(str, end, "host:", 5) == true) {
 		if (type & HTTP::Attributes::HOST)
 			return -1;	// ERROR: Multiple hosts
@@ -93,7 +103,6 @@ inline i32 HTTP::Request::parseLine(const char *str, const char *end, u32 lineCo
 	else if (s_compare_case(str, end, "content-length:", 15) == true) { // needs length checks, or could pad
 		if ((type & HTTP::Attributes::CHUNKED) || requestSize != SIZE_MAX)
 			return -1; // ERROR: bad request, transfer method had already been set
-
 		requestSize = s_read_digits(str, end);
 		if (requestSize == SIZE_MAX)
 			return -1;	// ERROR: Garbage after request
@@ -101,11 +110,11 @@ inline i32 HTTP::Request::parseLine(const char *str, const char *end, u32 lineCo
 	else if (s_compare_case(str, end, "transfer-encoding:", 18) == true) { // TODO: what if its empty?
 		if ((type & HTTP::Attributes::CHUNKED) || requestSize != SIZE_MAX)
 			return -1; // ERROR: bad request, transfer method had already been set
-
 		if (s_compare_case(str, end, "chunked", 7) == false)
 			return -1; // ERROR: bad request, transfer encoding isnt chunked
 		type |= HTTP::Attributes::CHUNKED;	// TODO: get proper enum for bitfield
 	}
+
 	if (str != end)
 		return -1; // ERROR: bad request, garbage after field value
 	return 0;

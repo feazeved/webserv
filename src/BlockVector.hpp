@@ -6,8 +6,6 @@
 #include <unistd.h>
 
 // Class template
-// TODO: Add init and close functions, and something that tracks available slots
-// TODO: Assert that blockSize is divisible by wordbits
 
 template <typename Type, usize blockSize, usize maxGrowth>
 class BlockVector {
@@ -44,7 +42,6 @@ public:
 			if (grow() == false)
 				return SIZE_MAX;
 		}
-
 		return freeIndex;
 	}
 

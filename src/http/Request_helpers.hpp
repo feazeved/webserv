@@ -4,7 +4,7 @@
 // Compares a string with another ignoring case status;
 // If equal, consumes characters and skips valid spaces
 static inline
-bool s_compare_case(const char* &str, const char *end, const char* ref, u32 refLength)
+bool s_compare_case(char* &str, char *end, const char* ref, u32 refLength)
 {
 	if (str + refLength > end)
 		return false;
@@ -26,7 +26,7 @@ bool s_compare_case(const char* &str, const char *end, const char* ref, u32 refL
 // basic atoi
 // consumes characters and skips valid spaces
 static inline
-usize s_read_digits(const char* &str, const char *end)
+usize s_read_digits(char* &str, char *end)
 {
 	static const i8 lut[256] = {
 		99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,

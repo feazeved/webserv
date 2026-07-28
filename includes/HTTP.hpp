@@ -46,25 +46,4 @@ struct ServerConfig {
 #define STATUS_504 "504 Gateway Timeout\r\n"
 #define STATUS(code) HTTP_STATUS_##code
 
-namespace Attributes {
-
-enum Attributes {
-	METHOD_GET = 1 << 0,
-	METHOD_POST = 1 << 1,
-	METHOD_DELETE = 1 << 2,
-	CGI = 1 << 3,
-	HOST = 1 << 4,
-	CHUNKED = 1 << 5,
-	FOO = 1 << 6
-};
-
-enum State {
-	READING = 1 << 0,		// Reading header
-	PROCESSING = 1 << 1,	// Reading body
-	WRITING = 1 << 2,		// Writing
-
-	PROCESSING_LENGTH = 1 << 6, // Reading the header for the body
-	FIRST_LINE = 1 << 7
-};
-}
 }
