@@ -30,29 +30,6 @@ struct ServerConfig {
 	ServerConfig() : host("localhost"), port(-1), maxBodySize(-1), autoindex(false) {}
 };
 
-enum Direction {
-	LEFT,
-	RIGHT,
-	UP,
-	DOWN
-};
-
-struct Player {
-	i32			id;
-	std::string	nick;
-	f64			x;
-	f64			y;
-	Direction	direction;
-	bool		moving;
-
-	Player() : x(0), y(0), direction(DOWN), moving(false) {}
-};
-
-enum GameEvent {
-	JOIN,
-	QUIT,
-	MOVE
-};
 
 struct GameEvent {
 	EventType	type;
