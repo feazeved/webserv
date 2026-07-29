@@ -1,16 +1,5 @@
 html, body{
-	height: 100%;
-	width: 100%;
-	margin: 0;
-	padding: 0;
-	overflow: hidden;
-}
-
-* {
-	font-family: "Playpen Sans", cursive;
-}
-
-body {
+	height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; } { font-family: "Playpen Sans", cursive; } body {
 	background-color: #eeeeee;
 
 	/*background-position: center;
