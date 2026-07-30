@@ -2,22 +2,13 @@
 #include <unistd.h>
 #include "core.hpp"
 
-// template <usize bufferSize>
-// union u_buffer {
-// 	struct s_buffer {
-// 		Buffer<bufferSize> reader;
-// 		Buffer<bufferSize> writer;
-// 	};
-// 	Buffer<bufferSize * 2> whole;
-// };
-
 template <usize bufferSize>
 class Buffer {
 public:
 // 
 	i32 fd;
-	u8 data[bufferSize - 3 * sizeof(u32)];
 	u32 index, size;
+	u8 data[bufferSize - 3 * sizeof(u32)];
 
 	isize read(usize bytes) {
 		if (size + bytes > sizeof(data))
@@ -31,26 +22,21 @@ public:
 	}
 
 	isize write(usize bytes) {
-		if (index == size)
-			return 0;	// Nothing to write, should be an error if the payload isnt 0
-
-		bytes = MIN(bytes, size - index);
-		isize bytesWritten = ::write(fd, data + index, bytes);
-		if (bytesWritten < 0)
-			return -1;
-		index += (u32) bytesWritten;
-		return bytesWritten;
+		return write(fd, bytes);
 	}
 
 	isize write(i32 fdOverride, usize bytes) {
-		if (index == size)
-			return 0;	// Nothing to write, should be an error if the payload isnt 0
-
-		bytes = MIN(bytes, size - index);
-		isize bytesWritten = ::write(fdOverride, data + index, bytes);
+		usize bytesCapped = MIN(bytes, size - index);
+		isize bytesWritten = ::write(fdOverride, data + index, bytesCapped);
+	
 		if (bytesWritten < 0)
-			return -1;
+			return bytesWritten;
 		index += (u32) bytesWritten;
+		if (size - index <= 32 && index < sizeof(data) - 32) {
+			MEMMOVE_BUILTIN(data, data + index, 32);
+			size -= index;
+			index = 0;
+		}
 		return bytesWritten;
 	}
 
@@ -60,45 +46,85 @@ public:
 		size = 0;
 	}
 
+	u32 find_line_end() {
+		u32 lineEnd = UINT32_MAX;
+		while (index < size - 1) {
+			if (data[index] == '\r' && data[index + 1] == '\n') {
+				lineEnd = index;
+				index += 2;
+				break;
+			}
+			else
+				index++;
+		}
+		return lineEnd;
+	}
+
+	template <usize N>
+	void append(const char (&string)[N]) {
+		MEMCPY_INLINE(data + size, string, N - 1);
+		size += N - 1;
+	}
+
+	void append(const u8 *ptr, usize length) {
+		MEMCPY_BUILTIN(data + size, ptr, length);
+		size += length;
+	}
+
+	// Should be impossible for dst buffer to not fit
+	usize append(Buffer &src, usize length) {
+		usize remainingSrc = src.size - src.index;	// How many bytes it has read
+		usize remainingDst = sizeof(data) - size;	// How many bytes are free in the buffer
+		usize appendLength = MIN3(length, remainingSrc, remainingDst);
+	
+		MEMCPY_BUILTIN(data + size, src.data + index, appendLength);
+		src.index += appendLength;
+		size += appendLength;
+		return appendLength;
+	}
+
+	void append(usize number, bool isHex) {
+		static const char digits[16] = {
+			'0', '1', '2', '3', '4', '5', '6', '7',
+			'8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+		char	buffer[24];
+		usize	length;
+		usize	i = sizeof(buffer);
+
+		buffer[--i] = '\n';
+		buffer[--i] = '\r';
+		if (isHex)
+		{
+			do
+			{
+				buffer[--i] = digits[(number % 16)];
+				number /= 16;
+			}	while (number != 0);
+		}
+		else
+		{
+			do
+			{
+				buffer[--i] = digits[(number % 10)];
+				number /= 10;
+			}	while (number != 0);			
+		}
+		length = sizeof(buffer) - i;
+		MEMCPY_BUILTIN(data + size, buffer + i, length);
+		size += length;
+	}
+
 	Buffer()
 		: fd(-1), index(0), size(0)
 		{
 		}
 };
 
-template <usize bufferSize>
-class IOBuffer {
-public:
-	Buffer<bufferSize> reader, writer;
-
-	isize read(usize bytes) {
-		return reader.read(bytes);
-	}
-
-	isize read(usize bytes, u32 events) {
-		// Epoll check
-		return reader.read(bytes);
-	}
-
-	isize write(usize bytes) {
-		return writer.write(bytes);
-	}
-	isize write(usize bytes, u32 events) {
-		// Epoll check
-		return writer.write(bytes);
-	}
-
-	void clear() {
-		// TODO: close fd
-		if (reader.fd == writer.fd) {
-			close(reader.fd);
-		}
-		else {
-			close(reader.fd);
-			close(writer.fd);
-		}
-
-		reader.clear();
-		writer.clear();
-	}
-};
+// template <usize bufferSize>
+// union u_buffer {
+// 	struct s_buffer {
+// 		Buffer<bufferSize> reader;
+// 		Buffer<bufferSize> writer;
+// 	};
+// 	Buffer<bufferSize * 2> whole;
+// };

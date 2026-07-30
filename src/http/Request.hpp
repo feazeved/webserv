@@ -68,19 +68,16 @@ public:
 	u8 type; // bitfield: (DONE) (-) (CHUNKED) (HOST) (CGI) (DELETE) (POST) (GET)
 	u8 state;	// TODO: transfer all of these to a metadata struct
 	u32 status;
-	IOBuffer<bufferSize> client, server;
 	RequestVars vars;
 	u32 lineStart;
-	usize bodySize;
-	usize chunkSize;
+	usize bodySize, chunkSize;
+	Buffer<bufferSize> clientInput, clientOutput;
+	Buffer<bufferSize> serverInput, serverOutput;
+
 	bool chunkDone;
-
 // Client writer will always be Client's FD
-
 // Server writer will either be CGI's FD or server file
-
 // Server reader will either be CGI's FD or server file
-
 // Client reader will either be CGI's FD or server file
 
 // Methods
@@ -128,7 +125,7 @@ isize dechunk(usize bytes, u32 events, Buffer<bufferSize>& src, Buffer<bufferSiz
 				chunkDone = true;
 		}
 		else if (chunkSize > 0) {
-			usize bytesAppended = dst.append(client, chunkSize);
+			usize bytesAppended = dst.append(src, chunkSize);
 			chunkSize -= bytesAppended;	// Guaranteed to be chunksize or less
 			if (src.cursor == src.size)	// Need to read from client for more info
 				return 0;
@@ -151,36 +148,39 @@ isize read_from_client(usize bytes, u32 events) {
 	if (!(type & (HTTP::Attributes::METHOD_POST | HTTP::Attributes::CGI)))
 		return read_from_server();
 
-	return write_to_server(client.reader);
+	return write_to_server(clientOutput);
 }
 
 isize read_from_client_chunked(usize bytes, u32 events) {
 	if (!(type & (HTTP::Attributes::METHOD_POST | HTTP::Attributes::CGI)))
 		return read_from_server();
 
-	if (dechunk(client.reader, server.writer))
+	if (dechunk(clientOutput, serverInput))
 		return -1;
 
-	return write_to_server(server.writer);	// dispatches to 
+	return write_to_server(serverInput);	// dispatches to 
 }
 
 // POST or CGI
 isize write_to_server(usize bytes, u32 events, Buffer<bufferSize>& source) {
-	source.write(server.writer.fd, bytes);	// In this case the FD for client_writer will not be the client
+	source.write(serverInput.fd, bytes);	// In this case the FD for client_writer will not be the client
+	if (type & HTTP::Attributes::CGI)
+		return read_from_server(bytes, events);	// Populate server output
 	write_to_client(bytes, events);
 }
 
 // GET or DEL
 // Needs no body, source from this is server file fd
 isize read_from_server(usize bytes, u32 events) {
-	server.read();
+	serverOutput.read();
 	write_to_client(bytes, events);
 }
 
 // Source of this will always be server.write buffer
 isize write_to_client(usize bytes, u32 events) {
-	// Write header (ONCE)
-	client.write(bytes);
+	// Write header (ONCE) wait for CGI
+	// Copy from serverOutput to clientInput
+	clientInput.write(bytes, events);
 }
 
 // isize buildHeader() {

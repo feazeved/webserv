@@ -1,9 +1,6 @@
 #pragma once
 
-#include <unistd.h>
-#include <sys/epoll.h>
-
-#include "core.hpp"
+#include "Request.hpp"
 
 // (Reentrant) Reading state for the header, returns true when finished parsing the header
 i8 parse_header(i32 fd, usize bytes, u32 events) {
