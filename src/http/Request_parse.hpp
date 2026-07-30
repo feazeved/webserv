@@ -7,15 +7,12 @@
 // Reject whitespace and control characters. V
 // Reject malformed encodings such as %, %2, or %GG. V
 // Reject decoded NUL bytes such as %00. V
-// Normalize or reject . and .. before filesystem access.
-// Ensure the final resolved filesystem path remains inside the configured root.
-// Do not blindly convert %2F into /; that can change path structure.
+// Normalize or reject . and .. before filesystem access. V
+// Ensure the final resolved filesystem path remains inside the configured root. V
+// Do not blindly convert %2F into /; that can change path structure. ??
 // Apply a request-target length limit and return 414 URI Too Long when exceeded
 // Needs to validate the target based on above reqs
 inline i32 HTTP::Request::parseTarget(const char *str, const char *end) {
-	if (str >= end)	// REVIEW: str < end is guaranteed at function call
-		return -1;
-
 	const char *p = str;
 	const char *questionMark = NULL;
 
@@ -28,9 +25,11 @@ inline i32 HTTP::Request::parseTarget(const char *str, const char *end) {
 			else
 				return -1;
 		}
+		if(*p == '.' && p[1] == '.')
+			return -1;
 		if(*p == '%' && p + 2 < end) { // REVIEW: p + 2 is not needed because \r\n is guaranteed to exist after end ptr
-			if(!IS_DIGIT(*(p+1)) || !IS_DIGIT(*(p+2))	// REVIEW: (personal preference) but i think something like p[1] and p[2] looks cleaner
-				||(*(p+1) == '0' && *(p+2) == '0'))
+			if(!IS_DIGIT(p[1]) || !IS_DIGIT(p[2]) // REVIEW: if im not mistaken the check here should be IS_HEX
+				||(p[1] == '0' && p[2] == '0'))
 				return -1;
 		}
 		p++;
