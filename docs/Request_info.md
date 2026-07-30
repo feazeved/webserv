@@ -1,8 +1,3 @@
-#pragma once
-#include "Request.hpp"
-#include "core.hpp"
-#include "http/Request_helpers.hpp"
-
 /*
 
 // Before execve'ing a CGI, the environment variables must be set with the query strings
@@ -66,42 +61,9 @@ Method Parsing:
 	POST	[HEADER] [BODY  ] [WRITE_A] [WRITE_B]	CGI - CHUNKED
 
 	* When there is no chunked encoding, write directly from the buffer responsible for client read
-	* 
 
   READ_A:	Holds the header information, but also compacts within itself the target + cookies
   READ_B:	Holds the body information
   WRITE_A:	Holds the processed information to be uploaded (or sent to CGI)
   WRITE_B:	Holds the CGI output
 */
-
-inline i32 HTTP::Request::prepare() {
-
-	if ((type & HTTP::Attributes::DONE) && status != 0) {	// An error caused early interruption
-		buildHeader();
-		state |= HTTP::Attributes::SKIPPING;
-	}
-
-}
-
-inline void HTTP::Request::buildHeader() {
-	output.append("HTTP/1.1 ");
-
-	if (requestSize != SIZE_MAX)
-		output.append("Transfer-Encoding: chunked\r\n");
-	else
-	{
-		output.append("Content-Length: ");
-		output.append(requestSize, false);	// Auto performs itoa
-	}
-
-	// Other lines here
-	// Location
-	// Content Type
-	// Content Encoding?
-
-	output.append("\r\n");
-	// if (isBad(status)) {
-	// 	output.append(output.data + 9, statusEnd - 9);
-	// 	return;
-	// }
-}

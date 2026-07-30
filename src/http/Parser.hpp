@@ -1,32 +1,30 @@
 #pragma once
-#include "Request.hpp"
+
+#include <unistd.h>
+#include <sys/epoll.h>
+
 #include "core.hpp"
-#include "http/Request_helpers.hpp"
 
-// Split path/query at the first ?. V
-// Reject whitespace and control characters. V
-// Reject malformed encodings such as %, %2, or %GG. V
-// Reject decoded NUL bytes such as %00. V
-// Normalize or reject . and .. before filesystem access.
-// Ensure the final resolved filesystem path remains inside the configured root.
-// Do not blindly convert %2F into /; that can change path structure.
-// Apply a request-target length limit and return 414 URI Too Long when exceeded
-// Needs to validate the target based on above reqs
+// (Reentrant) Reading state for the header, returns true when finished parsing the header
+i8 parse_header(i32 fd, usize bytes, u32 events) {
+	i8 rvalue = client.read(fd, bytes, events);
+	if (rvalue < 0)
+		return -1;	// ERROR: Failed reading
 
-// TODO: Modify boundaries inplace for multiple queries, for example:
-// Change ?q=abc&page=2&sort=date to ?q=abc\0page=2\0sort=date
+	u32 lineEnd = client.find_line_end();
+	while (lineEnd != UINT32_MAX) {
+		char *ptr = (char *) client.data;
+		parseLine(ptr + lineIndex, ptr + lineEnd, lineCount);
+		lineCount++;
+		lineIndex = lineEnd;
+		lineEnd = client.find_line_end();
+		if (lineEnd == 0 && type & HTTP::Attributes::DONE)
+			return preValidate();
+	}
+	return 0;	// Actually should return something more useful like request status (processing, etc)
+}
 
-// TODO: Verify if its CGI, if its a valid CGI, etc
-// If the method is valid for the file path
-
-// TODO: Resolve the file path against cwd (Our fake env class will save CWD)
-	// Check if there is no escaping outside of allowed directory (ex: outside of /www)
-	// For example, a valid CGI path is inside the /cgi folder, but ../../cgi would give another path
-
-inline i32 HTTP::Request::parseTarget(char *str, char *end) {
-	if (str >= end)	// REVIEW: str < end is guaranteed at function call
-		return -1;
-
+i32 parseTarget(char *str, char *end) {
 	const char *p = str;
 	const char *questionMark = NULL;
 
@@ -46,10 +44,10 @@ inline i32 HTTP::Request::parseTarget(char *str, char *end) {
 		}
 		p++;
 	}
-	vars.path.index = str - (const char *)input.data;
+	vars.path.index = str - (const char *)client.data;
 	if (questionMark) {
 		vars.path.size = questionMark - str;
-		vars.query.index = (questionMark + 1) - (const char *)input.data;
+		vars.query.index = (questionMark + 1) - (const char *)client.data;
 		vars.query.size = end - (questionMark + 1);
 	}
 	else
@@ -57,7 +55,7 @@ inline i32 HTTP::Request::parseTarget(char *str, char *end) {
 	return 0;
 }
 
-inline i32 HTTP::Request::parseFirstLine(char *str, char *end) {
+i32 parseFirstLine(char *str, char *end) {
 	if (end - str < 14)
 		return -1;	// ERROR: Bad request "GET / HTTP/1.0" shortest possible
 	if (MEMCMP_BUILTIN(str, "GET ", 4) == 0) {
@@ -88,7 +86,7 @@ inline i32 HTTP::Request::parseFirstLine(char *str, char *end) {
 	return 0;	// No problems (YET, return code for success only happens when finally executing the method)
 }
 
-inline i32 HTTP::Request::parseLine(char *str, char *end, u32 lineCount) {
+i32 parseLine(char *str, char *end, u32 lineCount) {
 	if (lineCount == 0)
 		return parseFirstLine(str, end);
 
@@ -100,19 +98,20 @@ inline i32 HTTP::Request::parseLine(char *str, char *end, u32 lineCount) {
 		s_compare_case(str, end, ":8080", 5);
 		type |= HTTP::Attributes::HOST;
 	}
-	else if (s_compare_case(str, end, "content-length:", 15) == true) { // needs length checks, or could pad
-		if ((type & HTTP::Attributes::CHUNKED) || requestSize != SIZE_MAX)
-			return -1; // ERROR: bad request, transfer method had already been set
-		requestSize = s_read_digits(str, end);
-		if (requestSize == SIZE_MAX)
-			return -1;	// ERROR: Garbage after request
-	}
 	else if (s_compare_case(str, end, "transfer-encoding:", 18) == true) { // TODO: what if its empty?
 		if ((type & HTTP::Attributes::CHUNKED) || requestSize != SIZE_MAX)
 			return -1; // ERROR: bad request, transfer method had already been set
 		if (s_compare_case(str, end, "chunked", 7) == false)
 			return -1; // ERROR: bad request, transfer encoding isnt chunked
 		type |= HTTP::Attributes::CHUNKED;	// TODO: get proper enum for bitfield
+	}
+	else if (s_compare_case(str, end, "content-length:", 15) == true) { // needs length checks, or could pad
+		if ((type & HTTP::Attributes::CHUNKED) || requestSize != SIZE_MAX)
+			return -1; // ERROR: bad request, transfer method had already been set
+		requestSize = s_read_digits(str);
+		if (requestSize == SIZE_MAX)
+			return -1;	// ERROR: Garbage after request
+		return 0;
 	}
 
 	if (str != end)

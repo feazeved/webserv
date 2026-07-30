@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <unistd.h>
 #include <sys/epoll.h>
 
@@ -27,14 +26,6 @@
 
 namespace HTTP {
 
-typedef struct {
-	struct
-	{
-		u32	index;
-		u32 size;
-	}	path, query, cookie;
-}	RequestVars;
-
 namespace Attributes {
 
 enum Attributes {
@@ -51,93 +42,175 @@ enum State {
 	READING = 1 << 0,		// Reading header
 	PROCESSING = 1 << 1,	// Reading body
 	WRITING = 1 << 2,		// Writing
-	SKIPPING = 1 << 3,		// Skipping until new header
 
 	PROCESSING_LENGTH = 1 << 6, // Reading the header for the body
 	FIRST_LINE = 1 << 7
 };
 }
 
-// Class has a read call that consumes lines
-// Possible states:
-// Reading: Reading Header, Reading Body
-// Writing: 
-// Limits: ~8kb per line, ~4kb for the target
-class Request {
-	static const usize metadataSize = sizeof(i32) + 2 * sizeof(u8) + 4 * sizeof(u32) + sizeof(RequestVars) + sizeof(usize);
+typedef struct {
+	struct
+	{
+		u32	index;
+		u32 size;
+	}	path, query, cookie;
+}	RequestVars;
 
+// 3 Stages:
+// 1) Read and decode information from client (means already dechunkify)
+// 2) a) Write to an FD (POST or CGI)
+// 2) b) Read from an FD (GET or DEL)
+// 3) Write to client (Response + optionally (Get or CGI))
+
+template <usize bufferSize>
+class Request {
 public:
-	i32 fd;
-	Buffer<16 * 1024 - metadataSize> input, output;
 	u8 type; // bitfield: (DONE) (-) (CHUNKED) (HOST) (CGI) (DELETE) (POST) (GET)
 	u8 state;	// TODO: transfer all of these to a metadata struct
 	u32 status;
-	u32 lineIndex, lineCount;
+	IOBuffer<bufferSize> client, server;
 	RequestVars vars;
-	usize requestSize;
+	u32 lineStart;
+	usize bodySize;
+	usize chunkSize;
+	bool chunkDone;
 
-// (Reentrant) Reading state for the header, returns true when finished parsing the header
-i8 parse_header(usize bytes, u32 events) {
-	i8 rvalue = input.read(fd, bytes, events);
+// Client writer will always be Client's FD
+
+// Server writer will either be CGI's FD or server file
+
+// Server reader will either be CGI's FD or server file
+
+// Client reader will either be CGI's FD or server file
+
+// Methods
+isize configure() {
+	static const u8 transferCheck = HTTP::Attributes::CHUNKED | HTTP::Attributes::METHOD_POST;
+
+	// Error checking
+	if (status != 0) {	// An error caused early interruption
+		// buildHeader();
+		// Close the connection
+	}
+
+	if ((type & HTTP::Attributes::HOST) == 0) {	// Host wasnt set
+		// Set status
+	}
+
+	// if ((type & transferCheck) == transferCheck) {
+	// 	if (bodySize == SIZE_MAX) {	// TODO: needs checking, conditions aint right
+	// 		return -1;	// Set status, transfer encoding was not set
+	// 	}
+	// 	source = &server.writer;
+	// }
+	// else
+	// 	source = &server.reader;
+
+}
+
+isize dechunk(usize bytes, u32 events, Buffer<bufferSize>& src, Buffer<bufferSize>& dst) {
+	isize rvalue = src.read(bytes, events);
 	if (rvalue < 0)
 		return -1;	// ERROR: Failed reading
 
-	u32 lineEnd;
-	while ((lineEnd = input.find_line_end()) != UINT32_MAX) {
-		char *ptr = (char *) input.data;
-		parseLine(ptr + lineIndex, ptr + lineEnd, lineCount);
-		lineCount++;
-		lineIndex = lineEnd;
-		if (type & HTTP::Attributes::DONE)
-			return prepare();
+	u32 lineEnd = UINT32_MAX;
+	while (true) {
+		if (chunkSize == SIZE_MAX) {
+			lineEnd = src.find_line_end();
+			if (lineEnd == UINT32_MAX)
+				return 0; // Error: no \r\n was found 
+			char *ptr = (char *) src.data + lineStart;
+			lineStart = lineEnd;
+			chunkSize = s_read_digits(ptr);
+			if (chunkSize == SIZE_MAX)
+				return -1;
+			if (chunkSize == 0)
+				chunkDone = true;
+		}
+		else if (chunkSize > 0) {
+			usize bytesAppended = dst.append(client, chunkSize);
+			chunkSize -= bytesAppended;	// Guaranteed to be chunksize or less
+			if (src.cursor == src.size)	// Need to read from client for more info
+				return 0;
+		}
+		else {
+			lineEnd = src.find_line_end();
+			if (lineEnd == UINT32_MAX)
+				return 0;
+			if (lineEnd != 0)
+				return -1;	// There was no \r\n after 0, or after a message
+			if (chunkDone == true)
+				return 1;
+			chunkSize = SIZE_MAX;
+		}
 	}
-	return 0;	// Actually should return something more useful like request status (processing, etc)
+	return 0;
 }
 
-// Reading state for the body
-// Here we are reading into the input buffer, but the newline requirement only applies to the content length
-// The body may well be over 8192 bytes, therefore it needs to be streamed appropriately
-i8 parse_body(usize bytes, u32 events) {
-	// if (input.read(bytes, events) < 0)
-	// 	return -1;	// ERROR: Failed reading
+isize read_from_client(usize bytes, u32 events) {
+	if (!(type & (HTTP::Attributes::METHOD_POST | HTTP::Attributes::CGI)))
+		return read_from_server();
 
-	// if ()
+	return write_to_server(client.reader);
 }
 
-i8 upload(usize bytes, u32 events);
+isize read_from_client_chunked(usize bytes, u32 events) {
+	if (!(type & (HTTP::Attributes::METHOD_POST | HTTP::Attributes::CGI)))
+		return read_from_server();
 
-void close() {
-	// close operations
-	if (fd > 0) {
-		::close(fd);
-		fd = -1;
-	}
+	if (dechunk(client.reader, server.writer))
+		return -1;
 
-	type = 0;
-	input.clear();
-	output.cursor = 0;
-	output.size = 9;
+	return write_to_server(server.writer);	// dispatches to 
 }
 
-i32 parseTarget(char *str, char *end);
-i32 parseFirstLine(char *str, char *end);
-i32 parseLine(char *str, char *end, u32 lineCount);
+// POST or CGI
+isize write_to_server(usize bytes, u32 events, Buffer<bufferSize>& source) {
+	source.write(server.writer.fd, bytes);	// In this case the FD for client_writer will not be the client
+	write_to_client(bytes, events);
+}
 
-void buildHeader();
-i32 prepare();
+// GET or DEL
+// Needs no body, source from this is server file fd
+isize read_from_server(usize bytes, u32 events) {
+	server.read();
+	write_to_client(bytes, events);
+}
+
+// Source of this will always be server.write buffer
+isize write_to_client(usize bytes, u32 events) {
+	// Write header (ONCE)
+	client.write(bytes);
+}
+
+// isize buildHeader() {
+// 	client.append("HTTP/1.1 ");
+
+// 	if (bodySize != SIZE_MAX)
+// 		client.append("Transfer-Encoding: chunked\r\n");
+// 	else
+// 	{
+// 		client.append("Content-Length: ");
+// 		client.append(requestSize, false);	// Auto performs itoa
+// 	}
+
+// 	// Other lines here
+// 	// Location
+// 	// Content Type
+// 	// Content Encoding?
+
+// 	client.append("\r\n");
+// 	// if (isBad(status)) {
+// 	// 	client.append(client.data + 9, statusEnd - 9);
+// 	// 	return;
+// 	// }
+// }
 
 // ======== Constructors ====================
 Request() :
-	fd(-1),
-	input(),	// TODO: empty constructors for buffer
-	output(),
 	type(0),
 	state(0),
-	requestSize(SIZE_MAX) {
-		output.cursor = 0;
-		output.size = 0;
+	bodySize(SIZE_MAX) {
 	}
 };
 }
-
-#include "Request_parse.hpp"

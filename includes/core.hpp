@@ -12,8 +12,8 @@
 #define SIZE_MAX_BASE16_LENGTH ((sizeof(size_t) * CHAR_BIT + 3) / 4)
 
 // Types
-typedef int8_t			i8;
-typedef uint8_t			u8;
+typedef char			i8;
+typedef unsigned char	u8;
 typedef int16_t			i16;
 typedef uint16_t		u16;
 typedef int32_t			i32;
@@ -69,6 +69,35 @@ typedef unsigned long	ulong;
 #else
 	#define MEMSET_INLINE(dst, val, n)	__builtin_memset(dst, val, n)
 #endif
+
+// #define MEMFIND(dst, str, dstSize) \
+// ({ \
+// 	const u8 *mf_dst = (const u8 *)(dst); \
+// 	const usize mf_dstSize = (usize)(dstSize); \
+// 	const usize mf_strSize = sizeof(str) - 1; \
+// 	const u8 *mf_result = NULL; \
+//     for (usize mf_i = 0; mf_i <= mf_dstSize - mf_strSize; mf_i++) \
+//         if (__builtin_memcmp(mf_dst + mf_i, (str), mf_strSize) == 0) { \
+//             mf_result = mf_dst + mf_i; \
+//             break; \
+//         } \
+// 	mf_result; \
+// })
+
+#define MEMFIND(dst, str, dstSize) \
+({ \
+	const u8 *mf_dst = (const u8 *)(dst); \
+	const usize mf_dstSize = (usize)(dstSize); \
+	const usize mf_strSize = sizeof(str) - 1; \
+	usize mf_result = SIZE_MAX; \
+    for (usize mf_i = 0; mf_i <= mf_dstSize - mf_strSize; mf_i++) { \
+        if (__builtin_memcmp(mf_dst + mf_i, (str), mf_strSize) == 0) { \
+            mf_result = mf_i; \
+            break; \
+        } \
+	}\
+	mf_result; \
+})
 
 #define CLZ(x)			__builtin_clzll(x)
 #define CTZ(x)			__builtin_ctzll(x)

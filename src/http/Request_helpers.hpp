@@ -26,8 +26,7 @@ bool s_compare_case(char* &str, char *end, const char* ref, u32 refLength)
 // basic atoi
 // consumes characters and skips valid spaces
 static inline
-usize s_read_digits(char* &str, char *end)
-{
+usize s_read_digits(const char* str) {
 	static const i8 lut[256] = {
 		99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
 		99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
@@ -68,7 +67,9 @@ usize s_read_digits(char* &str, char *end)
 		value += value * base + (usize) lut[(u8)str[numLength]];
 
 	str += numLength;
-	while (str < end && (*str == ' ' || *str == '\t'))
+	while (*str == ' ' || *str == '\t')
 		str++;
-	return value;
+	if ((str[0] == '\r' && str[1] == '\n'))
+		return value;
+	return SIZE_MAX;
 }

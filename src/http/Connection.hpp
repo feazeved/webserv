@@ -3,7 +3,8 @@
 #include <unistd.h>
 
 #include "core.hpp"
-#include "Request.hpp"
+#include "http/Request.hpp"
+#include "http/Parser.hpp"
 
 namespace HTTP {
 
@@ -21,20 +22,15 @@ public:
 		close(request.fd);
 }
 
-void	init(i32 fd) {
+void init(i32 fd) {
 	request.fd = fd;
 }
 
-// its called by ServerManager.run().
-// return values:
-// 		REQ_CONTINUE: response is not ready.
-// 		REQ_CLOSE:	  close the connection (will remove fd from epoll)
-// 		REQ_WRITE:	  says you're ready to write the response and ServerManager will modify its epoll so that you write
-//
-// TODO: check when to return REQ_CLOSE. Maybe should check for events & (EPOLLHUP | EPOLLERR) to close the connection properly.
-// Maybe should close according to something in the request? Maybe need to close if EPOLLIN && (rvalue = read()) == 0
-i8	handleEvent(usize bytes, u32 events) {
-	i8 rvalue = 0;
+void clear() {
+}
+
+isize dispatch(usize bytes, u32 events) {
+	isize rvalue = 0;
 
 	while (syscalled == false)
 	{

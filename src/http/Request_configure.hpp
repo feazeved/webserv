@@ -1,5 +1,10 @@
-#include "core.hpp"
+#pragma once
 
+#include <unistd.h>
+#include <sys/epoll.h>
+
+#include "core.hpp"
+#include "http/Request.hpp"
 
 /* 
 
@@ -12,3 +17,7 @@ Function receives a file path, a buffer, IO direction (read or write), number of
 2) Finally return an FD or -1
 
 */
+namespace HTTP {
+
+	
+}
