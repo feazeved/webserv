@@ -161,6 +161,11 @@ nav{
 		font-size: 45px;
 		text-shadow: none;
 	}
+	.container-header{
+        padding: 3rem;
+        background-color: #fefde1;
+        border-bottom: 2px solid #fdf8b8;
+	}
 	.content{
 		display: flex;
 		width: 100%;
@@ -170,7 +175,7 @@ nav{
 			width: 50%;
 		}
 		.content-text{
-			/*padding: 3rem;*/
+			padding: 3rem;
 			h2 {
 				font-size: 32px;
 				text-shadow: none;
