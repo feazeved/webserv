@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playpen+Sans:wght@100..800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="./css/styles.css">
 
 </head>
 
@@ -26,9 +26,17 @@
 			<p>Nostalgic Tribute</p>
 		</div>
 	</div>
+	<nav>
+		<span><a href="./index.html" >Home</a></span>
+		<span><a href="./about.html">About Us</a></span>
+		<span><a href="./error-pages/invalid-requests-map.html">Invalid Requests</a></span>
+		<span>CGI's</span>
+	</nav>
 
-	<button id="playButton" class="button" type="button"><em>Play</em></button>
-	<canvas id="gameCanvas" width="1080" height="675"></canvas>
+	<div class="game-container">
+		<button id="playButton" type="button"><em>Play</em></button>
+		<canvas id="gameCanvas" width="1080" height="675"></canvas>
+	</div>
 
 	<script src="js/game.js"></script>
 	<script src="js/index.js"></script>
