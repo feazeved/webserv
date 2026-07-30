@@ -30,12 +30,6 @@ struct ServerConfig {
 	ServerConfig() : host("localhost"), port(-1), maxBodySize(-1), autoindex(false) {}
 };
 
-
-struct GameEvent {
-	EventType	type;
-	Player*		player;
-};
-
 namespace Attributes {
 
 enum Attributes {
