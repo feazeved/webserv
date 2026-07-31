@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <stdexcept>
 #include <sys/socket.h>
 #include <vector>
@@ -72,13 +71,13 @@ public:
 					HTTP::Attributes::State	state = conn->handleEvent(0, events[i].events);
 
 					switch (state) {
-						case HTTP::REQ_CLOSE:
+						case HTTP::Attributes::State::PROCESSING:
 							closeConnection(conn);
 							break ;
-						case HTTP::REQ_WRITE:
+						case HTTP::Attributes::State::WRITING:
 							modifyEpollEvent(conn->request.fd, EPOLLOUT, conn);
 							break ;
-						case HTTP::REQ_CONTINUE:
+						case HTTP::Attributes::State:::
 							break ;
 					}
 				}
