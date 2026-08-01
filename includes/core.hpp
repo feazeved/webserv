@@ -29,6 +29,9 @@ typedef unsigned short	ushort;
 typedef unsigned int	uint;
 typedef unsigned long	ulong;
 
+// Lookup Tables
+extern const unsigned char g_asciiLut[256];
+
 // Builtins
 #define ALWAYS_INLINE	static inline __attribute__((always_inline))
 #define NOINLINE		__attribute__((noinline))
@@ -69,20 +72,6 @@ typedef unsigned long	ulong;
 #else
 	#define MEMSET_INLINE(dst, val, n)	__builtin_memset(dst, val, n)
 #endif
-
-// #define MEMFIND(dst, str, dstSize) \
-// ({ \
-// 	const u8 *mf_dst = (const u8 *)(dst); \
-// 	const usize mf_dstSize = (usize)(dstSize); \
-// 	const usize mf_strSize = sizeof(str) - 1; \
-// 	const u8 *mf_result = NULL; \
-//     for (usize mf_i = 0; mf_i <= mf_dstSize - mf_strSize; mf_i++) \
-//         if (__builtin_memcmp(mf_dst + mf_i, (str), mf_strSize) == 0) { \
-//             mf_result = mf_dst + mf_i; \
-//             break; \
-//         } \
-// 	mf_result; \
-// })
 
 #define MEMFIND(dst, str, dstSize) \
 ({ \
@@ -138,12 +127,26 @@ typedef unsigned long	ulong;
 #define LOG2(x)				(63u - CLZ(x))	// TODO: maybe math helpers dont belong in this
 
 // === ASCII Helpers =====================================
-#define IS_ASCII(x)       ((x) >= 0 && (x) < 128)
-#define IS_DIGIT(x)       ((x) >= '0' && (x) <= '9')
-#define IS_UPPER(x)       ((x) >= 'A' && (x) <= 'Z')
-#define IS_LOWER(x)       ((x) >= 'a' && (x) <= 'z')
-#define IS_ALPHA(x)       (IS_UPPER(x) || IS_LOWER(x))
-#define IS_ALNUM(x)       (IS_ALPHA(x) || IS_DIGIT(x))
+enum e_ascii {
+	ASCII_DIGITS  = 9,   // value <= digits
+	ASCII_HEX     = 15,  // value <= hex
+	ASCII_LETTERS = 16,  // value <= letters
+	ASCII_IDENT   = 17,  // value <= ident
+	ASCII_SPACE   = 18,
+	ASCII_SYMBOLS = 19,
+	ASCII_CONTROL = 20,
+	ASCII_INVALID = 64   // Null terminator is here as well
+};
+
+#define IS_ASCII(x) ((x) >= 0 && (x) < 128)
+#define IS_DIGIT(x) ((x) >= '0' && (x) <= '9')
+#define IS_UPPER(x) ((x) >= 'A' && (x) <= 'Z')
+#define IS_LOWER(x) ((x) >= 'a' && (x) <= 'z')
+#define IS_ALPHA(x) (IS_UPPER(x) || IS_LOWER(x))
+#define IS_SPACE(x)	(g_asciiLut[((unsigned char)(x))] == ASCII_SPACE)
+#define IS_HEX(x)	(g_asciiLut[((unsigned char)(x))] <= ASCII_HEX)
+#define IS_ALNUM(x) (g_asciiLut[((unsigned char)(x))] <= ASCII_LETTERS)
+#define IS_IDENT(x)	(g_asciiLut[((unsigned char)(x))] <= ASCII_IDENT)
 
 // === Generic Helpers =====================================
 #define ARRAY_SIZE(arr)		(sizeof(arr) / sizeof((arr)[0]))

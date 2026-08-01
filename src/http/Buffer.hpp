@@ -6,11 +6,10 @@ template <usize bufferSize>
 class Buffer {
 public:
 // 
-	i32 fd;
 	u32 index, size;
-	u8 data[bufferSize - 3 * sizeof(u32)];
+	u8 data[bufferSize - 2 * sizeof(u32)];
 
-	isize read(usize bytes) {
+	isize read(i32 fd, usize bytes) {
 		if (size + bytes > sizeof(data))
 			return -1;	// ERROR: Buffer overflow
 
@@ -21,13 +20,9 @@ public:
 		return bytesRead;
 	}
 
-	isize write(usize bytes) {
-		return write(fd, bytes);
-	}
-
-	isize write(i32 fdOverride, usize bytes) {
+	isize write(i32 fd, usize bytes) {
 		usize bytesCapped = MIN(bytes, size - index);
-		isize bytesWritten = ::write(fdOverride, data + index, bytesCapped);
+		isize bytesWritten = ::write(fd, data + index, bytesCapped);
 	
 		if (bytesWritten < 0)
 			return bytesWritten;
@@ -40,8 +35,7 @@ public:
 		return bytesWritten;
 	}
 
-	void clear() {
-		fd = -1;
+	void reset() {
 		index = 0;
 		size = 0;
 	}
@@ -72,6 +66,7 @@ public:
 	}
 
 	// Should be impossible for dst buffer to not fit
+	// TODO: Might remove MIN3 and have it overflow to guarantee behavior
 	usize append(Buffer &src, usize length) {
 		usize remainingSrc = src.size - src.index;	// How many bytes it has read
 		usize remainingDst = sizeof(data) - size;	// How many bytes are free in the buffer
@@ -83,13 +78,15 @@ public:
 		return appendLength;
 	}
 
+	// TODO: No length checks
+	// TODO: separate functions
 	void append(usize number, bool isHex) {
 		static const char digits[16] = {
 			'0', '1', '2', '3', '4', '5', '6', '7',
 			'8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-		char	buffer[24];
+		char	buffer[48];
 		usize	length;
-		usize	i = sizeof(buffer);
+		usize	i = sizeof(buffer) - 24;
 
 		buffer[--i] = '\n';
 		buffer[--i] = '\r';
@@ -110,12 +107,12 @@ public:
 			}	while (number != 0);			
 		}
 		length = sizeof(buffer) - i;
-		MEMCPY_BUILTIN(data + size, buffer + i, length);
+		MEMCPY_INLINE(data + size, buffer + i, 24);
 		size += length;
 	}
 
 	Buffer()
-		: fd(-1), index(0), size(0)
+		: index(0), size(0)
 		{
 		}
 };

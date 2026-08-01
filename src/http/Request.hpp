@@ -4,7 +4,7 @@
 #include <sys/epoll.h>
 
 #include "core.hpp"
-#include "Request_helpers.hpp"
+#include "Request_helpers.inl"
 #include "http/Buffer.hpp"
 
 // Implement a compact function so that if necessary, moves cookie to the end of query so that path + query + cookie < 8192
@@ -49,8 +49,7 @@ enum State {
 }
 
 typedef struct {
-	struct
-	{
+	struct {
 		u32	index;
 		u32 size;
 	}	path, query, cookie;
@@ -73,12 +72,7 @@ public:
 	usize bodySize, chunkSize;
 	Buffer<bufferSize> clientInput, clientOutput;
 	Buffer<bufferSize> serverInput, serverOutput;
-
 	bool chunkDone;
-// Client writer will always be Client's FD
-// Server writer will either be CGI's FD or server file
-// Server reader will either be CGI's FD or server file
-// Client reader will either be CGI's FD or server file
 
 // Methods
 isize configure() {
@@ -105,42 +99,70 @@ isize configure() {
 
 }
 
-isize dechunk(usize bytes, u32 events, Buffer<bufferSize>& src, Buffer<bufferSize>& dst) {
-	isize rvalue = src.read(bytes, events);
-	if (rvalue < 0)
-		return -1;	// ERROR: Failed reading
+// TODO: This is wrong, it's always hexadecimal
+isize readDigitLine(Buffer<bufferSize>& src) {
+	u32 lineEnd = src.find_line_end();
+	if (lineEnd == UINT32_MAX)
+		return 1;
+
+	chunkSize = s_read_digits(src.data + lineStart);
+	if (chunkSize == SIZE_MAX)
+		return -1;
+	lineStart = lineEnd;
+	if (chunkSize == 0)
+		chunkDone = true;
+	return 0;
+}
+
+isize dechunk(usize bytes, Buffer<bufferSize>& src, i32 targetFd) {
+	Buffer<bufferSize> buffer(targetFd);
 
 	u32 lineEnd = UINT32_MAX;
+	isize rvalue = 0;
+
 	while (true) {
 		if (chunkSize == SIZE_MAX) {
-			lineEnd = src.find_line_end();
-			if (lineEnd == UINT32_MAX)
-				return 0; // Error: no \r\n was found 
-			char *ptr = (char *) src.data + lineStart;
-			lineStart = lineEnd;
-			chunkSize = s_read_digits(ptr);
-			if (chunkSize == SIZE_MAX)
-				return -1;
-			if (chunkSize == 0)
-				chunkDone = true;
+			rvalue = readDigitLine(src);
+			if (rvalue == -1)
+				return rvalue;
+			else if (rvalue == 1)
+				break;
 		}
 		else if (chunkSize > 0) {
-			usize bytesAppended = dst.append(src, chunkSize);
+			usize bytesAppended = buffer.append(src, chunkSize);
 			chunkSize -= bytesAppended;	// Guaranteed to be chunksize or less
-			if (src.cursor == src.size)	// Need to read from client for more info
-				return 0;
+			if (src.index == src.size)	// Need to read from client for more info
+				break;
 		}
 		else {
 			lineEnd = src.find_line_end();
 			if (lineEnd == UINT32_MAX)
-				return 0;
+				break;
 			if (lineEnd != 0)
 				return -1;	// There was no \r\n after 0, or after a message
 			if (chunkDone == true)
-				return 1;
+				break;
 			chunkSize = SIZE_MAX;
 		}
 	}
+
+	if (buffer.index == 0)
+		return 0;
+
+	isize bytesWritten = buffer.write(bytes);
+	if (bytesWritten < 0)
+		return bytesWritten;
+
+	// Optimization opportunity here to have src copy directly to itself
+	if (src.index < src.size) {
+		isize bytesRemaining = src.size - src.index;
+		buffer.append(src, (usize)bytesRemaining);
+	}
+	if (buffer.size > buffer.index) {
+		src.reset();
+		src.append(buffer, SIZE_MAX);
+	}
+
 	return 0;
 }
 
