@@ -12,6 +12,7 @@
 
 #include "HTTP.hpp"
 #include "core.hpp"
+#include "State.hpp"
 
 class Server {
 public:
@@ -52,6 +53,7 @@ public:
 private:
 	HTTP::ServerConfig	config;
 	i32					listenFd;
+	Game::State			State;
 
 	static sockaddr_in	resolveHostAndPort(const std::string& host, i64 port) {
 		std::string	hostToResolve = host.empty() ? "0.0.0.0" : host;

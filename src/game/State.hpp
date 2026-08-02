@@ -18,6 +18,7 @@ private:
 	std::map<i32, Player>	players;
 	std::vector<GameEvent>	pendingEvents;
 	std::vector<i32>		sseClients;
+	std::string				json;
 	i32						nextPlayerId;
 
 	static const i32		s_spawnX = 0;
@@ -88,7 +89,7 @@ public:
 		sseClients.erase(it);
 	}
 
-	void	broadcastEvents() {
+	void	stringifyEvents() {
 		if (pendingEvents.empty())
 			return ;
 
@@ -110,11 +111,8 @@ public:
 			}
 			ss << "}\n\n";
 		}
-		std::string data = ss.str();
+		json = ss.str();
 		for (usize i = 0; i < sseClients.size(); i++) {
-			// mark each fd as writable
-			// have this data in the Server Buffer!!!
-			// then, with epoll, send it to each fd
 		}
 		pendingEvents.clear();
 	}
