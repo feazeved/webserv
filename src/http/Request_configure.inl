@@ -13,6 +13,8 @@ Read from, write to:   FD
 Read to,   write from: Buffer
 */
 
+// Buffer swapping could also solve the problem for decoding
+
 /* 
 
 DECODE NORMAL:

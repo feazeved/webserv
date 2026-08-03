@@ -105,7 +105,7 @@ isize readDigitLine(Buffer<bufferSize>& src) {
 	if (lineEnd == UINT32_MAX)
 		return 1;
 
-	chunkSize = s_read_digits(src.data + lineStart);
+	chunkSize = s_strtol16(src.data + lineStart);
 	if (chunkSize == SIZE_MAX)
 		return -1;
 	lineStart = lineEnd;

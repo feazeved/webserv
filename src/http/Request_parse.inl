@@ -65,15 +65,15 @@ i32 parseTarget(char *str, char *end) {
 i32 parseFirstLine(char *str, char *end) {
 	if (end - str < 14)
 		return -1;	// ERROR: Bad request "GET / HTTP/1.0" shortest possible
-	if (MEMCMP_BUILTIN(str, "GET ", 4) == 0) {
+	if (MEMCMP(str, "GET ", 4) == 0) {
 		type |= HTTP::Attributes::METHOD_GET;	// TODO: create enum
 		str += 4;
 	}
-	else if (MEMCMP_BUILTIN(str, "POST ", 5) == 0) {
+	else if (MEMCMP(str, "POST ", 5) == 0) {
 		type |= HTTP::Attributes::METHOD_POST;	// TODO: create enum
 		str += 5;
 	}
-	else if (MEMCMP_BUILTIN(str, "DELETE ", 7) == 0) {
+	else if (MEMCMP(str, "DELETE ", 7) == 0) {
 		type |= HTTP::Attributes::METHOD_DELETE;	// TODO: create enum
 		str += 7;
 	}
@@ -84,7 +84,7 @@ i32 parseFirstLine(char *str, char *end) {
 	str = end - 9;
 	if (str - arg > 4096)	// TODO: Fix mixup and magic number
 		return -1;
-	if (MEMCMP_BUILTIN(str, "HTTP/1.1", 8) != 0)
+	if (MEMCMP(str, "HTTP/1.1", 8) != 0)
 		return -1; // ERROR: Invalid version, TODO: what happens to the class once it is recognized as bad?
 
 	i32 rvalue = parseTarget(arg, str);	// TODO: meaningful return

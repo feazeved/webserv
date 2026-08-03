@@ -73,7 +73,7 @@ public:
 	}
 
 	void append(const u8 *ptr, usize length) {
-		MEMCPY_BUILTIN(data + size, ptr, length);
+		MEMCPY(data + size, ptr, length);
 		size += length;
 	}
 
@@ -83,7 +83,7 @@ public:
 		usize remainingDst = sizeof(data) - size;	// How many bytes are free in the buffer
 		usize appendLength = MIN3(length, remainingSrc, remainingDst);
 	
-		MEMCPY_BUILTIN(data + size, src.data + cursor, appendLength);
+		MEMCPY(data + size, src.data + cursor, appendLength);
 		src.cursor += appendLength;
 		size += appendLength;
 		return appendLength;
@@ -116,7 +116,7 @@ public:
 			}	while (number != 0);			
 		}
 		length = sizeof(buffer) - i;
-		MEMCPY_BUILTIN(data + size, buffer + i, length);
+		MEMCPY(data + size, buffer + i, length);
 		size += length;
 	}
 

@@ -45,10 +45,10 @@ public:
 			str = envpSrc[envIndex];
 			if (str == NULL)
 				break;
-			length = STRLEN_BUILTIN(str) + 1;
+			length = STRLEN(str) + 1;
 			if (bufIndex + length > sizeof(buffer) / 2)
 				break;
-			MEMCPY_BUILTIN(buffer + bufIndex, str, length);
+			MEMCPY(buffer + bufIndex, str, length);
 			bufIndex += length;
 		}
 	}

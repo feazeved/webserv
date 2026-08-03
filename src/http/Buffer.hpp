@@ -1,13 +1,22 @@
 #pragma once
 #include <unistd.h>
 #include "core.hpp"
+#include "Request_helpers.inl"
 
 template <usize bufferSize>
 class Buffer {
+private:
+
 public:
-// 
-	u32 index, size;
-	u8 data[bufferSize - 2 * sizeof(u32)];
+
+	union {
+		u8 rawData[bufferSize];
+		struct {
+			u8 data[bufferSize - sizeof(usize) * 8];	// Last cache line is reserved for unbounded memory loads
+			usize reserved[4];
+			usize index, size, start, end;
+		};
+	};
 
 	isize read(i32 fd, usize bytes) {
 		if (size + bytes > sizeof(data))
@@ -27,8 +36,8 @@ public:
 		if (bytesWritten < 0)
 			return bytesWritten;
 		index += (u32) bytesWritten;
-		if (size - index <= 32 && index < sizeof(data) - 32) {
-			MEMMOVE_BUILTIN(data, data + index, 32);
+		if (size - index <= 32) {	// Check if this is needed
+			MEMMOVE(data, data + index, 32);
 			size -= index;
 			index = 0;
 		}
@@ -40,10 +49,12 @@ public:
 		size = 0;
 	}
 
-	u32 find_line_end() {
-		u32 lineEnd = UINT32_MAX;
-		while (index < size - 1) {
-			if (data[index] == '\r' && data[index + 1] == '\n') {
+	usize find_line_end() {
+		usize lineEnd = SIZE_MAX;
+		const u32 maxLength = size == 0 ? 0 : size - 1;
+
+		while (index < maxLength) {
+			if (MEMCMP(data + index, "\r\n", 2) == 0) {
 				lineEnd = index;
 				index += 2;
 				break;
@@ -61,7 +72,7 @@ public:
 	}
 
 	void append(const u8 *ptr, usize length) {
-		MEMCPY_BUILTIN(data + size, ptr, length);
+		MEMCPY(data + size, ptr, length);
 		size += length;
 	}
 
@@ -72,7 +83,7 @@ public:
 		usize remainingDst = sizeof(data) - size;	// How many bytes are free in the buffer
 		usize appendLength = MIN3(length, remainingSrc, remainingDst);
 	
-		MEMCPY_BUILTIN(data + size, src.data + index, appendLength);
+		MEMCPY(data + size, src.data + index, appendLength);
 		src.index += appendLength;
 		size += appendLength;
 		return appendLength;
@@ -80,35 +91,17 @@ public:
 
 	// TODO: No length checks
 	// TODO: separate functions
-	void append(usize number, bool isHex) {
-		static const char digits[16] = {
-			'0', '1', '2', '3', '4', '5', '6', '7',
-			'8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-		char	buffer[48];
-		usize	length;
-		usize	i = sizeof(buffer) - 24;
+	void append(usize number) {
+		char buffer[48];
+		char *mid = buffer + 24;
+		usize digitLength = s_itoa10(number, mid);
+		char *start = buffer + 24 - digitLength;
 
-		buffer[--i] = '\n';
-		buffer[--i] = '\r';
-		if (isHex)
-		{
-			do
-			{
-				buffer[--i] = digits[(number % 16)];
-				number /= 16;
-			}	while (number != 0);
-		}
-		else
-		{
-			do
-			{
-				buffer[--i] = digits[(number % 10)];
-				number /= 10;
-			}	while (number != 0);			
-		}
-		length = sizeof(buffer) - i;
-		MEMCPY_INLINE(data + size, buffer + i, 24);
-		size += length;
+		*mid++ = '\r';
+		*mid = '\n';
+
+		MEMCPY_INLINE(data + size, start, 24);
+		size += digitLength;
 	}
 
 	Buffer()
