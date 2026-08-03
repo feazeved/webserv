@@ -22,15 +22,31 @@
 // 	});
 // });
 
+// function readState() {
+// 	const gameState = JSON.parse(text);
+//
+// if (gameState.type === "move")
+// {
+// 		let penguin = docum(gameState.id);
+//			penguin.style.x = g
+//			penguin.style.y = g
+//			direction/sprite = g
+//			direction/sprite = g
+// }
+//
+// if (JOIN) {
+//     how to add penguin
+// }
+// else if (LEFT) {
+// 		how to remove penguin
+// }
+
+
+// }
 
 function startGame() {
 	const canvas = document.getElementById('gameCanvas');
-	const ctx = canvas.getContext('2d');
 
-	const image = new Image();
-	image.src = 'images/town.webp';
-
-	image.onload = () => {
-		ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-	};
+	canvas.style.backgroundImage = "url('images/town.webp')";
+	canvas.style.backgroundPosition = "center";
 }
