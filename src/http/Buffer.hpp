@@ -49,21 +49,25 @@ public:
 		size = 0;
 	}
 
-	bool find_line_end(usize padSize) {
+	isize find_line_end() {
 		start = end != SIZE_MAX ? end : start;	// Previous call found a match
 		end = SIZE_MAX;
-		const usize maxLength = size == 0 ? 0 : size - padSize - 1;	// padSize is how many bytes extra we need
+		const usize maxLength = size == 0 ? 0 : size - 3;
 
 		while (index < maxLength) {
 			if (MEMCMP(data + index, "\r\n", 2) == 0) {
 				end = index;
 				index += 2;
-				return true; // Found line end
+				if (MEMCMP(data + index, "\r\n", 2) == 0) {
+					index += 2;
+					return 2; // Found header end
+				}
+				return 1; // Found line end
 			}
 			else
 				index++;
 		}
-		return false;
+		return 0;
 	}
 
 	bool find_header_end(usize padSize) {
@@ -127,6 +131,12 @@ public:
 
 		MEMCPY_INLINE(data + size, start, 24);
 		size += digitLength;
+	}
+
+	void copy(const Buffer& other) {
+		size = other.size - other.index;
+		index = 0;
+		MEMCPY(data, other.data + other.index, size);
 	}
 
 	Buffer()

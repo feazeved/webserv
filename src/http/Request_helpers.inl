@@ -75,7 +75,7 @@ usize s_strtol16(const char* str) {
 		str++;
 		value = value * 16 + digit;
 	}
-	if (ostr == str)
+	if (ostr == str || MEMCMP(str, "\r\n", 2) != 0)	// TODO: Check if not too strict
 		return SIZE_MAX;
 	return value;
 }
@@ -94,7 +94,7 @@ usize s_strtol10(const char* str) {
 		str++;
 		value = value * 10 + digit;
 	}
-	if (ostr == str)
+	if (ostr == str || MEMCMP(str, "\r\n", 2) != 0)
 		return SIZE_MAX;
 	return value;
 }

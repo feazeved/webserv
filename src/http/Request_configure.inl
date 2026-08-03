@@ -7,9 +7,9 @@
 
 namespace HTTP {
 // 
-template <usize bufferSize>
-inline isize Request<bufferSize>::configure() {
-	static const u8 transferCheck = HTTP::Attributes::CHUNKED | HTTP::Attributes::METHOD_POST;
+template <usize bufferSize> inline
+isize Request<bufferSize>::configure() {
+	static const u8 transferCheck = HTTP::Attributes::CHUNKED | HTTP::Attributes::POST;
 	// Error checking
 	if (status != 0) {	// An error caused early interruption
 		// buildHeader();
@@ -22,8 +22,8 @@ inline isize Request<bufferSize>::configure() {
 
 }
 
-template <usize bufferSize>
-inline void Request<bufferSize>::buildHeader() {
+template <usize bufferSize> inline
+void Request<bufferSize>::buildHeader() {
 	// client.append("HTTP/1.1 ");
 
 	// if (bodySize != SIZE_MAX)
