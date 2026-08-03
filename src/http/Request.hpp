@@ -7,45 +7,21 @@
 #include "Request_helpers.inl"
 #include "http/Buffer.hpp"
 
-// Implement a compact function so that if necessary, moves cookie to the end of query so that path + query + cookie < 8192
-
-// Implement state actions to Request so that it switches between reading and writing seamlessly
-	// It needs to set the epoll variables and confirm upon entry that it can write
-	// With chunked transfer encoding, it will constantly switch between read and write
-
-// Implement method actions to Request so that it can GET, POST, DELETE, CGI or ERROR
-	// This involves returning a HTTP Header with the appropriate status code and the payload
-
-// Create a separate Parser class that handles the reading of the header only
-	// It is supposed to output a struct containing all of the relevant metadata
-	// It does not own the buffer
-
-// Whenever status is deduced, it already loads the string into output buffer index 9 e.g. (HTTP/1.1 _)
-
-// Fake envp added to config for easy insertion
-
 namespace HTTP {
 
 namespace Attributes {
 
 enum Attributes {
-	METHOD_GET = 1 << 0,
-	METHOD_POST = 1 << 1,
-	METHOD_DELETE = 1 << 2,
+	GET = 1 << 0,
+	POST = 1 << 1,
+	DELETE = 1 << 2,
 	CGI = 1 << 3,
 	HOST = 1 << 4,
 	CHUNKED = 1 << 5,
 	DONE = 1 << 7
+
 };
 
-enum State {
-	READING = 1 << 0,		// Reading header
-	PROCESSING = 1 << 1,	// Reading body
-	WRITING = 1 << 2,		// Writing
-
-	PROCESSING_LENGTH = 1 << 6, // Reading the header for the body
-	FIRST_LINE = 1 << 7
-};
 }
 
 typedef struct {
@@ -55,183 +31,207 @@ typedef struct {
 	}	path, query, cookie;
 }	RequestVars;
 
-// 3 Stages:
-// 1) Read and decode information from client (means already dechunkify)
-// 2) a) Write to an FD (POST or CGI)
-// 2) b) Read from an FD (GET or DEL)
-// 3) Write to client (Response + optionally (Get or CGI))
-
 template <usize bufferSize>
 class Request {
 public:
-	u8 type; // bitfield: (DONE) (-) (CHUNKED) (HOST) (CGI) (DELETE) (POST) (GET)
-	u8 state;	// TODO: transfer all of these to a metadata struct
-	u32 status;
 	RequestVars vars;
-	u32 lineStart;
 	usize bodySize, chunkSize;
 	Buffer<bufferSize> clientInput, clientOutput;
-	Buffer<bufferSize> serverInput, serverOutput;
-	bool chunkDone;
+	struct {
+		i32 client;		// Duplex FD
+		i32 writeEnd;	// CGI Input or POST
+		i32 readEnd;	// CGI Output or GET/DEL
+	} fd;
+
+	union {
+		u64 state;
+		struct {
+			u32 metadata;
+			u16 status;
+			u8 info;
+			u8 type;
+		};
+	};
 
 // Methods
-isize configure() {
-	static const u8 transferCheck = HTTP::Attributes::CHUNKED | HTTP::Attributes::METHOD_POST;
-
-	// Error checking
-	if (status != 0) {	// An error caused early interruption
-		// buildHeader();
-		// Close the connection
-	}
-
-	if ((type & HTTP::Attributes::HOST) == 0) {	// Host wasnt set
-		// Set status
-	}
-
-	// if ((type & transferCheck) == transferCheck) {
-	// 	if (bodySize == SIZE_MAX) {	// TODO: needs checking, conditions aint right
-	// 		return -1;	// Set status, transfer encoding was not set
-	// 	}
-	// 	source = &server.writer;
-	// }
-	// else
-	// 	source = &server.reader;
-
+isize configure();
+void buildHeader();
+void buildCgiHeader() {
+	// parse CGI header
+	// build header based on this parsing
+	// set status
+	// Setting the status means the client output buffer was filled
 }
 
-// TODO: This is wrong, it's always hexadecimal
-isize readDigitLine(Buffer<bufferSize>& src) {
-	u32 lineEnd = src.find_line_end();
-	if (lineEnd == UINT32_MAX)
-		return 1;
-
-	chunkSize = s_strtol16(src.data + lineStart);
-	if (chunkSize == SIZE_MAX)
-		return -1;
-	lineStart = lineEnd;
-	if (chunkSize == 0)
-		chunkDone = true;
-	return 0;
+// Header will already be built in the configure function
+isize del_method(usize bytes, u32 events) {
+	return write_to_client(bytes, events);
 }
 
-isize dechunk(usize bytes, Buffer<bufferSize>& src, i32 targetFd) {
-	Buffer<bufferSize> buffer(targetFd);
-
-	u32 lineEnd = UINT32_MAX;
-	isize rvalue = 0;
-
-	while (true) {
-		if (chunkSize == SIZE_MAX) {
-			rvalue = readDigitLine(src);
-			if (rvalue == -1)
-				return rvalue;
-			else if (rvalue == 1)
-				break;
-		}
-		else if (chunkSize > 0) {
-			usize bytesAppended = buffer.append(src, chunkSize);
-			chunkSize -= bytesAppended;	// Guaranteed to be chunksize or less
-			if (src.index == src.size)	// Need to read from client for more info
-				break;
-		}
-		else {
-			lineEnd = src.find_line_end();
-			if (lineEnd == UINT32_MAX)
-				break;
-			if (lineEnd != 0)
-				return -1;	// There was no \r\n after 0, or after a message
-			if (chunkDone == true)
-				break;
-			chunkSize = SIZE_MAX;
-		}
+isize get_method(usize bytes, u32 events) {
+	isize bytesRead;
+	if (fd.readEnd >= 0) {
+		bytesRead = clientOutput.read(fd.readEnd, bytes);	// TODO: Need to also check if CGI signalled EOF
+		if (bytesRead < 0)
+			return bytesRead;
 	}
 
-	if (buffer.index == 0)
-		return 0;
+	if (status == 0 && bytesRead == 0) {
+		close(fd.readEnd);
+		fd.readEnd = -1;
+		// set status
+		// build header
+	}
+	return write_to_client(bytes, events);
+}
 
-	isize bytesWritten = buffer.write(bytes);
+isize post_method(usize bytes, u32 events) {
+	isize bytesRead = read_from_client(bytes, events);
+	if (bytesRead < 0)
+		return bytesRead;
+
+	isize bytesWritten = write_to_server(bytes);
 	if (bytesWritten < 0)
 		return bytesWritten;
 
-	// Optimization opportunity here to have src copy directly to itself
-	if (src.index < src.size) {
-		isize bytesRemaining = src.size - src.index;
-		buffer.append(src, (usize)bytesRemaining);
-	}
-	if (buffer.size > buffer.index) {
-		src.reset();
-		src.append(buffer, SIZE_MAX);
-	}
+	bytesRead = read_from_server(bytes);
+	if (bytesRead < 0)
+		return bytesRead;
 
-	return 0;
+	// Return path until the operation isnt complete
+	if (status == 0 && fd.writeEnd == -1) {
+		// set status
+		// build header
+	}
+	return write_to_client(bytes, events);	
 }
 
+isize cgi_method(usize bytes, u32 events) {
+	isize bytesRead = read_from_client(bytes, events);
+	if (bytesRead < 0)
+		return bytesRead;
+
+	isize bytesWritten = write_to_server(bytes);
+	if (bytesWritten < 0)
+		return bytesWritten;
+
+	bytesRead = read_from_server(bytes);
+	if (bytesRead < 0)
+		return bytesRead;
+
+	// Return path until the operation isnt complete
+	if (status == 0) {
+		if (clientOutput.find_header_end(0) == false) {
+			if (clientOutput.size > 8000)	// TODO: Fix magic variable
+				return -1;	// ERROR: CGI Header is too big
+			return 0;	// Still no CGI Header
+		}
+		buildCgiHeader();
+	}
+	return write_to_client(bytes, events);
+}
+
+isize read_from_server(usize bytes) {
+	isize bytesRead = clientOutput.read(fd.readEnd, bytes);
+	if (bytesRead < 0)
+		return bytesRead;
+	if (bytesRead == 0) {
+		close(fd.readEnd);
+		fd.readEnd = -1;
+	}
+	return bytesRead;
+}
+
+isize write_to_server(usize bytes) {
+	isize bytesWritten;
+
+	if (type & HTTP::Attributes::CHUNKED)
+		bytesWritten = dechunk(bytes, clientOutput);
+	else 
+		bytesWritten = clientOutput.write(fd.writeEnd, bodySize);
+	if (bytesWritten < 0)
+		return bytesWritten;
+
+	bodySize -= bytesWritten;
+	if (bodySize == 0) {
+		close(fd.writeEnd);
+		fd.writeEnd = -1;	// Finished reading
+	}
+	return bytesWritten;
+}
+
+// Common to all
+isize write_to_client(usize bytes, usize events) {
+	isize bytesWritten = clientOutput.write(fd.client, bytes);
+	if (bytesWritten < 0)
+		return bytesWritten;	// TODO: tmp error path
+	return bytesWritten;
+}
+
+// Common to POST and CGI
 isize read_from_client(usize bytes, u32 events) {
-	if (!(type & (HTTP::Attributes::METHOD_POST | HTTP::Attributes::CGI)))
-		return read_from_server();
-
-	return write_to_server(clientOutput);
+	isize bytesRead = clientOutput.read(fd.client, bytes);
+	if (bytesRead < 0)
+		return bytesRead;
+	return bytesRead;
 }
 
-isize read_from_client_chunked(usize bytes, u32 events) {
-	if (!(type & (HTTP::Attributes::METHOD_POST | HTTP::Attributes::CGI)))
-		return read_from_server();
+// This function dechunks from a source buffer to a stack buffer, then writes from this stack buffer
+// Any bytes that weren't consumed by the write are copied back to the start of the source buffer, 
+// effectively performing compaction.
+isize dechunk(usize bytes, Buffer<bufferSize>& src) {
+	Buffer<bufferSize> tmpBuffer;
 
-	if (dechunk(clientOutput, serverInput))
-		return -1;
+	while (src.index < src.size) {
+		if (chunkSize == SIZE_MAX) {
+			if (src.find_line_end(2) == false)
+				break;
+			chunkSize = s_strtol16(src.data + src.start);
+			if (chunkSize > bodySize)
+				return -4;	// CLOSING ERROR: Body size was greater than maximum allowed
+			bodySize -= chunkSize;	// bodySize here represents the total allowed
+			if (chunkSize == 0)
+				bodySize = 0;		// Signals end of message
+			src.index += 2;
+			break;
+		}
+		else if (chunkSize > 0) {
+			usize bytesAppended = tmpBuffer.append(src, chunkSize);
+			chunkSize -= bytesAppended;	// Guaranteed to be chunksize or less
+		}
+		else {
+			if (MEMCMP(src.data + src.index, "\r\n", 2) != 0)
+				return -2;	// CLOSING ERROR: Chunk size was 0 and it did not have \r\n
+			src.index += 2;
+			break;
+		}
+	}
 
-	return write_to_server(serverInput);	// dispatches to 
+	if (tmpBuffer.size == 0)
+		return 0;				// CHECK: Nothing was appended
+
+	isize bytesWritten = tmpBuffer.write(fd.writeEnd, bytes);
+	if (bytesWritten < 0)
+		return bytesWritten;	// FATAL ERROR: Write error
+
+	// Optimization opportunity here to have src copy directly to itself
+	// TODO: The buffer is only going to fill with data related to the chunks, decide if compaction is worth given current length
+	// Otherwise just prepend the remainder to the end of what was read
+	if (src.index < src.size) { 
+		isize bytesRemaining = src.size - src.index;
+		tmpBuffer.append(src, (usize)bytesRemaining);
+	}
+	if (tmpBuffer.size > tmpBuffer.index) {
+		src.reset();
+		src.append(tmpBuffer, SIZE_MAX);
+	}
+
+	return bytesWritten;
 }
-
-// POST or CGI
-isize write_to_server(usize bytes, u32 events, Buffer<bufferSize>& source) {
-	source.write(serverInput.fd, bytes);	// In this case the FD for client_writer will not be the client
-	if (type & HTTP::Attributes::CGI)
-		return read_from_server(bytes, events);	// Populate server output
-	write_to_client(bytes, events);
-}
-
-// GET or DEL
-// Needs no body, source from this is server file fd
-isize read_from_server(usize bytes, u32 events) {
-	serverOutput.read();
-	write_to_client(bytes, events);
-}
-
-// Source of this will always be server.write buffer
-isize write_to_client(usize bytes, u32 events) {
-	// Write header (ONCE) wait for CGI
-	// Copy from serverOutput to clientInput
-	clientInput.write(bytes, events);
-}
-
-// isize buildHeader() {
-// 	client.append("HTTP/1.1 ");
-
-// 	if (bodySize != SIZE_MAX)
-// 		client.append("Transfer-Encoding: chunked\r\n");
-// 	else
-// 	{
-// 		client.append("Content-Length: ");
-// 		client.append(requestSize, false);	// Auto performs itoa
-// 	}
-
-// 	// Other lines here
-// 	// Location
-// 	// Content Type
-// 	// Content Encoding?
-
-// 	client.append("\r\n");
-// 	// if (isBad(status)) {
-// 	// 	client.append(client.data + 9, statusEnd - 9);
-// 	// 	return;
-// 	// }
-// }
 
 // ======== Constructors ====================
 Request() :
 	type(0),
-	state(0),
 	bodySize(SIZE_MAX) {
 	}
 };

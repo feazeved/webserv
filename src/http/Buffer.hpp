@@ -49,20 +49,45 @@ public:
 		size = 0;
 	}
 
-	usize find_line_end() {
-		usize lineEnd = SIZE_MAX;
-		const u32 maxLength = size == 0 ? 0 : size - 1;
+	bool find_line_end(usize padSize) {
+		start = end != SIZE_MAX ? end : start;	// Previous call found a match
+		end = SIZE_MAX;
+		const usize maxLength = size == 0 ? 0 : size - padSize - 1;	// padSize is how many bytes extra we need
 
 		while (index < maxLength) {
 			if (MEMCMP(data + index, "\r\n", 2) == 0) {
-				lineEnd = index;
+				end = index;
 				index += 2;
-				break;
+				return true; // Found line end
 			}
 			else
 				index++;
 		}
-		return lineEnd;
+		return false;
+	}
+
+	bool find_header_end(usize padSize) {
+		start = end != SIZE_MAX ? end : start;	// Previous call found a match
+		end = SIZE_MAX;
+		const usize maxLength = size == 0 ? 0 : size - padSize - 3;	// padSize is how many bytes extra we need
+
+		while (index < maxLength) {
+			if (MEMCMP(data + index, "\r\n\r\n", 4) == 0) {
+				end = index;
+				index += 4;
+				return true; // Found header end
+			}
+			else
+				index++;
+		}
+		return false;
+	}
+
+	bool prepend(const u8 *ptr, usize length) {
+		if (length > index)
+			return false;
+		index -= length;
+		MEMCPY(data + index, ptr, length);
 	}
 
 	template <usize N>

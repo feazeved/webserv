@@ -5,64 +5,45 @@
 #include "core.hpp"
 #include "http/Request.hpp"
 
-/*
-For post requests, could write into a TMP file instead of overwriting
-Then once it is complete, DEL and MOVE
-
-Read from, write to:   FD
-Read to,   write from: Buffer
-*/
-
-// Buffer swapping could also solve the problem for decoding
-
-/* 
-
-DECODE NORMAL:
-	1) Write from (Client Output) to (Target FD)
-DECODE CHUNKED:
-	1) Dechunk from (Client Output) to (Stack Scratch Buffer)
-	2) Write from (Stack Scratch Buffer) to (Target FD)
-	3) Copy remaining bytes (if any) to client input and compact
-
-ENTRY POINTS:
-	0) Read from (Client FD) into (Client Output)
-
-EXIT POINTS:
-	END) Write from (Client Input) to (Client FD)
-
-Assumption is just finished reading HTTP header and it was parsed as valid
-
---------------------------------------
-POST:
-	1)	Decode from (Client FD) into (File FD)
-	2*)	Build a header in (Client Input)
-
---------------------------------------
-CGI: 
-	1*)	Change (Client Output) offset by 4096
-	2)	Decode from (Client FD) into (CGI IN)
-	3)	Read from (CGI OUT) to (Client Output)
-	4*)	Prepend the header to (Client Output) once CGI header is found
-
---------------------------------------
-DEL:
-	1*)	Delete (File FD)
-	2*)	Build a header in (Client Input)
-
---------------------------------------
-GET:
-	1*)	Build header in (Client Input)
-	2)	Read from (File FD) into (Client Input) 
-
---------------------------------------
-
-Failure conditions are:
-	- body size different than expected or greater than maxBodySize;
-	- failed to write into (File FD)
-	- failed to del or get file
-
-*/
 namespace HTTP {
+// 
+template <usize bufferSize>
+inline isize Request<bufferSize>::configure() {
+	static const u8 transferCheck = HTTP::Attributes::CHUNKED | HTTP::Attributes::METHOD_POST;
+	// Error checking
+	if (status != 0) {	// An error caused early interruption
+		// buildHeader();
+		// Close the connection
+	}
 
-	
+	if ((type & HTTP::Attributes::HOST) == 0) {	// Host wasnt set
+
+	}
+
+}
+
+template <usize bufferSize>
+inline void Request<bufferSize>::buildHeader() {
+	// client.append("HTTP/1.1 ");
+
+	// if (bodySize != SIZE_MAX)
+	// 	client.append("Transfer-Encoding: chunked\r\n");
+	// else
+	// {
+	// 	client.append("Content-Length: ");
+	// 	client.append(requestSize, false);	// Auto performs itoa
+	// }
+
+	// Other lines here
+	// Location
+	// Content Type
+	// Content Encoding?
+
+	// client.append("\r\n");
+	// if (isBad(status)) {
+	// 	client.append(client.data + 9, statusEnd - 9);
+	// 	return;
+	// }
+}
+
 }
