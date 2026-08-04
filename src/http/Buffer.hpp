@@ -1,82 +1,155 @@
 #pragma once
-
 #include <unistd.h>
-#include <sys/epoll.h>
-
 #include "core.hpp"
-#include "HTTP.hpp"
+#include "Request_helpers.inl"
 
-// TODO: add static assertions to sizeof(buffer) being power of two
-
-// There are two fds: the server will read from the clientFd to the input buffer,
-// and the server will read from clientFD to the output buffer
 template <usize bufferSize>
 class Buffer {
+private:
+
 public:
-	u8 data[bufferSize - 2 * sizeof(u32)];
-	u32 readOffset, writeOffset;
 
-	// Methods
-	// 0) No reads, 1) Read, -1) Failed Reading, -2) Line is too big
-	i8 read(i32 fd, usize bytes, u32 events) {
-		if ((events & EPOLLIN) == 0)
-			return -1;		// ERROR: Attempted to read but epoll was not set or ready
+	union {
+		u8 rawData[bufferSize];
+		struct {
+			u8 data[bufferSize - sizeof(usize) * 8];	// Last cache line is reserved for unbounded memory loads
+			usize reserved[4];
+			usize index, size, start, end;
+		};
+	};
 
-		if (readOffset + 1 < writeOffset)
-			return 0;
-		if (writeOffset + bytes > sizeof(data))
-			return -1;	// ERROR: Line is too long
+	isize read(i32 fd, usize bytes) {
+		if (size + bytes > sizeof(data))
+			return -1;	// ERROR: Buffer overflow
 
-		isize bytesRead = ::read(fd, data + writeOffset, bytes);
+		isize bytesRead = ::read(fd, data + size, bytes);
 		if (bytesRead < 0)
-			return -2;	// TODO: Need to distinguish between first read fail and other read fails
-
-		writeOffset += (usize) bytesRead;	// TODO: what do we do on failures?
-		return 1;
+			return -2;
+		size += (usize) bytesRead;	// TODO: what do we do on failures?
+		return bytesRead;
 	}
 
-	i8 readFile(i8 *path, usize reqBytes);
-	i8 writeFile(i8 *path, usize reqBytes);
-
-	i8 write(i32 fd, usize bytes, u32 events) {
-		if ((events & EPOLLOUT) == 0)
-			return -1;		// ERROR: Attempted to write but epoll was not set or ready
-
-		if (readOffset + 1 < writeOffset)
-			return 0;	// Nothing to write, should be an error if the payload isnt 0
-
-		bytes = MIN(bytes, writeOffset - readOffset);
-		isize bytesWritten = ::write(fd, data + readOffset, bytes);	// TODO: The write here reads from a different FD, and from a different buffer too
+	isize write(i32 fd, usize bytes) {
+		usize bytesCapped = MIN(bytes, size - index);
+		isize bytesWritten = ::write(fd, data + index, bytesCapped);
+	
 		if (bytesWritten < 0)
-			return -1;
-		return 1;
+			return bytesWritten;
+		index += (u32) bytesWritten;
+		if (size - index <= 32) {	// Check if this is needed
+			MEMMOVE(data, data + index, 32);
+			size -= index;
+			index = 0;
+		}
+		return bytesWritten;
 	}
 
-	// TODO: Passing state as reference is less clean because state is being mutated from a method outside of Request
-	u32 find_line_end(bool &header_done) {
+	void reset() {
+		index = 0;
+		size = 0;
+	}
 
-		u32 lineEnd = UINT32_MAX;
-		while (readOffset < writeOffset - 1) {
-			if (data[readOffset] == '\r' && data[readOffset + 1] == '\n')
-			{
-				lineEnd = readOffset;
-				readOffset += 2;
-				if (readOffset < writeOffset - 1 && data[readOffset] == '\r' && data[readOffset + 1] == '\n') {
-					readOffset += 2;
-					header_done = true;
-					break;
+	isize find_line_end() {
+		start = end != SIZE_MAX ? end : start;	// Previous call found a match
+		end = SIZE_MAX;
+		const usize maxLength = size == 0 ? 0 : size - 3;
+
+		while (index < maxLength) {
+			if (MEMCMP(data + index, "\r\n", 2) == 0) {
+				end = index;
+				index += 2;
+				if (MEMCMP(data + index, "\r\n", 2) == 0) {
+					index += 2;
+					return 2; // Found header end
 				}
+				return 1; // Found line end
 			}
 			else
-				readOffset++;
+				index++;
 		}
-		return lineEnd;
+		return 0;
 	}
 
-	void clear() {
-		readOffset = 0;
-		writeOffset = 0;
+	bool find_header_end() {
+		start = end != SIZE_MAX ? end : start;	// Previous call found a match
+		end = SIZE_MAX;
+		const usize maxLength = size == 0 ? 0 : size - 3;
+
+		while (index < maxLength) {
+			if (MEMCMP(data + index, "\r\n\r\n", 4) == 0) {
+				end = index;
+				index += 4;
+				return true; // Found header end
+			}
+			else
+				index++;
+		}
+		return false;
 	}
+
+	bool prepend(const u8 *ptr, usize length) {
+		if (length > index)
+			return false;
+		index -= length;
+		MEMCPY(data + index, ptr, length);
+	}
+
+	template <usize N>
+	void append(const char (&string)[N]) {
+		MEMCPY_INLINE(data + size, string, N - 1);
+		size += N - 1;
+	}
+
+	void append(const u8 *ptr, usize length) {
+		MEMCPY(data + size, ptr, length);
+		size += length;
+	}
+
+	// Should be impossible for dst buffer to not fit
+	// TODO: Might remove MIN3 and have it overflow to guarantee behavior
+	usize append(Buffer &src, usize length) {
+		usize remainingSrc = src.size - src.index;	// How many bytes it has read
+		usize remainingDst = sizeof(data) - size;	// How many bytes are free in the buffer
+		usize appendLength = MIN3(length, remainingSrc, remainingDst);
+	
+		MEMCPY(data + size, src.data + index, appendLength);
+		src.index += appendLength;
+		size += appendLength;
+		return appendLength;
+	}
+
+	// TODO: No length checks
+	// TODO: separate functions
+	void append(usize number) {
+		char buffer[48];
+		char *mid = buffer + 24;
+		usize digitLength = s_itoa10(number, mid);
+		char *start = buffer + 24 - digitLength;
+
+		*mid++ = '\r';
+		*mid = '\n';
+
+		MEMCPY_INLINE(data + size, start, 24);
+		size += digitLength;
+	}
+
+	void copy(const Buffer& other) {
+		size = other.size - other.index;
+		index = 0;
+		MEMCPY(data, other.data + other.index, size);
+	}
+
+	Buffer()
+		: index(0), size(0)
+		{
+		}
 };
 
-// parseLine(readOffset - lineOffset);	// TODO: check for errors
+// template <usize bufferSize>
+// union u_buffer {
+// 	struct s_buffer {
+// 		Buffer<bufferSize> reader;
+// 		Buffer<bufferSize> writer;
+// 	};
+// 	Buffer<bufferSize * 2> whole;
+// };

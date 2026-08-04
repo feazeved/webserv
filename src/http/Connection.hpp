@@ -3,53 +3,53 @@
 #include <unistd.h>
 
 #include "core.hpp"
-#include "Request.hpp"
+#include "http/Request.hpp"
+#include "http/Parser.hpp"
 
 namespace HTTP {
+
+// Connection will loop until either there is an unrecoverable error, or a syscall was made
+// The idea is that all information will be processed, and the limiting factor is the influx of new information
+// The new information goes both ways, input and output. A write buffer will only execute one write per connection call
 
 class Connection {
 public:
 	Request request;
+	bool syscalled;
 
-	~Connection() {
-		if (request.fd != -1)
-			close(request.fd);
-	}
+~Connection() {
+	if (request.fd != -1)
+		close(request.fd);
+}
 
-	void	init(i32 fd) {
-		request.fd = fd;
-	}
+void init(i32 fd) {
+	request.fd = fd;
+}
 
-		// its called by ServerManager.run().
-	// return values:
-	// 		REQ_CONTINUE: response is not ready.
-	// 		REQ_CLOSE:	  close the connection (will remove fd from epoll)
-	// 		REQ_WRITE:	  says you're ready to write the response and ServerManager will modify its epoll so that you write
-	//
-	// TODO: check when to return REQ_CLOSE. Maybe should check for events & (EPOLLHUP | EPOLLERR) to close the connection properly.
-	// Maybe should close according to something in the request? Maybe need to close if EPOLLIN && (rvalue = read()) == 0
-	i8	handleEvent(usize bytes, u32 events)
+void clear() {
+}
+
+isize dispatch(usize bytes, u32 events) {
+	isize rvalue = 0;
+
+	while (syscalled == false)
 	{
-		i8 rvalue = 0;
-
-		while (request.syscalled == false)
+		switch (request.state)
 		{
-			switch (request.state)
-			{
-				case HTTP::Attributes::READING:
-					rvalue = request.parse_header(bytes, events);
-					break;
-				case HTTP::Attributes::PROCESSING:
-					rvalue = request.parse_body(bytes, events);
-					break;
-				case HTTP::Attributes::WRITING:
-					rvalue = request.exec(bytes, events);
-					break;
-				default: break;
-			}
+			case HTTP::Attributes::READING:
+				rvalue = request.parse_header(bytes, events);
+				break;
+			case HTTP::Attributes::PROCESSING:
+				rvalue = request.parse_body(bytes, events);
+				break;
+			case HTTP::Attributes::WRITING:
+				rvalue = request.upload(bytes, events);
+				break;
+			default: break;
 		}
-		request.syscalled = false;	// TODO: Change the bitset functions
-		return rvalue;
 	}
+	syscalled = false;	// TODO: Change the bitset functions
+	return rvalue;
+}
 };
 }
