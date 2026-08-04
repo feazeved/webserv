@@ -30,11 +30,16 @@ typedef struct {
 	}	path, query, cookie;
 }	RequestVars;
 
+typedef struct {
+	usize bodySizeMax;
+}	t_servcfg;
+
 template <usize bufferSize>
 class Request {
 public:
 	RequestVars vars;
 	usize bodySize, chunkSize;
+	t_servcfg *cfg;	// Temporary placeholder
 	Buffer<bufferSize> clientInput, clientOutput;
 	struct {
 		i32 client;		// Duplex FD
@@ -52,6 +57,7 @@ public:
 		};
 	};
 
+
 // Parsing
 isize parse_header(usize bytes, u32 events);
 isize parse_first_line(char *str, char *end);
@@ -59,9 +65,13 @@ isize parse_line(char *str, char *end);
 isize parse_target(char *str, char *end);
 
 // Configuration
+isize error_path();
 isize configure();
 void buildHeader();
 void buildCgiHeader();
+isize prepare_cgi();
+isize prepare_server_read();
+isize prepare_server_write();
 
 // HTTP Methods
 isize del_method(usize bytes, u32 events);

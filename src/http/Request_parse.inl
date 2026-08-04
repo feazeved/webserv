@@ -3,7 +3,6 @@
 #include "Request.hpp"
 #include "http/Request_helpers.inl"
 
-
 /*
 Functions: 
 Something that takes the config file for the server and a request, and validates:

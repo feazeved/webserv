@@ -6,19 +6,61 @@
 #include "http/Request.hpp"
 
 namespace HTTP {
-// 
+
 template <usize bufferSize> inline
-isize Request<bufferSize>::configure() {
-	static const u8 transferCheck = HTTP::Attributes::CHUNKED | HTTP::Attributes::POST;
-	// Error checking
-	if (status != 0) {	// An error caused early interruption
+isize Request<bufferSize>::error_path() {
 		// buildHeader();
 		// Close the connection
-	}
+		// Clean files
+		// Reset state
+}
 
-	if ((type & HTTP::Attributes::HOST) == 0) {	// Host wasnt set
+template <usize bufferSize> inline
+isize Request<bufferSize>::prepare_cgi() {
+		// Open pipes, fork, dup fds, execve
+		// Set FDs
+		// Write once to CGI
+		// Start timer
+}
 
-	}
+template <usize bufferSize> inline
+isize Request<bufferSize>::prepare_server_read() {
+		// Open files
+		// Set FDs
+}
+
+template <usize bufferSize> inline
+isize Request<bufferSize>::prepare_server_write() {
+		// Open files
+		// Set FDs
+}
+
+template <usize bufferSize> inline
+isize Request<bufferSize>::configure() {
+	const bool isBodyMethod = type & (Attributes::POST | Attributes::CGI);
+	const bool encodingSet = !(type & Attributes::CHUNKED) && bodySize == SIZE_MAX;
+
+	if (status != 0)
+		return error_path();	// An error caused early interruption
+
+	if ((type & 0xF) == 0)
+		return error_path();	// TODO: Method not set, should be impossible. Remove in future
+
+	if ((type & Attributes::HOST) == 0)
+		return error_path();	// Host not set
+
+	if (isBodyMethod && !encodingSet)
+		return error_path();	// Transfer encoding not set
+	if (!isBodyMethod && encodingSet)
+		return error_path();	// Encoding set for non-body methods
+	bodySize = (bodySize == SIZE_MAX) ? SIZE_MAX : cfg->bodySizeMax;
+	
+	if (type & Attributes::CGI)
+		return prepare_cgi();
+	else if (type & (Attributes::GET | Attributes::DELETE))
+		return prepare_server_read();
+	else if (type & Attributes::POST)
+		return prepare_server_write();
 
 }
 

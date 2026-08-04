@@ -3,6 +3,7 @@
 
 // Compares a string with another ignoring case status;
 // If equal, consumes characters and skips valid spaces
+// TODO: fix this shit
 static inline
 bool s_compare_case(char* &str, char *end, const char* ref, u32 refLength)
 {
