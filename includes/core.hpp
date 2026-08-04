@@ -5,14 +5,9 @@
 #include <climits>
 #define restrict __restrict__
 
-#define ALIGN_SIZE	alignof(std::max_align_t)
-#define WORD_SIZE	sizeof(size_t)
-#define WORD_BITS	(WORD_SIZE * CHAR_BIT)
-#define SIZE_MAX_BASE10_LENGTH ((sizeof(size_t) * CHAR_BIT * 30103) / 100000 + 1)
-
 // Types
-typedef int8_t			i8;
-typedef uint8_t			u8;
+typedef char			i8;
+typedef unsigned char	u8;
 typedef int16_t			i16;
 typedef uint16_t		u16;
 typedef int32_t			i32;
@@ -28,97 +23,48 @@ typedef unsigned short	ushort;
 typedef unsigned int	uint;
 typedef unsigned long	ulong;
 
-// Builtins
-#define ALWAYS_INLINE	static inline __attribute__((always_inline))
-#define NOINLINE		__attribute__((noinline))
-#define PURE			__attribute__((pure))			// Function produces no observable side effects (may read from memory)
-#define KPURE			__attribute__((const))			// Function depends only on its arguments (doesn't read from memory)
-#define PACKED			__attribute__((packed))			// Struct has no padding
-#define ALIGNED(n)		__attribute__((aligned(n)))
-#define COLD			__attribute__((cold))
-#define HOT				__attribute__((hot))
-#define FLATTEN			__attribute__((flatten))		// Function calls inside this function are aggressively inlined
+// Defines
+#define ALIGN_SIZE	alignof(std::max_align_t)
+#define WORD_SIZE	sizeof(size_t)
+#define WORD_BITS	(WORD_SIZE * CHAR_BIT)
+#define SIZE_MAX_BASE10_LENGTH ((sizeof(size_t) * CHAR_BIT * 30103) / 100000 + 1)
+#define SIZE_MAX_BASE16_LENGTH ((sizeof(size_t) * CHAR_BIT + 3) / 4)
 
-#define UNREACHABLE()	__builtin_unreachable()
-#define LIKELY(x)		__builtin_expect(!!(x), 1)
-#define UNLIKELY(x)		__builtin_expect(!!(x), 0)
-#if defined(__clang__)
-	#define ASSUME(x)	__builtin_assume(x)
-#elif defined(__GNUC__)
-	#define ASSUME(x) ((x) ? (void)0 : __builtin_unreachable())
-#endif
+enum e_ascii {
+	ASCII_DIGITS  = 9,   // value <= digits
+	ASCII_HEX     = 15,  // value <= hex
+	ASCII_LETTERS = 35,  // A–Z / a–z map to 10–35
+	ASCII_IDENT   = 36,  // underscore
+	ASCII_SPACE   = 37,
+	ASCII_SYMBOLS = 38,
+	ASCII_CONTROL = 39,
+	ASCII_INVALID = 64   // Null terminator and non-ASCII bytes
+};
 
-#define MEMCPY_BUILTIN(dst, src, n)		__builtin_memcpy(dst, src, n)
-#define MEMMOVE_BUILTIN(dst, src, n)	__builtin_memmove(dst, src, n)
-#define MEMSET_BUILTIN(dst, val, n)		__builtin_memset(dst, val, n)
-#define MEMCHR_BUILTIN(src, val, n)		__builtin_memchr(src, val, n)
-#define MEMCMP_BUILTIN(s1, s2, n)		__builtin_memcmp(s1, s2, n)
+// Tables
+#ifdef MAIN_FILE
+	const u8 g_asciiLut[256] = {
+		127, 39, 39, 39, 39, 39, 39, 39, 39, 37, 37, 37, 37, 37, 39, 39, // 0x00–0x0F
+		39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, 39, // 0x10–0x1F
+		37, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, // 0x20–0x2F
+		0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 38, 38, 38, 38, 38, 38, // 0x30–0x3F: 0–9
+		38, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, // 0x40–0x4F: @, A–O
+		25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 38, 38, 38, 38, 36, // 0x50–0x5F: P–Z, [, \, ], ^, _
+		38, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, // 0x60–0x6F: `, a–o
+		25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 38, 38, 38, 38, 39, // 0x70–0x7F: p–z, {, |, }, ~, DEL
 
-#if defined(__clang__) && __has_builtin(__builtin_memcpy_inline)
-	#define MEMCPY_INLINE(dst, src, n)	__builtin_memcpy_inline(dst, src, n)
+		128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, // 0x80–0x8F
+		144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, // 0x90–0x9F
+		160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, // 0xA0–0xAF
+		176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, // 0xB0–0xBF
+		192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, // 0xC0–0xCF
+		208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, // 0xD0–0xDF
+		224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, // 0xE0–0xEF
+		240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255  // 0xF0–0xFF
+	};
 #else
-	#define MEMCPY_INLINE(dst, src, n)	__builtin_memcpy(dst, src, n)
+	extern const u8 g_asciiLut[256];
 #endif
 
-#if defined(__clang__) && __has_builtin(__builtin_memset_inline)
-	#define MEMSET_INLINE(dst, val, n)	__builtin_memset_inline(dst, val, n)
-#else
-	#define MEMSET_INLINE(dst, val, n)	__builtin_memset(dst, val, n)
-#endif
-
-#define CLZ(x)			__builtin_clzll(x)
-#define CTZ(x)			__builtin_ctzll(x)
-#define POPCOUNT(x)		__builtin_popcountll(x)
-#define FFS(x)			__builtin_ffsll(x)
-#define PARITY(x)		__builtin_parityll(x)
-#define BSWAP16(x)		__builtin_bswap16(x)
-#define BSWAP32(x)		__builtin_bswap32(x)
-#define BSWAP64(x)		__builtin_bswap64(x)
-#define BITREVERSE(x)	__builtin_bitreverse64(x)	// TODO: CLANG SPECIFIC
-
-// === Bit Helpers =========================================
-#define BIT_READ(word, index)	(((word) >> (index)) & 1)
-#define BIT_SET(word, index)	((word) | ((typeof(word))1 << (index)))
-#define BIT_CLR(word, index)	((word) & ~((typeof(word))1 << (index)))
-
-// === MINMAX Helpers ========================================
-#define MIN(x, y)			((x) < (y) ? (x) : (y))
-#define MAX(x, y)			((x) > (y) ? (x) : (y))
-#define ABS(x)				((x) > 0 ? (x) : -(x))
-
-#define CLAMP(x, low, high)	MAX(low, MIN(x, high))
-#define ABSMAX(x, y)		MAX(ABS(x), ABS(y))
-#define ABSMIN(x, y)		MIN(ABS(x), ABS(y))
-#define ABSDIFF(x, y)		(MAX(x, y) - MIN(x, y))
-
-#define MIN3(x, y, z)		MIN(x, MIN(y, z))
-#define MAX3(x, y, z)		MAX(x, MAX(y, z))
-#define MIN4(x, y, z, w)	MIN(MIN(x, y), MIN(z, w))
-#define MAX4(x, y, z, w)	MAX(MAX(x, y), MAX(z, w))
-
-#define ABSMIN3(x, y, z)	MIN3(ABS(x), ABS(y), ABS(z))
-#define ABSMAX3(x, y, z)	MAX3(ABS(x), ABS(y), ABS(z))
-#define ABSMIN4(x, y, z, w)	MIN4(ABS(x), ABS(y), ABS(z), ABS(w))
-#define ABSMAX4(x, y, z, w)	MAX4(ABS(x), ABS(y), ABS(z), ABS(w))
-
-// === Math Helpers ========================================
-#define LOG2(x)				(63u - CLZ(x))	// TODO: maybe math helpers dont belong in this
-
-// === ASCII Helpers =====================================
-#define IS_ASCII(x)       ((x) >= 0 && (x) < 128)
-#define IS_DIGIT(x)       ((x) >= '0' && (x) <= '9')
-#define IS_UPPER(x)       ((x) >= 'A' && (x) <= 'Z')
-#define IS_LOWER(x)       ((x) >= 'a' && (x) <= 'z')
-#define IS_ALPHA(x)       (IS_UPPER(x) || IS_LOWER(x))
-#define IS_ALNUM(x)       (IS_ALPHA(x) || IS_DIGIT(x))
-
-// === Generic Helpers =====================================
-#define ARRAY_SIZE(arr)		(sizeof(arr) / sizeof((arr)[0]))
-#define ARRAY_END(arr)		(&(arr)[ARRAY_SIZE(arr)])
-#define SWAP(a, b) 			({typeof(a) _swap_tmp_ = (a); (a) = (b); (b) = _swap_tmp_; (void)0;})
-
-#define STRINGIFY_(x)		#x
-#define STRINGIFY(x)		STRINGIFY_(x)
-#define ALIGN_UP(x, a)		(((x) + ((a) - 1)) & ~((a) - 1))	// TODO: rename this
-#define ALIGN_DOWN(x, a)	((x) & ~((a) - 1))
-#define IS_POW2(x)			(((x) & ((x) - 1)) == 0)			// UB for x==0
+#include "core_builtins.ipp"
+#include "core_macros.ipp"
