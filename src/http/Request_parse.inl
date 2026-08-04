@@ -19,10 +19,15 @@ isize HTTP::Request<bufferSize>::parse_header(usize bytes, u32 events) {
 	if (bytesRead < 0)
 		return bytesRead;
 
-	while (clientOutput.find_line_end() == true) {
+	isize rvalue;
+	while ((rvalue = clientOutput.find_line_end()) != 0) {
 		u8 *lineStart = clientOutput.data + clientOutput.start;
 		u8 *lineEnd = clientOutput.data + clientOutput.end;
-		parse_line(lineStart, lineEnd);
+		if (parse_line(lineStart, lineEnd) < 0)
+			return error_path();	// ERROR: Invalid header
+		if (rvalue == 2) {
+			// Header end, call configure() and setup
+		}
 	}
 	return 0;	// Actually should return something more useful like request status (processing, etc)
 }

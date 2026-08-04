@@ -59,9 +59,8 @@ isize Request<bufferSize>::configure() {
 		return prepare_cgi();
 	else if (type & (Attributes::GET | Attributes::DELETE))
 		return prepare_server_read();
-	else if (type & Attributes::POST)
+	else
 		return prepare_server_write();
-
 }
 
 template <usize bufferSize> inline
