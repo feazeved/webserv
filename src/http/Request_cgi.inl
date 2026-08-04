@@ -4,9 +4,23 @@
 #include <fcntl.h>
 #include <sys/epoll.h>
 #include "core.hpp"
+#include "core_macros.inl"
+#include "http/Buffer.hpp"
 #include "http/Request.hpp"
 
+extern time_t g_timeNow;
+
 namespace HTTP {
+static inline
+isize s_close_all(int *fdInput, int *fdOutput) {
+	close(fdInput[0]);	// Child Read End
+	close(fdInput[1]);	// Parent Write End
+	if (fdOutput != NULL) {
+		close(fdOutput[0]);	// Parent Read End
+		close(fdOutput[1]);	// Child Write End		
+	}
+	return -1;
+}
 
 template <usize bufferSize> inline
 isize Request<bufferSize>::cgi_first_run() {
@@ -15,31 +29,22 @@ isize Request<bufferSize>::cgi_first_run() {
 
 	if (pipe(fdInput) == -1)
 		return -1;
-	if (pipe(fdOutput) == -1) {
-		close(fdInput[0]);	// Child Read End
-		close(fdInput[1]);	// Parent Write End
-		return -1;
-	}
+	if (pipe(fdOutput) == -1)
+		return s_close_all(fdInput, NULL);
+	if (s_set_noblock(fdOutput[0]) == false || s_set_noblock(fdInput[1]) == false)
+		return s_close_all(fdInput, fdOutput);
 
 	processId = fork();
-	if (processId < 0) {
-		close(fdInput[0]);	// Child Read End
-		close(fdInput[1]);	// Parent Write End
-		close(fdOutput[0]);	// Parent Read End
-		close(fdOutput[1]);	// Child Write End
-		return -1;
-	}
+	if (processId < 0)
+		return s_close_all(fdInput, fdOutput);
 
 	if (processId == 0) {
 		bool fail = dup2(STDOUT_FILENO, fdOutput[1]) == -1 || dup2(STDIN_FILENO, fdInput[0]) == -1;
-		close(fdInput[1]);
-		close(fdOutput[0]);
-		close(fdInput[0]);
-		close(fdOutput[1]);
+		s_close_all(fdInput, fdOutput);
 		if (fail) {
 			close(STDOUT_FILENO);
 			close(STDIN_FILENO);
-			return -1;
+			_exit(1);	// TODO: Appropriate return
 		}
 		// execve
 		_exit(1);
@@ -49,14 +54,20 @@ isize Request<bufferSize>::cgi_first_run() {
 	close(fdOutput[1]);
 	fd.readEnd = fdOutput[0];
 	fd.writeEnd = fdInput[1];
-	// Write once to CGI
-	// Start timer
+	cgiStartTime = g_timeNow;
 }
 
-/*
-The pipe fds here are configured to be non-blocking and read/write errors are ignored
-Failure conditions for these fds are instead handled by CGI timeouts
-*/
+/*	Header is built in stack memory while parsing the header from client output
+	When the header is built, it then appends part of the CGI body to tmp buffer
+	up to how many bytes will fit in a single write */
+template <usize bufferSize> inline
+isize Request<bufferSize>::buildCgiHeader() {
+	Buffer<bufferSize> tmpBuffer;
+
+}
+
+/*	The pipe fds here are configured to be non-blocking and read/write errors are ignored
+	Failure conditions for these fds are instead handled by CGI timeouts */
 template <usize bufferSize> inline
 isize Request<bufferSize>::cgi_method(usize bytes, u32 events) {
 	isize bytesRead, bytesWritten;
@@ -68,10 +79,13 @@ isize Request<bufferSize>::cgi_method(usize bytes, u32 events) {
 	bytesWritten = write_to_server(bytes);
 	bytesRead = read_from_server(bytes);
 
+	isize delta = ((bytesWritten < 0) ? -1 : 1) + ((bytesRead < 0) ? -1 : 1);
+	bonusTime = CLAMP(bonusTime + delta, -30, 30);
+
 	// Return path until the operation isnt complete
 	if (status == 0) {
 		if (clientOutput.find_header_end() == false) {
-			if (clientOutput.size > 8000)	// TODO: Fix magic variable
+			if (clientOutput.is_full())
 				return -1;	// ERROR: CGI Header is too big
 			return 0;	// Still no CGI Header
 		}
