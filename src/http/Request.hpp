@@ -43,7 +43,8 @@ public:
 	t_servcfg *cfg;	// Temporary placeholder
 	Buffer<bufferSize> clientInput, clientOutput;
 
-	time_t cgiStarted;
+	time_t startTime, cgiStartTime;
+	time_t bonusTime;	// Value ranging from -30s to 30s
 	pid_t processId;
 
 	struct {
@@ -72,7 +73,7 @@ isize parse_target(char *str, char *end);
 isize error_path();
 isize configure();
 void buildHeader();
-void buildCgiHeader();
+isize buildCgiHeader();
 isize cgi_first_run();
 isize get_first_run();
 isize post_first_run();

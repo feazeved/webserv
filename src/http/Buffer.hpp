@@ -49,6 +49,10 @@ public:
 		size = 0;
 	}
 
+	bool is_full() {
+		return size == sizeof(data);
+	}
+
 	isize find_line_end() {
 		start = end != SIZE_MAX ? end : start;	// Previous call found a match
 		end = SIZE_MAX;

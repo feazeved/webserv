@@ -1,5 +1,6 @@
 #pragma once
 #include "core.hpp"
+#include "fcntl.h"
 
 // Compares a string with another ignoring case status;
 // If equal, consumes characters and skips valid spaces
@@ -98,4 +99,17 @@ usize s_strtol10(const char* str) {
 	if (ostr == str || MEMCMP(str, "\r\n", 2) != 0)
 		return SIZE_MAX;
 	return value;
+}
+
+static inline
+bool s_set_noblock(int fd)
+{
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1)
+		return false;
+
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+		return false;
+
+	return true;
 }
