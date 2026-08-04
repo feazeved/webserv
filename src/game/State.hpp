@@ -72,10 +72,6 @@ public:
 		pendingEvents.push_back(ev);
 	}
 
-	void	update() {
-
-	}
-
 	void	addSSEClient(i32 fd) {
 		sseClients.push_back(fd);
 	}
@@ -112,8 +108,6 @@ public:
 			ss << "}\n\n";
 		}
 		json = ss.str();
-		for (usize i = 0; i < sseClients.size(); i++) {
-		}
 		pendingEvents.clear();
 	}
 

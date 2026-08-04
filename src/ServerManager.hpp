@@ -82,6 +82,8 @@ public:
 					}
 				}
 			}
+
+			broadcast();
 		}
 	}
 
@@ -183,6 +185,10 @@ private:
 			return (false);
 		index = i;
 		return (true);
+	}
+
+	void	updateEpollSSE() {
+		const std::vector<i32>	clients =
 	}
 
 	// To prevent copying
