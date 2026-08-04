@@ -4,97 +4,96 @@
 #include <sys/epoll.h>
 
 #include "core.hpp"
-#include "Request_helpers.hpp"
+#include "Request_helpers.inl"
 #include "http/Buffer.hpp"
-
-// Implement a compact function so that if necessary, moves cookie to the end of query so that path + query + cookie < 8192
-
-// Implement state actions to Request so that it switches between reading and writing seamlessly
-	// It needs to set the epoll variables and confirm upon entry that it can write
-	// With chunked transfer encoding, it will constantly switch between read and write
-
-// Implement method actions to Request so that it can GET, POST, DELETE, CGI or ERROR
-	// This involves returning a HTTP Header with the appropriate status code and the payload
-
 
 namespace HTTP {
 
+namespace Attributes {
+
+enum Attributes {
+	GET = 1 << 0,
+	POST = 1 << 1,
+	DELETE = 1 << 2,
+	CGI = 1 << 3,
+	HOST = 1 << 4,
+	CHUNKED = 1 << 5,
+	DONE = 1 << 7
+
+};
+}
+
 typedef struct {
-	struct
-	{
+	struct {
 		u32	index;
 		u32 size;
 	}	path, query, cookie;
 }	RequestVars;
 
-// Class has a read call that consumes lines
-// Possible states:
-// Reading: Reading Header, Reading Body
-// Writing: 
-// Limits: ~8kb per line, ~4kb for the target
+typedef struct {
+	usize bodySizeMax;
+}	t_servcfg;
+
+template <usize bufferSize>
 class Request {
 public:
-	i32 fd;
-	Buffer<8192> input;
-	u8 type; // bitfield: (-) (-) (CHUNKED) (HOST) (HTTP VERSION) (DELETE) (POST) (GET)
-	u8 state;
-	u32 lineIndex, lineCount;
-	bool syscalled;
 	RequestVars vars;
-	u64 requestSize;
+	usize bodySize, chunkSize;
+	t_servcfg *cfg;	// Temporary placeholder
+	Buffer<bufferSize> clientInput, clientOutput;
+	struct {
+		i32 client;		// Duplex FD
+		i32 writeEnd;	// CGI Input or POST
+		i32 readEnd;	// CGI Output or GET/DEL
+	} fd;
 
-// Reading state for the header, returns true when finished parsing the header
-i8 parse_header(usize bytes, u32 events) {
-	i8 rvalue = input.read(fd, bytes, events);
-	if (rvalue < 0)
-		return -1;	// ERROR: Failed reading
+	union {
+		u64 state;
+		struct {
+			u32 metadata;
+			u16 status;
+			u8 info;
+			u8 type;
+		};
+	};
 
-	bool header_done = false;
-	u32 lineEnd = input.find_line_end(header_done);
-	if (lineEnd == UINT32_MAX)	// Not done reading a line
-		return 0;
 
-	const char *ptr = (const char *)input.data;
-	if (header_done)
-		state = (HTTP::Attributes::PROCESSING);
+// Parsing
+isize parse_header(usize bytes, u32 events);
+isize parse_first_line(char *str, char *end);
+isize parse_line(char *str, char *end);
+isize parse_target(char *str, char *end);
 
-	if (parseLine(ptr + lineIndex, ptr + lineEnd, lineCount) != 0)
-		return -1; // TODO: This also determines if the parsing is done, given errors exist
-	lineCount++;
-	lineIndex = lineEnd;
-	return 0;	// Actually should return something more useful like request status (processing, etc)
-}
+// Configuration
+isize error_path();
+isize configure();
+void buildHeader();
+void buildCgiHeader();
+isize prepare_cgi();
+isize prepare_server_read();
+isize prepare_server_write();
 
-// Reading state for the body
-i8 parse_body(usize bytes, u32 events) {
-	// if (input.read(bytes, events) < 0)
-	// 	return -1;	// ERROR: Failed reading
+// HTTP Methods
+isize del_method(usize bytes, u32 events);
+isize get_method(usize bytes, u32 events);
+isize post_method(usize bytes, u32 events);
+isize cgi_method(usize bytes, u32 events);
 
-}
+// Common
+isize read_from_server(usize bytes);
+isize write_to_server(usize bytes);
+isize write_to_client(usize bytes, u32 events);
+isize read_from_client(usize bytes, u32 events);
+isize dechunk(usize bytes, Buffer<bufferSize>& src);
 
-isize exec(usize bytes, u32 events) {
-
-}
-
-void close() {
-	// close operations
-	type = 0;
-	input.clear();
-}
-
-i32 parseTarget(const char *str, const char *end);
-i32 parseFirstLine(const char *str, const char *end);
-i32 parseLine(const char *str, const char *end, u32 lineCount);
+// This function dechunks from a source buffer to a stack buffer, then writes from this stack buffer
+// Any bytes that weren't consumed by the write are copied back to the start of the source buffer, 
+// effectively performing compaction.
 
 // ======== Constructors ====================
 Request() :
-	fd(-1),
-	input(),
 	type(0),
-	state(0),
-	requestSize(SIZE_MAX) {
+	bodySize(SIZE_MAX) {
 	}
 };
 }
-
-#include "Request_parse.hpp"

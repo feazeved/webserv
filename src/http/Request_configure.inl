@@ -1,0 +1,91 @@
+#pragma once
+
+#include <unistd.h>
+#include <sys/epoll.h>
+#include "core.hpp"
+#include "http/Request.hpp"
+
+namespace HTTP {
+
+template <usize bufferSize> inline
+isize Request<bufferSize>::error_path() {
+		// buildHeader();
+		// Close the connection
+		// Clean files
+		// Reset state
+}
+
+template <usize bufferSize> inline
+isize Request<bufferSize>::prepare_cgi() {
+		// Open pipes, fork, dup fds, execve
+		// Set FDs
+		// Write once to CGI
+		// Start timer
+}
+
+template <usize bufferSize> inline
+isize Request<bufferSize>::prepare_server_read() {
+		// Open files
+		// Set FDs
+}
+
+template <usize bufferSize> inline
+isize Request<bufferSize>::prepare_server_write() {
+		// Open files
+		// Set FDs
+}
+
+template <usize bufferSize> inline
+isize Request<bufferSize>::configure() {
+	const bool isBodyMethod = type & (Attributes::POST | Attributes::CGI);
+	const bool encodingSet = !(type & Attributes::CHUNKED) && bodySize == SIZE_MAX;
+
+	if (status != 0)
+		return error_path();	// An error caused early interruption
+
+	if ((type & 0xF) == 0)
+		return error_path();	// TODO: Method not set, should be impossible. Remove in future
+
+	if ((type & Attributes::HOST) == 0)
+		return error_path();	// Host not set
+
+	if (isBodyMethod && !encodingSet)
+		return error_path();	// Transfer encoding not set
+	if (!isBodyMethod && encodingSet)
+		return error_path();	// Encoding set for non-body methods
+	bodySize = (bodySize == SIZE_MAX) ? SIZE_MAX : cfg->bodySizeMax;
+	
+	if (type & Attributes::CGI)
+		return prepare_cgi();
+	else if (type & (Attributes::GET | Attributes::DELETE))
+		return prepare_server_read();
+	else if (type & Attributes::POST)
+		return prepare_server_write();
+
+}
+
+template <usize bufferSize> inline
+void Request<bufferSize>::buildHeader() {
+	// client.append("HTTP/1.1 ");
+
+	// if (bodySize != SIZE_MAX)
+	// 	client.append("Transfer-Encoding: chunked\r\n");
+	// else
+	// {
+	// 	client.append("Content-Length: ");
+	// 	client.append(requestSize, false);	// Auto performs itoa
+	// }
+
+	// Other lines here
+	// Location
+	// Content Type
+	// Content Encoding?
+
+	// client.append("\r\n");
+	// if (isBad(status)) {
+	// 	client.append(client.data + 9, statusEnd - 9);
+	// 	return;
+	// }
+}
+
+}

@@ -1,6 +1,6 @@
 # Configuration ------------------------------- #
 NAME = webserv
-VPATH = src test
+VPATH = src test src/http src/utils
 MAIN_SRC = main.cpp
 CORE_SRC = parseConfig.cpp
 TEST_SRC = test_main.cpp test_parseConfig.cpp
@@ -10,7 +10,7 @@ ARG = config/default.conf
 # Defaults ------------------------------------ #
 RM := rm -f
 BUILD_PATH = build
-INC_PATH = includes src test src/http
+INC_PATH = $(VPATH) + includes
 OBJ_PATH = $(BUILD_PATH)/obj
 BIN = build/$(NAME)
 TEST_BIN = $(BIN)_test
