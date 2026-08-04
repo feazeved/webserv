@@ -66,5 +66,5 @@ enum e_ascii {
 	extern const u8 g_asciiLut[256];
 #endif
 
-#include "core_builtins.inl"
-#include "core_macros.inl"
+#include "core_builtins.ipp"
+#include "core_macros.ipp"

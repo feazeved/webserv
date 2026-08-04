@@ -4,12 +4,12 @@
 #include <fcntl.h>
 #include <sys/epoll.h>
 #include "core.hpp"
-#include "http/Request.hpp"
+#include "http/Connection.hpp"
 
 namespace HTTP {
 
 template <usize bufferSize> inline
-isize Request<bufferSize>::error_path() {
+isize Connection<bufferSize>::error_path() {
 		// buildHeader();
 		// Close the connection
 		// Clean files
@@ -17,7 +17,7 @@ isize Request<bufferSize>::error_path() {
 }
 
 template <usize bufferSize> inline
-isize Request<bufferSize>::configure() {
+isize Connection<bufferSize>::configure() {
 	const bool isBodyMethod = type & (Attributes::POST | Attributes::CGI);
 	const bool encodingSet = !(type & Attributes::CHUNKED) && bodySize == SIZE_MAX;
 
@@ -45,7 +45,7 @@ isize Request<bufferSize>::configure() {
 }
 
 template <usize bufferSize> inline
-void Request<bufferSize>::buildHeader() {
+void Connection<bufferSize>::buildHeader() {
 	// client.append("HTTP/1.1 ");
 
 	// if (bodySize != SIZE_MAX)

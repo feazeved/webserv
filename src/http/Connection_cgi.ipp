@@ -4,9 +4,9 @@
 #include <fcntl.h>
 #include <sys/epoll.h>
 #include "core.hpp"
-#include "core_macros.inl"
+#include "core_macros.ipp"
 #include "http/Buffer.hpp"
-#include "http/Request.hpp"
+#include "http/Connection.hpp"
 
 extern time_t g_timeNow;
 
@@ -23,7 +23,7 @@ isize s_close_all(int *fdInput, int *fdOutput) {
 }
 
 template <usize bufferSize> inline
-isize Request<bufferSize>::cgi_first_run() {
+isize Connection<bufferSize>::cgi_first_run() {
 	int fdInput[2];
 	int fdOutput[2];
 
@@ -61,7 +61,7 @@ isize Request<bufferSize>::cgi_first_run() {
 	When the header is built, it then appends part of the CGI body to tmp buffer
 	up to how many bytes will fit in a single write */
 template <usize bufferSize> inline
-isize Request<bufferSize>::buildCgiHeader() {
+isize Connection<bufferSize>::buildCgiHeader() {
 	Buffer<bufferSize> tmpBuffer;
 
 }
@@ -69,7 +69,7 @@ isize Request<bufferSize>::buildCgiHeader() {
 /*	The pipe fds here are configured to be non-blocking and read/write errors are ignored
 	Failure conditions for these fds are instead handled by CGI timeouts */
 template <usize bufferSize> inline
-isize Request<bufferSize>::cgi_method(usize bytes, u32 events) {
+isize Connection<bufferSize>::cgi_method(usize bytes, u32 events) {
 	isize bytesRead, bytesWritten;
 
 	bytesRead = read_from_client(bytes, events);
@@ -79,8 +79,8 @@ isize Request<bufferSize>::cgi_method(usize bytes, u32 events) {
 	bytesWritten = write_to_server(bytes);
 	bytesRead = read_from_server(bytes);
 
-	isize delta = ((bytesWritten < 0) ? -1 : 1) + ((bytesRead < 0) ? -1 : 1);
-	bonusTime = CLAMP(bonusTime + delta, -30, 30);
+	isize delta = ((bytesWritten < 0 || bytesRead < 0) ? -1 : 1);
+	bonusTime = CLAMP(bonusTime + delta, 0, 30);
 
 	// Return path until the operation isnt complete
 	if (status == 0) {
