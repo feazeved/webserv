@@ -9,12 +9,46 @@
 namespace HTTP {
 
 template <usize bufferSize> inline
-isize Request<bufferSize>::prepare_cgi() {
+isize Request<bufferSize>::cgi_first_run() {
+	int fdInput[2];
+	int fdOutput[2];
 
-	open()
-	// Open CGI here (invalid CGIs should be checked in parsing, not here)
-	// Open pipes, fork, dup fds, execve
-	// Set FDs
+	if (pipe(fdInput) == -1)
+		return -1;
+	if (pipe(fdOutput) == -1) {
+		close(fdInput[0]);	// Child Read End
+		close(fdInput[1]);	// Parent Write End
+		return -1;
+	}
+
+	processId = fork();
+	if (processId < 0) {
+		close(fdInput[0]);	// Child Read End
+		close(fdInput[1]);	// Parent Write End
+		close(fdOutput[0]);	// Parent Read End
+		close(fdOutput[1]);	// Child Write End
+		return -1;
+	}
+
+	if (processId == 0) {
+		bool fail = dup2(STDOUT_FILENO, fdOutput[1]) == -1 || dup2(STDIN_FILENO, fdInput[0]) == -1;
+		close(fdInput[1]);
+		close(fdOutput[0]);
+		close(fdInput[0]);
+		close(fdOutput[1]);
+		if (fail) {
+			close(STDOUT_FILENO);
+			close(STDIN_FILENO);
+			return -1;
+		}
+		// execve
+		_exit(1);
+	}
+
+	close(fdInput[0]);
+	close(fdOutput[1]);
+	fd.readEnd = fdOutput[0];
+	fd.writeEnd = fdInput[1];
 	// Write once to CGI
 	// Start timer
 }

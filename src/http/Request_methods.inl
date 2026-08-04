@@ -4,13 +4,19 @@
 namespace HTTP {
 
 template <usize bufferSize> inline
-isize Request<bufferSize>::prepare_server_read() {
+isize Request<bufferSize>::get_first_run() {
 		// Open files
 		// Set FDs
 }
 
 template <usize bufferSize> inline
-isize Request<bufferSize>::prepare_server_write() {
+isize Request<bufferSize>::del_first_run() {
+		// Open files
+		// Set FDs
+}
+
+template <usize bufferSize> inline
+isize Request<bufferSize>::post_first_run() {
 		// Open files
 		// Set FDs
 }

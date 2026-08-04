@@ -37,11 +37,11 @@ isize Request<bufferSize>::configure() {
 	bodySize = (bodySize == SIZE_MAX) ? SIZE_MAX : cfg->bodySizeMax;
 	
 	if (type & Attributes::CGI)
-		return prepare_cgi();
+		return cgi_first_run();
 	else if (type & (Attributes::GET | Attributes::DELETE))
-		return prepare_server_read();
+		return get_first_run();
 	else
-		return prepare_server_write();
+		return post_first_run();
 }
 
 template <usize bufferSize> inline

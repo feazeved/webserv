@@ -6,6 +6,7 @@
 #include "core.hpp"
 #include "Request_helpers.inl"
 #include "http/Buffer.hpp"
+#include <ctime>
 
 namespace HTTP {
 
@@ -42,6 +43,9 @@ public:
 	t_servcfg *cfg;	// Temporary placeholder
 	Buffer<bufferSize> clientInput, clientOutput;
 
+	time_t cgiStarted;
+	pid_t processId;
+
 	struct {
 		i32 client;		// Duplex FD
 		i32 writeEnd;	// CGI Input or POST
@@ -69,9 +73,10 @@ isize error_path();
 isize configure();
 void buildHeader();
 void buildCgiHeader();
-isize prepare_cgi();
-isize prepare_server_read();
-isize prepare_server_write();
+isize cgi_first_run();
+isize get_first_run();
+isize post_first_run();
+isize del_first_run();
 
 // HTTP Methods
 isize del_method(usize bytes, u32 events);
