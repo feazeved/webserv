@@ -1,36 +1,36 @@
 #pragma once
-#include "Request.hpp"
+#include "Connection.hpp"
 
 namespace HTTP {
 
 template <usize bufferSize> inline
-isize Request<bufferSize>::get_first_run() {
+isize Connection<bufferSize>::get_first_run() {
 		// Open files
 		// Set FDs
 }
 
 template <usize bufferSize> inline
-isize Request<bufferSize>::del_first_run() {
+isize Connection<bufferSize>::del_first_run() {
 		// Open files
 		// Set FDs
 }
 
 template <usize bufferSize> inline
-isize Request<bufferSize>::post_first_run() {
+isize Connection<bufferSize>::post_first_run() {
 		// Open files
 		// Set FDs
 }
 
 // === DEL ==========================================================================
 template <usize bufferSize> inline // Header will already be built in the configure function
-isize Request<bufferSize>::del_method(usize bytes, u32 events) {
+isize Connection<bufferSize>::del_method(usize bytes, u32 events) {
 	return write_to_client(bytes, events);
 }
 
 // === GET ==========================================================================
 // Header will already be built in the configure function
 template <usize bufferSize>
-isize Request<bufferSize>::get_method(usize bytes, u32 events) {
+isize Connection<bufferSize>::get_method(usize bytes, u32 events) {
 	isize bytesRead = read_from_server(bytes);
 	if (bytesRead < 0)
 		return bytesRead;
@@ -39,7 +39,7 @@ isize Request<bufferSize>::get_method(usize bytes, u32 events) {
 
 // === POST =========================================================================
 template <usize bufferSize> inline
-isize Request<bufferSize>::post_method(usize bytes, u32 events) {
+isize Connection<bufferSize>::post_method(usize bytes, u32 events) {
 	isize bytesRead = read_from_client(bytes, events);
 	if (bytesRead < 0)
 		return bytesRead;

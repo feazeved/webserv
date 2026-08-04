@@ -1,7 +1,7 @@
 #pragma once
 #include <unistd.h>
 #include "core.hpp"
-#include "Request_helpers.inl"
+#include "Connection_helpers.ipp"
 
 template <usize bufferSize>
 class Buffer {

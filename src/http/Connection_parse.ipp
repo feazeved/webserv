@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Request.hpp"
-#include "http/Request_helpers.inl"
+#include "Connection.hpp"
+#include "http/Connection_helpers.ipp"
 
 namespace HTTP {
 
@@ -16,7 +16,7 @@ Function receives a file path, a buffer, IO direction (read or write), number of
 */
 // (Reentrant) Reading state for the header, returns true when finished parsing the header
 template <usize bufferSize> inline
-isize Request<bufferSize>::parse_header(usize bytes, u32 events) {
+isize Connection<bufferSize>::parse_header(usize bytes, u32 events) {
 	isize bytesRead = read_from_client(bytes, events);
 	if (bytesRead < 0)
 		return bytesRead;
@@ -35,7 +35,7 @@ isize Request<bufferSize>::parse_header(usize bytes, u32 events) {
 }
 
 template <usize bufferSize> inline
-isize Request<bufferSize>::parse_target(char *str, char *end) {
+isize Connection<bufferSize>::parse_target(char *str, char *end) {
 	const char *p = str;
 	const char *questionMark = NULL;
 
@@ -69,7 +69,7 @@ isize Request<bufferSize>::parse_target(char *str, char *end) {
 }
 
 template <usize bufferSize> inline
-isize Request<bufferSize>::parse_first_line(char *str, char *end) {
+isize Connection<bufferSize>::parse_first_line(char *str, char *end) {
 	if (end - str < 14)
 		return -1;	// ERROR: Bad request "GET / HTTP/1.0" shortest possible
 	if (MEMCMP(str, "GET ", 4) == 0) {
@@ -101,7 +101,7 @@ isize Request<bufferSize>::parse_first_line(char *str, char *end) {
 }
 
 template <usize bufferSize> inline
-isize Request<bufferSize>::parse_line(char *str, char *end) {
+isize Connection<bufferSize>::parse_line(char *str, char *end) {
 	if (s_compare_case(str, end, "host:", 5) == true) {
 		if (type & Attributes::HOST)
 			return -1;	// ERROR: Multiple hosts
