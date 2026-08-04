@@ -96,15 +96,13 @@ void parseDirective(std::vector<token>::const_iterator &cursor, std::vector<toke
     {
         arguments.push_back(cursor->value);
         advance(cursor, end);
-        //cursor++;
     }
     if(cursor->type != parseConfig::SEMICOLON)
         throw std::runtime_error("Unexpected token");
     dir.args = arguments;
 }
 
-// Alex: Lembra que se nao for referencia aqui ele cria copia
-static long stt_strtol(std::string str)
+static long stt_strtol(std::string& str)
 {
     const char *sptr = str.c_str();
     char *eptr = NULL;
@@ -210,10 +208,10 @@ void setServerDirective(Directive &dir, HTTP::ServerConfig &server){
     {
         if(dir.args.size() != 2)
             throw std::runtime_error("Invalid error page");
-        server.errors[0] = stt_strtol(dir.args.at(0));
-        server.errors[1] = dir.args.at(1);
-        if(server.errors[0] < 100 || server.errors.at(0) > 599)
+        i64	error = stt_strtol(dir.args.at(0));
+        if(error < 400 || error > 599)
             throw std::runtime_error("Invalid error number");
+        server.errors[error] = dir.args.at(1);
     }
     else
         throw std::runtime_error("Invalid server directive");

@@ -24,7 +24,7 @@ public:
 			throw std::runtime_error("invalid BlockVector size");
 		instance() = this;
 		usize numServers = configs.size();
-		while (servers.allocdSize() < numServers) {
+		while (servers.capacity() < numServers) {
 			if (!servers.grow())
 				throw std::bad_alloc();
 		}
@@ -45,7 +45,7 @@ public:
 		(void)signal(SIGINT, handleSignal);
 		(void)signal(SIGPIPE, SIG_IGN);
 
-		for (usize i = 0; i < servers.allocdSize() && servers[i].getFd() != -1; i++) {
+		for (usize i = 0; i < servers.size(); i++) {
 			addToEpoll(servers[i].getFd(), EPOLLIN, &servers[i]);
 		}
 
@@ -67,35 +67,35 @@ public:
 				if (isListeningSocket(ptr)) {
 					handleNewConnection(static_cast<Server*>(ptr));
 				} else {
-					HTTP::Connection*		conn  = static_cast<HTTP::Connection*>(ptr);
-					HTTP::Attributes::State	state = conn->handleEvent(0, events[i].events);
+					HTTP::Connection<s_bufferSize>*		conn  = static_cast<HTTP::Connection<s_bufferSize>*>(ptr);
+					i32	returnValue = conn->dispatch();
 
-					switch (state) {
-						case HTTP::Attributes::State::PROCESSING:
+					switch (returnValue) {
+						case 0:
 							closeConnection(conn);
 							break ;
-						case HTTP::Attributes::State::WRITING:
-							modifyEpollEvent(conn->request.fd, EPOLLOUT, conn);
+						case 1:
 							break ;
-						case HTTP::Attributes::State:::
+						default:
 							break ;
 					}
 				}
 			}
-
-			broadcast();
+			// TODO
+			//broadcast();
 		}
 	}
 
 private:
-	static const usize											s_maxEvents = 16;
-	static const usize											s_serverBlockSize = 8;
-	static const usize											s_connectionBlockSize = 32;
+	static const usize														s_maxEvents = 16;
+	static const usize														s_serverBlockSize = 8;
+	static const usize														s_connectionBlockSize = 32;
+	static const usize														s_bufferSize = 1024;
 
-	BlockVector<Server, s_serverBlockSize, 16>					servers;
-	BlockVector<HTTP::Connection, s_connectionBlockSize, 64>	connections;
-	i32															epoll_fd;
-	volatile bool												running;
+	BlockVector<Server, s_serverBlockSize, 16>								servers;
+	BlockVector<HTTP::Connection<s_bufferSize>, s_connectionBlockSize, 64>	connections;
+	i32																		epoll_fd;
+	volatile bool															running;
 
 
 	static ServerManager*&	instance() {
@@ -130,7 +130,7 @@ private:
 	}
 
 	bool	isListeningSocket(void* ptr) {
-		for (usize i = 0; i < servers.allocdSize(); i++) {
+		for (usize i = 0; i < servers.size(); i++) {
 			if (ptr == &servers[i])
 				return (true);
 		}
@@ -155,40 +155,21 @@ private:
 			return ;
 		}
 
-		usize	index;
-		if (getFreeConnection(index) == false) {
+		usize	index = connections.find_free_slot();
+		if (index == SIZE_MAX) {
 			close(clientFd);
 			throw std::bad_alloc();
 		}
-		connections[index].init(clientFd);
-		addToEpoll(clientFd, EPOLLIN, &connections[index]);
+		connections[index].init(clientFd, &server->getConfig());
+		// Dont know if this is the best option. I think having the EPOLLOUT will make the connection be returned always
+		addToEpoll(clientFd, EPOLLIN | EPOLLOUT, &connections[index]);
 	}
 
-	void	closeConnection(HTTP::Connection* conn) {
-		for (usize i = 0; i < connections.allocdSize(); i++) {
-			if (&connections[i] == conn) {
-				removeFromEpoll(conn->request.fd);
-				break ;
-			}
-		}
-	}
-
-	bool	getFreeConnection(usize& index) {
-		usize i;
-		for (i = 0; i < connections.allocdSize(); i++) {
-			if (connections[i].request.fd == -1) {
-				index = i;
-				return (true);
-			}
-		}
-		if (connections.grow() == false)
-			return (false);
-		index = i;
-		return (true);
+	void	closeConnection(HTTP::Connection<s_bufferSize>* conn) {
+		removeFromEpoll(conn->fd.client);
 	}
 
 	void	updateEpollSSE() {
-		const std::vector<i32>	clients =
 	}
 
 	// To prevent copying

@@ -1,9 +1,6 @@
 #pragma once
 
 #include <core.hpp>
-#include "Player.hpp"
-
-class Player;
 
 namespace Game {
 	enum Direction {
