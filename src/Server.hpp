@@ -11,6 +11,7 @@
 #include <netdb.h>
 
 #include "HTTP.hpp"
+#include "State.hpp"
 #include "core.hpp"
 
 class Server {
@@ -47,17 +48,18 @@ public:
 	}
 
 	i32	getFd() const { return (listenFd); }
-	const HTTP::ServerConfig&	getConfig() const { return (config); }
+	HTTP::ServerConfig&	getConfig() { return (config); }
 
 private:
 	HTTP::ServerConfig	config;
 	i32					listenFd;
+	Game::State			State;
 
 	static sockaddr_in	resolveHostAndPort(const std::string& host, i64 port) {
 		std::string	hostToResolve = host.empty() ? "0.0.0.0" : host;
 
 		addrinfo hints;
-		MEMSET_BUILTIN(&hints, 0, sizeof(hints));
+		MEMSET(&hints, 0, sizeof(hints));
 		hints.ai_family = AF_INET;
 		hints.ai_socktype = SOCK_STREAM;
 
@@ -70,8 +72,8 @@ private:
 		}
 
 		sockaddr_in	addr;
-		MEMSET_BUILTIN(&addr, 0, sizeof(addr));
-		MEMCPY_BUILTIN(&addr, result->ai_addr, sizeof(sockaddr_in));
+		MEMSET(&addr, 0, sizeof(addr));
+		MEMCPY(&addr, result->ai_addr, sizeof(sockaddr_in));
 
 		addr.sin_port = htons(port);
 
