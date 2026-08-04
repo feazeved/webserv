@@ -1,8 +1,10 @@
 #pragma once
 #include "Request.hpp"
 
+namespace HTTP {
+
 template <usize bufferSize> inline
-isize HTTP::Request<bufferSize>::read_from_server(usize bytes) {
+isize Request<bufferSize>::read_from_server(usize bytes) {
 	isize bytesRead = clientInput.read(fd.readEnd, bytes);
 	if (bytesRead == 0) {
 		close(fd.readEnd);
@@ -12,10 +14,10 @@ isize HTTP::Request<bufferSize>::read_from_server(usize bytes) {
 }
 
 template <usize bufferSize> inline
-isize HTTP::Request<bufferSize>::write_to_server(usize bytes) {
+isize Request<bufferSize>::write_to_server(usize bytes) {
 	isize bytesWritten;
 
-	if (type & HTTP::Attributes::CHUNKED)
+	if (type & Attributes::CHUNKED)
 		bytesWritten = dechunk(bytes, clientOutput);
 	else {
 		bytesWritten = clientOutput.write(fd.writeEnd, bodySize);
@@ -32,7 +34,7 @@ isize HTTP::Request<bufferSize>::write_to_server(usize bytes) {
 
 // Common to all
 template <usize bufferSize> inline
-isize HTTP::Request<bufferSize>::write_to_client(usize bytes, u32 events) {
+isize Request<bufferSize>::write_to_client(usize bytes, u32 events) {
 	// TODO: epoll event checks to see if valid
 	isize bytesWritten = clientInput.write(fd.client, bytes);
 	if (bytesWritten < 0)
@@ -42,7 +44,7 @@ isize HTTP::Request<bufferSize>::write_to_client(usize bytes, u32 events) {
 
 // Common to POST and CGI
 template <usize bufferSize> inline
-isize HTTP::Request<bufferSize>::read_from_client(usize bytes, u32 events) {
+isize Request<bufferSize>::read_from_client(usize bytes, u32 events) {
 	// TODO: epoll event checks to see if valid
 	if (clientOutput.index < clientOutput.size)	// Still have things to process
 		return 0;
@@ -56,7 +58,7 @@ isize HTTP::Request<bufferSize>::read_from_client(usize bytes, u32 events) {
 // Any bytes that weren't consumed by the write are copied back to the start of the source buffer, 
 // effectively performing compaction.
 template <usize bufferSize> inline
-isize HTTP::Request<bufferSize>::dechunk(usize bytes, Buffer<bufferSize>& src) {
+isize Request<bufferSize>::dechunk(usize bytes, Buffer<bufferSize>& src) {
 	Buffer<bufferSize> tmpBuffer;
 	const usize maxLength = src.size != 0 ? src.size - 1 : 0;
 
@@ -105,4 +107,5 @@ isize HTTP::Request<bufferSize>::dechunk(usize bytes, Buffer<bufferSize>& src) {
 		src.copy(tmpBuffer);
 
 	return bytesWritten;
+}
 }

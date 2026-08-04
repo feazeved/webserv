@@ -41,6 +41,7 @@ public:
 	usize bodySize, chunkSize;
 	t_servcfg *cfg;	// Temporary placeholder
 	Buffer<bufferSize> clientInput, clientOutput;
+
 	struct {
 		i32 client;		// Duplex FD
 		i32 writeEnd;	// CGI Input or POST
@@ -56,7 +57,6 @@ public:
 			u8 type;
 		};
 	};
-
 
 // Parsing
 isize parse_header(usize bytes, u32 events);
@@ -85,10 +85,6 @@ isize write_to_server(usize bytes);
 isize write_to_client(usize bytes, u32 events);
 isize read_from_client(usize bytes, u32 events);
 isize dechunk(usize bytes, Buffer<bufferSize>& src);
-
-// This function dechunks from a source buffer to a stack buffer, then writes from this stack buffer
-// Any bytes that weren't consumed by the write are copied back to the start of the source buffer, 
-// effectively performing compaction.
 
 // ======== Constructors ====================
 Request() :

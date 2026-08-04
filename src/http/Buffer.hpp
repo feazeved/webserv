@@ -70,10 +70,10 @@ public:
 		return 0;
 	}
 
-	bool find_header_end(usize padSize) {
+	bool find_header_end() {
 		start = end != SIZE_MAX ? end : start;	// Previous call found a match
 		end = SIZE_MAX;
-		const usize maxLength = size == 0 ? 0 : size - padSize - 3;	// padSize is how many bytes extra we need
+		const usize maxLength = size == 0 ? 0 : size - 3;
 
 		while (index < maxLength) {
 			if (MEMCMP(data + index, "\r\n\r\n", 4) == 0) {

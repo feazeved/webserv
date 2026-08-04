@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/epoll.h>
 #include "core.hpp"
 #include "http/Request.hpp"
@@ -13,26 +14,6 @@ isize Request<bufferSize>::error_path() {
 		// Close the connection
 		// Clean files
 		// Reset state
-}
-
-template <usize bufferSize> inline
-isize Request<bufferSize>::prepare_cgi() {
-		// Open pipes, fork, dup fds, execve
-		// Set FDs
-		// Write once to CGI
-		// Start timer
-}
-
-template <usize bufferSize> inline
-isize Request<bufferSize>::prepare_server_read() {
-		// Open files
-		// Set FDs
-}
-
-template <usize bufferSize> inline
-isize Request<bufferSize>::prepare_server_write() {
-		// Open files
-		// Set FDs
 }
 
 template <usize bufferSize> inline
@@ -86,5 +67,4 @@ void Request<bufferSize>::buildHeader() {
 	// 	return;
 	// }
 }
-
 }

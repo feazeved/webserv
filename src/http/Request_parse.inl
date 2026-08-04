@@ -3,6 +3,8 @@
 #include "Request.hpp"
 #include "http/Request_helpers.inl"
 
+namespace HTTP {
+
 /*
 Functions: 
 Something that takes the config file for the server and a request, and validates:
@@ -14,7 +16,7 @@ Function receives a file path, a buffer, IO direction (read or write), number of
 */
 // (Reentrant) Reading state for the header, returns true when finished parsing the header
 template <usize bufferSize> inline
-isize HTTP::Request<bufferSize>::parse_header(usize bytes, u32 events) {
+isize Request<bufferSize>::parse_header(usize bytes, u32 events) {
 	isize bytesRead = read_from_client(bytes, events);
 	if (bytesRead < 0)
 		return bytesRead;
@@ -33,7 +35,7 @@ isize HTTP::Request<bufferSize>::parse_header(usize bytes, u32 events) {
 }
 
 template <usize bufferSize> inline
-isize HTTP::Request<bufferSize>::parse_target(char *str, char *end) {
+isize Request<bufferSize>::parse_target(char *str, char *end) {
 	const char *p = str;
 	const char *questionMark = NULL;
 
@@ -67,19 +69,19 @@ isize HTTP::Request<bufferSize>::parse_target(char *str, char *end) {
 }
 
 template <usize bufferSize> inline
-isize HTTP::Request<bufferSize>::parse_first_line(char *str, char *end) {
+isize Request<bufferSize>::parse_first_line(char *str, char *end) {
 	if (end - str < 14)
 		return -1;	// ERROR: Bad request "GET / HTTP/1.0" shortest possible
 	if (MEMCMP(str, "GET ", 4) == 0) {
-		type |= HTTP::Attributes::GET;	// TODO: create enum
+		type |= Attributes::GET;	// TODO: create enum
 		str += 4;
 	}
 	else if (MEMCMP(str, "POST ", 5) == 0) {
-		type |= HTTP::Attributes::POST;	// TODO: create enum
+		type |= Attributes::POST;	// TODO: create enum
 		str += 5;
 	}
 	else if (MEMCMP(str, "DELETE ", 7) == 0) {
-		type |= HTTP::Attributes::DELETE;	// TODO: create enum
+		type |= Attributes::DELETE;	// TODO: create enum
 		str += 7;
 	}
 	else
@@ -99,24 +101,24 @@ isize HTTP::Request<bufferSize>::parse_first_line(char *str, char *end) {
 }
 
 template <usize bufferSize> inline
-isize HTTP::Request<bufferSize>::parse_line(char *str, char *end) {
+isize Request<bufferSize>::parse_line(char *str, char *end) {
 	if (s_compare_case(str, end, "host:", 5) == true) {
-		if (type & HTTP::Attributes::HOST)
+		if (type & Attributes::HOST)
 			return -1;	// ERROR: Multiple hosts
 		if (s_compare_case(str, end, "localhost", 9) == false)
 			return -1;	// ERROR: Invalid host
 		s_compare_case(str, end, ":8080", 5);
-		type |= HTTP::Attributes::HOST;
+		type |= Attributes::HOST;
 	}
 	else if (s_compare_case(str, end, "transfer-encoding:", 18) == true) { // TODO: what if its empty?
-		if ((type & HTTP::Attributes::CHUNKED) || bodySize != SIZE_MAX)
+		if ((type & Attributes::CHUNKED) || bodySize != SIZE_MAX)
 			return -1; // ERROR: bad request, transfer method had already been set
 		if (s_compare_case(str, end, "chunked", 7) == false)
 			return -1; // ERROR: bad request, transfer encoding isnt chunked
-		type |= HTTP::Attributes::CHUNKED;	// TODO: get proper enum for bitfield
+		type |= Attributes::CHUNKED;	// TODO: get proper enum for bitfield
 	}
 	else if (s_compare_case(str, end, "content-length:", 15) == true) { // needs length checks, or could pad
-		if ((type & HTTP::Attributes::CHUNKED) || bodySize != SIZE_MAX)
+		if ((type & Attributes::CHUNKED) || bodySize != SIZE_MAX)
 			return -1; // ERROR: bad request, transfer method had already been set
 		bodySize = s_strtol10(str);
 		if (bodySize == SIZE_MAX)
@@ -127,4 +129,5 @@ isize HTTP::Request<bufferSize>::parse_line(char *str, char *end) {
 	if (str != end)
 		return -1; // ERROR: bad request, garbage after field value
 	return 0;
+}
 }
