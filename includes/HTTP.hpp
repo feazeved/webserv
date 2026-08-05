@@ -4,6 +4,8 @@
 #include <vector>
 #include <map>
 
+#include "core.hpp"
+
 namespace HTTP {
 
 struct Location {

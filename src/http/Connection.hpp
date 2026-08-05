@@ -3,9 +3,10 @@
 #include <unistd.h>
 #include <sys/epoll.h>
 
+#include "HTTP.hpp"
 #include "core.hpp"
 #include "Connection_helpers.ipp"
-#include "http/Buffer.hpp"
+#include "Buffer.hpp"
 #include <ctime>
 
 namespace HTTP {
@@ -40,7 +41,7 @@ class Connection {
 public:
 	RequestVars vars;
 	usize bodySize, chunkSize;
-	t_servcfg *cfg;	// Temporary placeholder
+	ServerConfig*	cfg;
 	Buffer<bufferSize> clientInput, clientOutput;
 
 	time_t startTime, cgiStartTime;
@@ -63,6 +64,23 @@ public:
 		};
 	};
 
+	// TODO
+	i32	dispatch() {
+		return (1);
+	}
+
+	// TODO
+	i32 init(i32 fd, ServerConfig* c) {
+		(void)fd;
+		cfg = c;
+		return (1);
+	}
+
+	// TODO
+	i32	clear() {
+		return (1);
+	}
+
 // Parsing
 isize parse_header(usize bytes, u32 events);
 isize parse_first_line(char *str, char *end);
@@ -72,7 +90,7 @@ isize parse_target(char *str, char *end);
 // Configuration
 isize error_path();
 isize configure();
-void buildHeader();
+void  buildHeader();
 isize buildCgiHeader();
 isize cgi_first_run();
 isize get_first_run();
@@ -94,8 +112,8 @@ isize dechunk(usize bytes, Buffer<bufferSize>& src);
 
 // ======== Constructors ====================
 Connection() :
-	type(0),
-	bodySize(SIZE_MAX) {
+	bodySize(SIZE_MAX),
+	type(0) {
 	}
 };
 }
