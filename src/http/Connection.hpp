@@ -83,6 +83,8 @@ public:
 
     i32 handle_game_request();
 
+    bool  checkType(const std::string& method, std::vector<std::string>::iterator& mit, std::vector<std::string>::iterator& end);
+    bool  checkLocation();
     isize parse_header(usize bytes, u32 events);
     isize parse_first_line(char *str, char *end);
     isize parse_line(char *str, char *end);

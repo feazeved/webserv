@@ -12,7 +12,7 @@ public:
 	union {
 		u8 rawData[bufferSize];
 		struct {
-			u8 data[bufferSize - sizeof(usize) * 8];	// Last cache line is reserved for unbounded memory loads
+			i8 data[bufferSize - sizeof(usize) * 8];	// Last cache line is reserved for unbounded memory loads
 			usize reserved[4];
 			usize index, size, start, end;
 		};
@@ -32,7 +32,7 @@ public:
 	isize write(i32 fd, usize bytes) {
 		usize bytesCapped = MIN(bytes, size - index);
 		isize bytesWritten = ::write(fd, data + index, bytesCapped);
-	
+
 		if (bytesWritten < 0)
 			return bytesWritten;
 		index += (u32) bytesWritten;
@@ -115,7 +115,7 @@ public:
 		usize remainingSrc = src.size - src.index;	// How many bytes it has read
 		usize remainingDst = sizeof(data) - size;	// How many bytes are free in the buffer
 		usize appendLength = MIN3(length, remainingSrc, remainingDst);
-	
+
 		MEMCPY(data + size, src.data + index, appendLength);
 		src.index += appendLength;
 		size += appendLength;
