@@ -2,6 +2,8 @@
 
 #include "Connection.hpp"
 #include "http/Connection_helpers.ipp"
+#include <iterator>
+#include <vector>
 
 namespace HTTP {
 
@@ -36,6 +38,44 @@ isize Connection<bufferSize>::parse_header(usize bytes, u32 events) {
 	return 0;	// Actually should return something more useful like request status (processing, etc)
 }
 
+static bool checkType(std::string &method, std::vector<std::string>::iterator &mit, std::vector<std::string>::iterator &end){
+	for(; mit != end; mit++)
+		if(method == mit) return true;
+	return false;
+}
+
+static bool checkLocations(){
+	bool found = false;
+	std::vector<Location>::iterator it = cfg->locations.begin();
+
+	for(; it != cfg->locations.end(); it++)
+	{
+		if (MEMCMP(vars.path.index, it.path.c_str(), it.path.size()))
+		{
+			found = true;
+			break ;
+		}
+	}
+
+	if (found)
+	{
+		std::string method;
+		std::vector<std::string>::iterator begin = it.methods.begin();
+		std::vector<std::string>::iterator end = it.methods.end();
+
+		if (type & (Attributes::GET))
+			method("GET ");
+		else if (type & (Attributes::POST))
+			method("POST ");
+		else if (type & (Attributes::DELETE))
+			method("DELETE ");
+
+		found = checkType(method, begin, end);
+	}
+
+	return found;
+}
+
 template <usize bufferSize> inline
 isize Connection<bufferSize>::parse_target(char *str, char *end) {
 	const char *p = str;
@@ -67,6 +107,12 @@ isize Connection<bufferSize>::parse_target(char *str, char *end) {
 	}
 	else
 		vars.path.size = end - str;
+
+	//check method/location
+
+	if(!checkLocations())
+		return -1;
+
 	return 0;
 }
 
