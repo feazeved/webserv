@@ -6,12 +6,12 @@
 namespace HTTP {
 
 /*
-Functions: 
+Functions:
 Something that takes the config file for the server and a request, and validates:
 
 Function receives a file path, a buffer, IO direction (read or write), number of bytes:
 
-1) Checks if the file path exists, if the server has permission to access it 
+1) Checks if the file path exists, if the server has permission to access it
 2) Finally return an FD or -1
 */
 // (Reentrant) Reading state for the header, returns true when finished parsing the header
@@ -29,6 +29,8 @@ isize Connection<bufferSize>::parse_header(usize bytes, u32 events) {
 			return error_path();	// ERROR: Invalid header
 		if (rvalue == 2) {
 			// Header end, call configure() and setup
+			headerParsed = true;
+			break ;
 		}
 	}
 	return 0;	// Actually should return something more useful like request status (processing, etc)
