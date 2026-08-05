@@ -16,6 +16,8 @@ typedef int64_t			i64;
 typedef uint64_t		u64;
 typedef float			f32;
 typedef double			f64;	// Should I include 128?
+typedef __int128 		i128;
+typedef unsigned __int128	u128;
 typedef size_t			usize;
 typedef ptrdiff_t		isize;
 typedef unsigned char	uchar;	// For completeness, to mirror platform's type

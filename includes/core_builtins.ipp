@@ -34,6 +34,7 @@
 #define STRLEN(str) 			__builtin_strlen(str)
 #define MEMCHR(src, val, n)		__builtin_memchr(src, val, n)
 #define MEMCMP(s1, s2, n)		__builtin_memcmp(s1, s2, n)
+#define MEMCMP_INLINE(s1, s2)	__builtin_memcmp(s1, s2, sizeof(s2) - 1)
 
 #if defined(__clang__) && __has_builtin(__builtin_memcpy_inline)
 	#define MEMCPY_INLINE(dst, src, n)	__builtin_memcpy_inline(dst, src, n)

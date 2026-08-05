@@ -113,3 +113,34 @@ bool s_set_noblock(int fd)
 
 	return true;
 }
+
+// Can be improved: 
+// Finding : can be two operations
+// Setting or can be one operation
+// TODO: Move table to init
+// TODO: somehow automate the creation of the enums from the table
+static inline
+isize s_match_field(char* &ptr, char* end) {
+	static const char fieldTable[][32] = 
+	{"status", "location", "transfer-encoding", "content-length"};	
+	static const usize fieldCount = ARRAY_SIZE(fieldTable);
+	char *optr = ptr;
+
+	while (ptr < end && *ptr != ':')
+		ptr++;
+	usize length = (usize)(ptr - optr);
+	if (length >= 32 || *ptr != ':')
+		return (*ptr != ':') ? -1 : 0;
+	ptr++;
+	char buffer[64];
+	MEMCPY_INLINE(buffer, optr, 32);
+	for (usize i = 0; i < 32; i++)
+		buffer[i] |= 32;
+	MEMSET_INLINE(buffer + length, 0, 32);
+
+	for (usize i = 0; i < fieldCount; i++) {
+		if (MEMCMP(fieldTable[i], buffer, 32) == 0)
+			return (isize)i + 1;
+	}
+	return 0;
+}
