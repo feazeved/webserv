@@ -8,7 +8,6 @@ namespace HTTP {
 #define STATUS_102 "102 Processing"
 #define STATUS_103 "103 Early Hints"
 #define STATUS_104 "104 Upload Resumption Supported"
-
 #define STATUS_200 "200 OK"
 #define STATUS_201 "201 Created"
 #define STATUS_202 "202 Accepted"
@@ -19,7 +18,6 @@ namespace HTTP {
 #define STATUS_207 "207 Multi-Status"
 #define STATUS_208 "208 Already Reported"
 #define STATUS_226 "226 IM Used"
-
 #define STATUS_300 "300 Multiple Choices"
 #define STATUS_301 "301 Moved Permanently"
 #define STATUS_302 "302 Found"
@@ -29,7 +27,6 @@ namespace HTTP {
 #define STATUS_306 "306 (Unused)"
 #define STATUS_307 "307 Temporary Redirect"
 #define STATUS_308 "308 Permanent Redirect"
-
 #define STATUS_400 "400 Bad Request"
 #define STATUS_401 "401 Unauthorized"
 #define STATUS_402 "402 Payment Required"
@@ -58,8 +55,7 @@ namespace HTTP {
 #define STATUS_428 "428 Precondition Required"
 #define STATUS_429 "429 Too Many Requests"
 #define STATUS_431 "431 Request Header Fields Too Large"
-// #define STATUS_451 "451 Unavailable For Legal Reasons" would make the lut too big
-
+#define STATUS_451 "451 Unavailable For Legal Reasons" // not used, would make the lut too big
 #define STATUS_500 "500 Internal Server Error"
 #define STATUS_501 "501 Not Implemented"
 #define STATUS_502 "502 Bad Gateway"
@@ -73,87 +69,96 @@ namespace HTTP {
 #define STATUS_511 "511 Network Authentication Required"
 
 #define STATUS(code) STATUS_##code
-
 enum
 {
-	idx100 = 3,
-	idx101 = idx100 + sizeof(STATUS(100)) + 1,
-	idx102 = idx101 + sizeof(STATUS(101)) + 1,
-	idx103 = idx102 + sizeof(STATUS(102)) + 1,
-	idx104 = idx103 + sizeof(STATUS(103)) + 1,
-	idx200 = idx104 + sizeof(STATUS(104)) + 1,
-	idx201 = idx200 + sizeof(STATUS(200)) + 1,
-	idx202 = idx201 + sizeof(STATUS(201)) + 1,
-	idx203 = idx202 + sizeof(STATUS(202)) + 1,
-	idx204 = idx203 + sizeof(STATUS(203)) + 1,
-	idx205 = idx204 + sizeof(STATUS(204)) + 1,
-	idx206 = idx205 + sizeof(STATUS(205)) + 1,
-	idx207 = idx206 + sizeof(STATUS(206)) + 1,
-	idx208 = idx207 + sizeof(STATUS(207)) + 1,
-	idx226 = idx208 + sizeof(STATUS(208)) + 1,
-	idx300 = idx226 + sizeof(STATUS(226)) + 1,
-	idx301 = idx300 + sizeof(STATUS(300)) + 1,
-	idx302 = idx301 + sizeof(STATUS(301)) + 1,
-	idx303 = idx302 + sizeof(STATUS(302)) + 1,
-	idx304 = idx303 + sizeof(STATUS(303)) + 1,
-	idx305 = idx304 + sizeof(STATUS(304)) + 1,
-	idx306 = idx305 + sizeof(STATUS(305)) + 1,
-	idx307 = idx306 + sizeof(STATUS(306)) + 1,
-	idx308 = idx307 + sizeof(STATUS(307)) + 1,
-	idx400 = idx308 + sizeof(STATUS(308)) + 1,
-	idx401 = idx400 + sizeof(STATUS(400)) + 1,
-	idx402 = idx401 + sizeof(STATUS(401)) + 1,
-	idx403 = idx402 + sizeof(STATUS(402)) + 1,
-	idx404 = idx403 + sizeof(STATUS(403)) + 1,
-	idx405 = idx404 + sizeof(STATUS(404)) + 1,
-	idx406 = idx405 + sizeof(STATUS(405)) + 1,
-	idx407 = idx406 + sizeof(STATUS(406)) + 1,
-	idx408 = idx407 + sizeof(STATUS(407)) + 1,
-	idx409 = idx408 + sizeof(STATUS(408)) + 1,
-	idx410 = idx409 + sizeof(STATUS(409)) + 1,
-	idx411 = idx410 + sizeof(STATUS(410)) + 1,
-	idx412 = idx411 + sizeof(STATUS(411)) + 1,
-	idx413 = idx412 + sizeof(STATUS(412)) + 1,
-	idx414 = idx413 + sizeof(STATUS(413)) + 1,
-	idx415 = idx414 + sizeof(STATUS(414)) + 1,
-	idx416 = idx415 + sizeof(STATUS(415)) + 1,
-	idx417 = idx416 + sizeof(STATUS(416)) + 1,
-	idx418 = idx417 + sizeof(STATUS(417)) + 1,
-	idx421 = idx418 + sizeof(STATUS(418)) + 1,
-	idx422 = idx421 + sizeof(STATUS(421)) + 1,
-	idx423 = idx422 + sizeof(STATUS(422)) + 1,
-	idx424 = idx423 + sizeof(STATUS(423)) + 1,
-	idx425 = idx424 + sizeof(STATUS(424)) + 1,
-	idx426 = idx425 + sizeof(STATUS(425)) + 1,
-	idx428 = idx426 + sizeof(STATUS(426)) + 1,
-	idx429 = idx428 + sizeof(STATUS(428)) + 1,
-	idx431 = idx429 + sizeof(STATUS(429)) + 1,
-	idx500 = idx431 + sizeof(STATUS(431)) + 1,
-	idx501 = idx500 + sizeof(STATUS(500)) + 1,
-	idx502 = idx501 + sizeof(STATUS(501)) + 1,
-	idx503 = idx502 + sizeof(STATUS(502)) + 1,
-	idx504 = idx503 + sizeof(STATUS(503)) + 1,
-	idx505 = idx504 + sizeof(STATUS(504)) + 1,
-	idx506 = idx505 + sizeof(STATUS(505)) + 1,
-	idx507 = idx506 + sizeof(STATUS(506)) + 1,
-	idx508 = idx507 + sizeof(STATUS(507)) + 1,
-	idx510 = idx508 + sizeof(STATUS(508)) + 1,
-	idx511 = idx510 + sizeof(STATUS(510)) + 1
+	i000 = 1,
+	i100 = 3,
+	i101 = i100 + sizeof(STATUS(100)) + 1,
+	i102 = i101 + sizeof(STATUS(101)) + 1,
+	i103 = i102 + sizeof(STATUS(102)) + 1,
+	i104 = i103 + sizeof(STATUS(103)) + 1,
+	i200 = i104 + sizeof(STATUS(104)) + 1,
+	i201 = i200 + sizeof(STATUS(200)) + 1,
+	i202 = i201 + sizeof(STATUS(201)) + 1,
+	i203 = i202 + sizeof(STATUS(202)) + 1,
+	i204 = i203 + sizeof(STATUS(203)) + 1,
+	i205 = i204 + sizeof(STATUS(204)) + 1,
+	i206 = i205 + sizeof(STATUS(205)) + 1,
+	i207 = i206 + sizeof(STATUS(206)) + 1,
+	i208 = i207 + sizeof(STATUS(207)) + 1,
+	i226 = i208 + sizeof(STATUS(208)) + 1,
+	i300 = i226 + sizeof(STATUS(226)) + 1,
+	i301 = i300 + sizeof(STATUS(300)) + 1,
+	i302 = i301 + sizeof(STATUS(301)) + 1,
+	i303 = i302 + sizeof(STATUS(302)) + 1,
+	i304 = i303 + sizeof(STATUS(303)) + 1,
+	i305 = i304 + sizeof(STATUS(304)) + 1,
+	i306 = i305 + sizeof(STATUS(305)) + 1,
+	i307 = i306 + sizeof(STATUS(306)) + 1,
+	i308 = i307 + sizeof(STATUS(307)) + 1,
+	i400 = i308 + sizeof(STATUS(308)) + 1,
+	i401 = i400 + sizeof(STATUS(400)) + 1,
+	i402 = i401 + sizeof(STATUS(401)) + 1,
+	i403 = i402 + sizeof(STATUS(402)) + 1,
+	i404 = i403 + sizeof(STATUS(403)) + 1,
+	i405 = i404 + sizeof(STATUS(404)) + 1,
+	i406 = i405 + sizeof(STATUS(405)) + 1,
+	i407 = i406 + sizeof(STATUS(406)) + 1,
+	i408 = i407 + sizeof(STATUS(407)) + 1,
+	i409 = i408 + sizeof(STATUS(408)) + 1,
+	i410 = i409 + sizeof(STATUS(409)) + 1,
+	i411 = i410 + sizeof(STATUS(410)) + 1,
+	i412 = i411 + sizeof(STATUS(411)) + 1,
+	i413 = i412 + sizeof(STATUS(412)) + 1,
+	i414 = i413 + sizeof(STATUS(413)) + 1,
+	i415 = i414 + sizeof(STATUS(414)) + 1,
+	i416 = i415 + sizeof(STATUS(415)) + 1,
+	i417 = i416 + sizeof(STATUS(416)) + 1,
+	i418 = i417 + sizeof(STATUS(417)) + 1,
+	i421 = i418 + sizeof(STATUS(418)) + 1,
+	i422 = i421 + sizeof(STATUS(421)) + 1,
+	i423 = i422 + sizeof(STATUS(422)) + 1,
+	i424 = i423 + sizeof(STATUS(423)) + 1,
+	i425 = i424 + sizeof(STATUS(424)) + 1,
+	i426 = i425 + sizeof(STATUS(425)) + 1,
+	i428 = i426 + sizeof(STATUS(426)) + 1,
+	i429 = i428 + sizeof(STATUS(428)) + 1,
+	i431 = i429 + sizeof(STATUS(429)) + 1,
+	i500 = i431 + sizeof(STATUS(431)) + 1,
+	i501 = i500 + sizeof(STATUS(500)) + 1,
+	i502 = i501 + sizeof(STATUS(501)) + 1,
+	i503 = i502 + sizeof(STATUS(502)) + 1,
+	i504 = i503 + sizeof(STATUS(503)) + 1,
+	i505 = i504 + sizeof(STATUS(504)) + 1,
+	i506 = i505 + sizeof(STATUS(505)) + 1,
+	i507 = i506 + sizeof(STATUS(506)) + 1,
+	i508 = i507 + sizeof(STATUS(507)) + 1,
+	i510 = i508 + sizeof(STATUS(508)) + 1,
+	i511 = i510 + sizeof(STATUS(510)) + 1
 };
 
-static const u16 offsets[] =
+static const u16 s_offsets[160] =
 {
-	idx100, idx101, idx102, idx103, idx104,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	idx201, idx201, idx202, idx203, idx204, idx205, idx206, idx207, idx208,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, idx226, 1, 1, 1, 1, 1,
-	idx301, idx301, idx302, idx303, idx304, idx305, idx306, idx307, idx308,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	idx401, idx401, idx402, idx403, idx404, idx405, idx406, idx407, idx408, idx409,
-	idx411, idx411, idx412, idx413, idx414, idx415, idx416, idx417, idx418,	1, 1,
-	idx421, idx422, idx423, idx424, idx425, idx426, 1, idx428, idx429, 1, idx431,
-	idx501, idx501, idx502, idx503, idx504, idx505, idx506, idx507, idx508,
-	1, idx511, idx511, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+	i100, i101, i102, i103, i104, i000, i000, i000,
+	i000, i000, i000, i000, i000, i000, i000, i000,
+	i000, i000, i000, i000, i000, i000, i000, i000,
+	i000, i000, i000, i000, i000, i000, i000, i000,
+	i200, i201, i202, i203, i204, i205, i206, i207,
+	i208, i000, i000, i000, i000, i000, i000, i000,
+	i000, i000, i000, i000, i000, i000, i000, i000,
+	i000, i000, i226, i000, i000, i000, i000, i000,
+	i300, i301, i302, i303, i304, i305, i306, i307,
+	i308, i000, i000, i000, i000, i000, i000, i000,
+	i000, i000, i000, i000, i000, i000, i000, i000,
+	i000, i000, i000, i000, i000, i000, i000, i000,
+	i400, i401, i402, i403, i404, i405, i406, i407,
+	i408, i409, i410, i411, i412, i413, i414, i415,
+	i416, i417, i418, i000, i000, i421, i422, i423,
+	i424, i425, i426, i000, i428, i429, i000, i431,
+	i500, i501, i502, i503, i504, i505, i506, i507,
+	i508, i000, i510, i511, i000, i000, i000, i000,
+	i000, i000, i000, i000, i000, i000, i000, i000,
+	i000, i000, i000, i000, i000, i000, i000, i000
 };
 
 static const char s_statusCodes[] = "\0\0"
@@ -184,17 +189,16 @@ static const char s_statusCodes[] = "\0\0"
 	"\x1B" STATUS(506) "\0"	"\x18" STATUS(507) "\0"	"\x11" STATUS(508) "\0"
 	"\x10" STATUS(510) "\0"	"\x23" STATUS(511) "\0";
 
-// C++98
 class Status {
 public:
 	u16 index;
 
 	Status(usize number) {
-		usize div = number / 100 - 100;
-		usize rem = number % 100;
+		usize div = number / 100;
+		usize rem = number - div * 100;
 
 		index = (number < 100 || number >= 512 || rem >= 32) 
-			? 1 : offsets[div * 32 + rem];
+			? 1 : s_offsets[(div - 1) * 32 + rem];
 	}
 
 	const char *c_str() {
@@ -206,3 +210,4 @@ public:
 	}
 };
 }
+
