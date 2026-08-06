@@ -62,7 +62,8 @@ void Game::State::broadcastEvents(ServerManager& manager) {
     }
 
     std::string data = flushEvents();
-    if (data.empty()) return;
+    if (data.empty())
+    	return;
 
     static const usize bufSize = 1024;
     for (usize i = 0; i < sseClients.size(); ++i) {

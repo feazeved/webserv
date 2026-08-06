@@ -45,13 +45,13 @@ public:
     Buffer<bufferSize> clientInput, clientOutput;
 
     time_t startTime, cgiStartTime;
-    time_t bonusTime;
+    time_t bonusTime;	// Value ranging from -30s to 30s
     pid_t processId;
 
     struct {
-        i32 client;
-        i32 writeEnd;
-        i32 readEnd;
+        i32 client;		// Duplex FD
+        i32 writeEnd;	// CGI Input or POST
+        i32 readEnd;	// CGI Output or GET/DEL
     } fd;
 
     union {
@@ -64,25 +64,33 @@ public:
         };
     };
 
+public:
     Game::State* gameState;
     bool isSSE;
     bool headerParsed;
     std::string sse_buffer;
 
-    i32 dispatch();
+    i32 dispatch() {
 
+    }
+
+    // TODO
     i32 init(i32 f, ServerConfig* c) {
         (void)f;
         cfg = c;
         return 1;
     }
 
+    // TODO
     i32 clear() {
         return 1;
     }
 
+
+    // Game
     i32 handle_game_request();
 
+    // Parsing
     bool  checkType(const std::string& method, std::vector<std::string>::iterator& mit, std::vector<std::string>::iterator& end);
     bool  checkLocation();
     isize parse_header(usize bytes, u32 events);
@@ -90,6 +98,7 @@ public:
     isize parse_line(char *str, char *end);
     isize parse_target(char *str, char *end);
 
+    // Configuration
     isize error_path();
     isize configure();
     void  buildHeader();
@@ -99,17 +108,20 @@ public:
     isize post_first_run();
     isize del_first_run();
 
+    // HTTP Methods
     isize del_method(usize bytes, u32 events);
     isize get_method(usize bytes, u32 events);
     isize post_method(usize bytes, u32 events);
     isize cgi_method(usize bytes, u32 events);
 
+    // Common
     isize read_from_server(usize bytes);
     isize write_to_server(usize bytes);
     isize write_to_client(usize bytes, u32 events);
     isize read_from_client(usize bytes, u32 events);
     isize dechunk(usize bytes, Buffer<bufferSize>& src);
 
+    // ======== Constructors ====================
     Connection() :
         bodySize(SIZE_MAX),
         type(0),
@@ -126,5 +138,4 @@ public:
 #include "Connection_methods.ipp"
 #include "Connection_common.ipp"
 #include "Connection_cgi.ipp"
-#include "Connection_dispatch.ipp"
 #include "Connection_game.ipp"

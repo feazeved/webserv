@@ -5,6 +5,7 @@
 #include "State.hpp"
 #include <sstream>
 #include <cstdlib>
+#include <sys/socket.h>
 
 namespace {
     inline bool isPath(const char* path, usize path_len, const char* str, usize len) {
