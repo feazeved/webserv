@@ -49,11 +49,12 @@ public:
 
 	i32	getFd() const { return (listenFd); }
 	HTTP::ServerConfig&	getConfig() { return (config); }
+	Game::State&		getState() { return (gameState); }
 
 private:
 	HTTP::ServerConfig	config;
 	i32					listenFd;
-	Game::State			State;
+	Game::State			gameState;
 
 	static sockaddr_in	resolveHostAndPort(const std::string& host, i64 port) {
 		std::string	hostToResolve = host.empty() ? "0.0.0.0" : host;

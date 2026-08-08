@@ -10,19 +10,21 @@
 #include "Buffer.hpp"
 #include "Status.hpp"
 
+namespace Game { class State; }
+
 namespace HTTP {
 
 namespace Attributes {
-	enum {
-		GET = 1 << 0,
-		POST = 1 << 1,
-		DELETE = 1 << 2,
-		CGI = 1 << 3,
-		HOST = 1 << 4,
-		CHUNKED = 1 << 5,
-		DONE = 1 << 7
 
-	};
+enum Attributes {
+	GET = 1 << 0,
+	POST = 1 << 1,
+	DELETE = 1 << 2,
+	CGI = 1 << 3,
+	HOST = 1 << 4,
+	CHUNKED = 1 << 5,
+	DONE = 1 << 7
+};
 }
 
 namespace Field {
@@ -35,13 +37,15 @@ namespace Field {
 		CONTENT_LENGTH = 4
 	};
 }
+}
 
 typedef struct {
 	struct {
-		u32	index;
+		u32 index;
 		u32 size;
 	}	path, query, cookie;
 }	RequestVars;
+
 
 template <usize bufferSize>
 class Connection {
@@ -66,59 +70,80 @@ public:
 	u8 info;
 	u8 type;
 
-	// TODO
-	i32	dispatch() {
-		return (1);
+public:
+	Game::State* gameState;
+	bool isSSE;
+	bool headerParsed;
+	std::string sse_buffer;
+
+	i32 dispatch() {
 	}
 
 	// TODO
-	i32 init(i32 fd, ServerConfig* c) {
-		(void)fd;
+	i32 init(i32 f, ServerConfig* c) {
+		(void)f;
 		cfg = c;
-		return (1);
+		return 1;
 	}
 
 	// TODO
-	i32	clear() {
-		return (1);
+	i32 clear() {
+		return 1;
 	}
 
-// Parsing
-isize parse_header(usize bytes, u32 events);
-isize parse_first_line(char *str, char *end);
-isize parse_line(char *str, char *end);
-isize parse_target(char *str, char *end);
+
+	// Game
+	i32 handle_game_request();
+
+	// Parsing
+	bool  checkType(const std::string& method, std::vector<std::string>::iterator& mit, std::vector<std::string>::iterator& end);
+	bool  checkLocation();
+	isize parse_header(usize bytes, u32 events);
+	isize parse_first_line(char *str, char *end);
+	isize parse_line(char *str, char *end);
+	isize parse_target(char *str, char *end);
 
 // Configuration
-isize error_path();
-isize configure();
-void  build_header();
-isize get_first_run();
-isize post_first_run();
-isize del_first_run();
+	isize error_path();
+	isize configure();
+	void  build_header();
+	isize get_first_run();
+	isize post_first_run();
+	isize del_first_run();
 
-// HTTP Methods
-isize del_method(usize bytes, u32 events);
-isize get_method(usize bytes, u32 events);
-isize post_method(usize bytes, u32 events);
+	// HTTP Methods
+	isize del_method(usize bytes, u32 events);
+	isize get_method(usize bytes, u32 events);
+	isize post_method(usize bytes, u32 events);
 
-// CGI
-isize cgi_first_run();
-isize cgi_method(usize bytes, u32 events);
-isize parse_cgi_line(Buffer<bufferSize> &src, Buffer<bufferSize> &dst);
-isize build_cgi_header();
+	// CGI
+	isize cgi_first_run();
+	isize cgi_method(usize bytes, u32 events);
+	isize parse_cgi_line(Buffer<bufferSize> &src, Buffer<bufferSize> &dst);
+	isize build_cgi_header();
 
-// Common
-isize read_from_server(usize bytes);
-isize write_to_server(usize bytes);
-isize write_to_client(usize bytes, u32 events);
-isize read_from_client(usize bytes, u32 events);
-isize dechunk(usize bytes, Buffer<bufferSize>& src);
+	// Common
+	isize read_from_server(usize bytes);
+	isize write_to_server(usize bytes);
+	isize write_to_client(usize bytes, u32 events);
+	isize read_from_client(usize bytes, u32 events);
+	isize dechunk(usize bytes, Buffer<bufferSize>& src);
 
-// ======== Constructors ====================
-Connection() :
-	bodySize(SIZE_MAX),
-	type(0) {
+	// ======== Constructors ====================
+	Connection() :
+		bodySize(SIZE_MAX),
+		type(0),
+		gameState(NULL),
+		isSSE(false),
+		headerParsed(false) {
 	}
 };
-}
+
+} // namespace HTTP
+
+#include "Connection_parse.ipp"
+#include "Connection_configure.ipp"
+#include "Connection_methods.ipp"
+#include "Connection_common.ipp"
+#include "Connection_cgi.ipp"
+#include "Connection_game.ipp"

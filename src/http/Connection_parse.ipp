@@ -2,16 +2,18 @@
 
 #include "Connection.hpp"
 #include "http/Connection_helpers.ipp"
+#include <iterator>
+#include <vector>
 
 namespace HTTP {
 
 /*
-Functions: 
+Functions:
 Something that takes the config file for the server and a request, and validates:
 
 Function receives a file path, a buffer, IO direction (read or write), number of bytes:
 
-1) Checks if the file path exists, if the server has permission to access it 
+1) Checks if the file path exists, if the server has permission to access it
 2) Finally return an FD or -1
 */
 // (Reentrant) Reading state for the header, returns true when finished parsing the header
@@ -23,15 +25,58 @@ isize Connection<bufferSize>::parse_header(usize bytes, u32 events) {
 
 	isize rvalue;
 	while ((rvalue = clientOutput.find_line_end()) != 0) {
-		u8 *lineStart = clientOutput.data + clientOutput.start;
-		u8 *lineEnd = clientOutput.data + clientOutput.end;
+		char *lineStart = clientOutput.data + clientOutput.start;
+		char *lineEnd = clientOutput.data + clientOutput.end;
 		if (parse_line(lineStart, lineEnd) < 0)
 			return error_path();	// ERROR: Invalid header
 		if (rvalue == 2) {
 			// Header end, call configure() and setup
+			headerParsed = true;
+			break ;
 		}
 	}
 	return 0;	// Actually should return something more useful like request status (processing, etc)
+}
+
+template <usize bufferSize> inline
+bool	Connection<bufferSize>::checkType(const std::string &method, std::vector<std::string>::iterator &mit, std::vector<std::string>::iterator &end){
+	for(; mit != end; mit++)
+		if(method == *mit) return true;
+	return false;
+}
+
+template <usize bufferSize> inline
+bool Connection<bufferSize>::checkLocation(){
+	bool found = false;
+	std::vector<Location>::iterator it = cfg->locations.begin();
+
+	for(; it != cfg->locations.end(); it++)
+	{
+		if (MEMCMP(vars.path.index, it->path.c_str(), it->path.size()))
+		{
+			found = true;
+			break ;
+		}
+	}
+
+	if (found)
+	{
+		std::string method;
+		std::vector<std::string>::iterator begin = it->methods.begin();
+		std::vector<std::string>::iterator end = it->methods.end();
+
+		if (type & (Attributes::GET))
+			method = "GET ";
+		else if (type & (Attributes::POST))
+			method = "POST ";
+		else if (type & (Attributes::DELETE))
+			method = "DELETE ";
+		else
+			return false;
+
+		return (checkType(method, begin, end));
+	}
+	return false;
 }
 
 template <usize bufferSize> inline
@@ -65,6 +110,12 @@ isize Connection<bufferSize>::parse_target(char *str, char *end) {
 	}
 	else
 		vars.path.size = end - str;
+
+	//check method/location
+
+	if(!checkLocation())
+		return -1;
+
 	return 0;
 }
 
