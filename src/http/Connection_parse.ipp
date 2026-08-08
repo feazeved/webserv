@@ -25,30 +25,34 @@ isize Connection<bufferSize>::parse_header(usize bytes, u32 events) {
 
 	isize rvalue;
 	while ((rvalue = clientOutput.find_line_end()) != 0) {
-		u8 *lineStart = clientOutput.data + clientOutput.start;
-		u8 *lineEnd = clientOutput.data + clientOutput.end;
+		char *lineStart = clientOutput.data + clientOutput.start;
+		char *lineEnd = clientOutput.data + clientOutput.end;
 		if (parse_line(lineStart, lineEnd) < 0)
 			return error_path();	// ERROR: Invalid header
 		if (rvalue == 2) {
 			// Header end, call configure() and setup
+			headerParsed = true;
+			break ;
 		}
 	}
 	return 0;	// Actually should return something more useful like request status (processing, etc)
 }
 
-static bool checkType(std::string &method, std::vector<std::string>::iterator &mit, std::vector<std::string>::iterator &end){
+template <usize bufferSize> inline
+bool	Connection<bufferSize>::checkType(const std::string &method, std::vector<std::string>::iterator &mit, std::vector<std::string>::iterator &end){
 	for(; mit != end; mit++)
-		if(method == mit) return true;
+		if(method == *mit) return true;
 	return false;
 }
 
-static bool checkLocations(){
+template <usize bufferSize> inline
+bool Connection<bufferSize>::checkLocation(){
 	bool found = false;
 	std::vector<Location>::iterator it = cfg->locations.begin();
 
 	for(; it != cfg->locations.end(); it++)
 	{
-		if (MEMCMP(vars.path.index, it.path.c_str(), it.path.size()))
+		if (MEMCMP(vars.path.index, it->path.c_str(), it->path.size()))
 		{
 			found = true;
 			break ;
@@ -58,20 +62,21 @@ static bool checkLocations(){
 	if (found)
 	{
 		std::string method;
-		std::vector<std::string>::iterator begin = it.methods.begin();
-		std::vector<std::string>::iterator end = it.methods.end();
+		std::vector<std::string>::iterator begin = it->methods.begin();
+		std::vector<std::string>::iterator end = it->methods.end();
 
 		if (type & (Attributes::GET))
-			method("GET ");
+			method = "GET ";
 		else if (type & (Attributes::POST))
-			method("POST ");
+			method = "POST ";
 		else if (type & (Attributes::DELETE))
-			method("DELETE ");
+			method = "DELETE ";
+		else
+			return false;
 
-		found = checkType(method, begin, end);
+		return (checkType(method, begin, end));
 	}
-
-	return found;
+	return false;
 }
 
 template <usize bufferSize> inline
@@ -108,7 +113,7 @@ isize Connection<bufferSize>::parse_target(char *str, char *end) {
 
 	//check method/location
 
-	if(!checkLocations())
+	if(!checkLocation())
 		return -1;
 
 	return 0;

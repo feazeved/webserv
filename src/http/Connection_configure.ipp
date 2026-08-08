@@ -34,8 +34,8 @@ isize Connection<bufferSize>::configure() {
 		return error_path();	// Transfer encoding not set
 	if (!isBodyMethod && encodingSet)
 		return error_path();	// Encoding set for non-body methods
-	bodySize = (bodySize == SIZE_MAX) ? SIZE_MAX : cfg->bodySizeMax;
-	
+	bodySize = (bodySize == SIZE_MAX) ? SIZE_MAX : cfg->maxBodySize;
+
 	if (type & Attributes::CGI)
 		return cgi_first_run();
 	else if (type & (Attributes::GET | Attributes::DELETE))
