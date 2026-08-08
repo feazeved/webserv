@@ -111,6 +111,11 @@ void append(const u8 *ptr, usize length) {
 	size += length;
 }
 
+void appendInline(const u8 *ptr, usize length) {
+	MEMCPY_INLINE(data + size, ptr, length);
+	size += length;
+}
+
 // Should be impossible for dst buffer to not fit
 // TODO: Might remove MIN3 and have it overflow to guarantee behavior
 usize append(Buffer &src, usize length) {

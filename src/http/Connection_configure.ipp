@@ -10,11 +10,33 @@ namespace HTTP {
 
 template <usize bufferSize> inline
 isize Connection<bufferSize>::error_path() {
+		// Status should be set prior to entering error path
 		// buildHeader();
 		// Close the connection
 		// Clean files
 		// Reset state
 }
+
+// template <usize bufferSize> static inline
+// void	s_append_cstr(Buffer<bufferSize>& buf, const char* str) {
+// 	buf.append((const u8*)str, (usize)strlen(str));
+// }
+
+// template <usize bufferSize> static inline
+// void	s_append_status_line(Buffer<bufferSize>& buf, u16 code, const char* reason) {
+// 	char	line[16];
+// 	i32		len = snprintf(line, sizeof(line), "HTTP/1.1 %u ", (unsigned)code);
+// 	buf.append((const u8*)line, (usize)len);
+// 	s_append_cstr(buf, reason);
+// 	s_append_cstr(buf, "\r\n");
+// }
+
+// template <usize bufferSize> static inline
+// void	s_append_content_length(Buffer<bufferSize>& buf, usize value) {
+// 	char digits[24];
+// 	int len = snprintf(digits, sizeof(digits), "%zu", value);
+// 	buf.append((const u8*)digits, (usize)len);
+// }
 
 template <usize bufferSize> inline
 isize Connection<bufferSize>::configure() {
@@ -45,7 +67,31 @@ isize Connection<bufferSize>::configure() {
 }
 
 template <usize bufferSize> inline
-void Connection<bufferSize>::buildHeader() {
+void Connection<bufferSize>::build_header() {
+
+	clientInput.append("HTTP/1.1 ");	// always use the buffer appends, cause it updates the cursors
+	if (status.is_error()) {
+		clientInput.append(status.c_str(), status.size());
+		clientInput.append("\r\n");
+	}
+	else {
+		clientInput.appendInline(status.c_str(), 3);
+		clientInput.append("OK\r\n");
+	}
+
+	clientInput.append("Content-Type: ");
+	// clientInput.append(s_get_mime_type(fullpath));	// lets have this already parsed, only print
+
+	clientInput.append("\r\n\r\n");
+
+	// s_append_cstr(clientInput, "Content-Type: ");
+	// s_append_cstr(clientInput, s_get_mime_type(fullpath));
+	// s_append_cstr(clientInput, "\r\n");
+	// clientInput.append("Content-Length: ");
+	// s_append_content_length(clientInput, (usize)st.st_size);
+	// s_append_cstr(clientInput, "\r\n");
+	// s_append_cstr(clientInput, "\r\n");
+
 	// client.append("HTTP/1.1 ");
 
 	// if (bodySize != SIZE_MAX)

@@ -218,6 +218,11 @@ public:
 	}
 
 	ALWAYS_INLINE
+	bool is_error() const {
+		return index >= i400;
+	}
+
+	ALWAYS_INLINE
 	bool is_set() const {
 		return index == 1;
 	}

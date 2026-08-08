@@ -79,27 +79,54 @@ bool Connection<bufferSize>::checkLocation(){
 	return false;
 }
 
+// TODO: parsing should process the data not just store it
+// Alex: Lets have this save an enum to extension type. Example:
+// enum ContentType : u8 {
+// 	Html,
+// 	Css,
+// 	JavaScript,
+// 	Json,
+// 	Png,
+// 	Jpeg,
+// 	Gif,
+// 	Text,
+// };
+static inline
+const char* s_get_mime_type(const std::string& path) {
+	usize	dot_pos = path.find_last_of('.');	// Alex: Ideally this function should be inside parse_target
+												// Save an enum to the file type inside the class, might be relevant for other stuff
+	if (dot_pos == std::string::npos)
+		return "application/octet-stream";
+	std::string extension = path.substr(dot_pos + 1);
+	if (extension == "html" || extension == "htm")	return "text/html";
+	if (extension == "css")                 		return "text/css";
+	if (extension == "js")                  		return "application/javascript";
+	if (extension == "json")                 		return "application/json";
+	if (extension == "png")                  		return "image/png";
+	if (extension == "jpg" || extension == "jpeg")	return "image/jpeg";
+	if (extension == "gif")                  		return "image/gif";
+	if (extension == "txt")                  		return "text/plain";
+	return "application/octet-stream";
+}
+
 template <usize bufferSize> inline
 isize Connection<bufferSize>::parse_target(char *str, char *end) {
 	const char *p = str;
 	const char *questionMark = NULL;
 
 	while (p < end) {
-		if(*p <= 32)
+		if (*p <= 32)
 			return -1;
-		if(*p == '?') {
+		if (*p == '?') {
 			if(!questionMark)
 				questionMark = p;
 			else
 				return -1;
 		}
-		if(*p == '.' && p[1] == '.')
+		if (*p == '.' && p[1] == '.')
 			return -1;
-		if(*p == '%' && p + 2 < end) { // REVIEW: p + 2 is not needed because \r\n is guaranteed to exist after end ptr
-			if(!IS_DIGIT(p[1]) || !IS_DIGIT(p[2]) // REVIEW: if im not mistaken the check here should be IS_HEX
-				||(p[1] == '0' && p[2] == '0'))
+		if (*p == '%' && ((!IS_DIGIT(p[1]) || !IS_DIGIT(p[2]) || (p[1] == '0' && p[2] == '0'))))	// TODO: should be hex i was wrong
 				return -1;
-		}
 		p++;
 	}
 	vars.path.index = str - (const char *)clientOutput.data;

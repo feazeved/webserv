@@ -37,7 +37,6 @@ namespace Field {
 		CONTENT_LENGTH = 4
 	};
 }
-}
 
 typedef struct {
 	struct {
@@ -69,6 +68,7 @@ public:
 	Status status;
 	u8 info;
 	u8 type;
+	u8 contentType;	// TODO: make enum
 
 public:
 	Game::State* gameState;
@@ -103,7 +103,7 @@ public:
 	isize parse_line(char *str, char *end);
 	isize parse_target(char *str, char *end);
 
-// Configuration
+	// Configuration
 	isize error_path();
 	isize configure();
 	void  build_header();
