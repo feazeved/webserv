@@ -114,11 +114,17 @@ bool s_set_noblock(int fd)
 	return true;
 }
 
-// Can be improved: 
-// Finding : can be two operations
-// Setting or can be one operation
-// TODO: Move table to init
-// TODO: somehow automate the creation of the enums from the table
+/* (IMPORTANT) This function presumes 32 byte padding
+This function performs a 32 byte load of a field delimited by : then compares
+against a table of reference strings to find a match. Because MEMCMP length is
+fixed, the compiler automatically vectorizes the comparison
+
+Returns: 0 on no matches, -1 on errors or
+		index associated with the string compared
+
+TODO:	Finding can be two operations, Setting or can be one operation
+		Move table to init, Automate the creation of the enums from the table
+*/
 static inline
 isize s_match_field(char* &ptr, char* end) {
 	static const char fieldTable[][32] = 

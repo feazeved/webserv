@@ -1,7 +1,7 @@
 #pragma once
 #include "core.hpp"
 
-#define ALWAYS_INLINE	static inline __attribute__((always_inline))
+#define ALWAYS_INLINE	inline __attribute__((always_inline))
 #define NOINLINE		__attribute__((noinline))
 #define KPURE			__attribute__((const))			// Function depends only on its arguments (doesn't read from memory)
 #define PURE			__attribute__((pure))			// Function produces no observable side effects (may read from memory)

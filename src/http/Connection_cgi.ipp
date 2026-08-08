@@ -57,6 +57,9 @@ isize Connection<bufferSize>::cgi_first_run() {
 	cgiStartTime = g_timeNow;
 }
 
+// NOTES: i think the call here is because CGI output is server controlled, 
+// we perform little error checking and presume the output is correct. 
+// Only quick sanity checks
 template <usize bufferSize> inline
 isize Connection<bufferSize>::parse_cgi_line(Buffer<bufferSize> &src, Buffer<bufferSize> &dst) {
 	char *field = src.data + src.start;
@@ -66,16 +69,20 @@ isize Connection<bufferSize>::parse_cgi_line(Buffer<bufferSize> &src, Buffer<buf
 
 	isize type = s_match_field(value, end);
 	if (type <= 0) {
-		status = (type < 0) ? 500 : status;
+		if (type < 0)
+			status = Status::i500;
 		return type;
 	}
 
 	if (type == Field::STATUS) {
-		status = s_strtol10(value);
-		if (status == SIZE_MAX) {
-			status = 500;	// CGI output an invalid status, should be server error
-			return -1;
-		}
+		status = value;
+		isize rvalue = status.is_valid() == true ? 0 : -1;
+		if (rvalue == -1)
+			status = Status::i500;	// CGI output an invalid status, should be server error
+		const char *str = status.c_str();
+		usize length = status.size();
+		dst.insert(str, length, 256 - length);
+		return rvalue;
 	}
 	else {
 		dst.append(field, totalLength);
@@ -95,7 +102,9 @@ isize Connection<bufferSize>::build_cgi_header() {
 	tmpBuffer.start = 256;
 
 	while (clientOutput.find_line_end() == 1) {
-		if (parse_cgi_line() == -1)
+		if (parse_cgi_line() == -1) {
+			
+		}
 	}
 }
 
@@ -116,7 +125,7 @@ isize Connection<bufferSize>::cgi_method(usize bytes, u32 events) {
 	bonusTime = CLAMP(bonusTime + delta, 0, 30);
 
 	// Return path until the operation isnt complete
-	if (status == 0) {
+	if (status.is_set()) {
 		if (clientOutput.find_header_end() == false) {
 			if (clientOutput.is_full())
 				return -1;	// ERROR: CGI Header is too big

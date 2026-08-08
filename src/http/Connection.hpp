@@ -2,12 +2,13 @@
 
 #include <unistd.h>
 #include <sys/epoll.h>
+#include <ctime>
 
 #include "HTTP.hpp"
 #include "core.hpp"
 #include "Connection_helpers.ipp"
 #include "Buffer.hpp"
-#include <ctime>
+#include "Status.hpp"
 
 namespace HTTP {
 
@@ -47,7 +48,7 @@ class Connection {
 public:
 	RequestVars vars;
 	usize bodySize, chunkSize;
-	ServerConfig*	cfg;
+	ServerConfig* cfg;
 	Buffer<bufferSize> clientInput, clientOutput;
 
 	time_t startTime, cgiStartTime;
@@ -60,15 +61,10 @@ public:
 		i32 readEnd;	// CGI Output or GET/DEL
 	} fd;
 
-	union {
-		u64 state;
-		struct {
-			u32 metadata;
-			u16 status;
-			u8 info;
-			u8 type;
-		};
-	};
+	u32 metadata;
+	Status status;
+	u8 info;
+	u8 type;
 
 	// TODO
 	i32	dispatch() {

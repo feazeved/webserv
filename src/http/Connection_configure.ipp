@@ -21,7 +21,7 @@ isize Connection<bufferSize>::configure() {
 	const bool isBodyMethod = type & (Attributes::POST | Attributes::CGI);
 	const bool encodingSet = !(type & Attributes::CHUNKED) && bodySize == SIZE_MAX;
 
-	if (status != 0)
+	if (status.is_set())
 		return error_path();	// An error caused early interruption
 
 	if ((type & 0xF) == 0)

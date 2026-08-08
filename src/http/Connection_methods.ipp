@@ -49,7 +49,7 @@ isize Connection<bufferSize>::post_method(usize bytes, u32 events) {
 		return bytesWritten;
 
 	// Return path until the operation isnt complete
-	if (status == 0 && fd.writeEnd == -1) {
+	if (!status.is_set() && fd.writeEnd == -1) {
 		// set status
 		// build header
 	}

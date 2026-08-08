@@ -101,11 +101,6 @@ bool insert(const u8 *ptr, usize length, usize insertIndex) {
 }
 
 template <usize N>
-void insert(const char (&string)[N], usize insertIndex) {
-	MEMCPY_INLINE(data + insertIndex, string, N - 1);
-}
-
-template <usize N>
 void append(const char (&string)[N]) {
 	MEMCPY_INLINE(data + size, string, N - 1);
 	size += N - 1;
