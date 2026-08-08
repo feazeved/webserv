@@ -61,6 +61,7 @@ bool Connection<bufferSize>::checkLocation(){
 
 	if (found)
 	{
+		// Changing this
 		std::string method;
 		std::vector<std::string>::iterator begin = it->methods.begin();
 		std::vector<std::string>::iterator end = it->methods.end();
