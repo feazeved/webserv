@@ -11,6 +11,7 @@
 #include <vector>
 #include <cstring>
 #include <sys/stat.h>
+#include <string>
 
 namespace HTTP {
 
@@ -82,47 +83,44 @@ isize Connection<bufferSize>::get_first_run() {
 	std::string	relative;
 	std::string	fullpath;
 
+	// There is no location. Error 404
 	if (!s_resolve_location(cfg, reqPath, vars.path.size, &location, relative)) {
 		status = 404;
 		return error_path();
 	}
 	s_join_path(location->root, relative, fullpath);
 
-	i32	rawFd = open(fullpath.c_str(), O_RDONLY);
-	if (rawFd == -1) {
+	struct stats st;
+	if (stat(fullpath.c_str(), &st) == -1) {
 		status = (errno == ENOENT) ? 404 : (errno == EACCES ? 403 : 500);
 		return error_path();
 	}
 
-	struct stat	st;
-	if (fstat(rawFd, &st) == -1) {
-		close(rawFd);
-		status = 500;
-		return error_path();
-	}
-
 	if (S_ISDIR(st.st_mode)) {
-		close(rawFd);
 		if (location->index.empty()) {
 			status = 403;
 			return error_path();
 		}
-		std::string indexPath = fullpath;
+		std::string	indexPath = fullpath;
 		if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
 			indexPath += '/';
 		indexPath += location->index;
 
-		rawFd = open(indexPath.c_str(), O_RDONLY);
-		if (rawFd == -1) {
+		if (stat(indexPath.c_str(), &st) == -1) {
 			status = (errno == ENOENT) ? 404 : 500;
-			return error_path;
-		}
-		if (fstat(rawFd, &st) == -1 || S_ISDIR(st.st_mode)) {
-			close(rawFd);
-			status = 500;
 			return error_path();
 		}
-		fullpath = indexPath;
+		if (S_ISDIR(st.st_mode)) {	// Index is directory (maybe should be parsing error?)
+			status = 500;
+			return error_path();
+			fullpath = indexPath;
+		}
+	}
+
+	i32	rawFd = open(fullpath.c_str(), O_RDONLY);
+	if (rawFd == -1) {
+		status = (errno == ENOENT) ? 404 : (errno == EACCES ? 403 : 500);
+		return error_path();
 	}
 
 	if (s_set_noblock(rawFd) == false) {
@@ -141,20 +139,95 @@ isize Connection<bufferSize>::get_first_run() {
 	s_append_cstr(clientInput, "Content-Length: ");
 	s_append_content_length(clientInput, (usize)st.st_size);
 	s_append_cstr(clientInput, "\r\n");
+	s_append_cstr(clientInput, "\r\n");
 
 	return 0;
 }
 
 template <usize bufferSize> inline
 isize Connection<bufferSize>::del_first_run() {
-		// Open files
-		// Set FDs
+	const char*	reqPath = (const char*)clientOutput.data + vars.path.index;
+	Location*	location = NULL;
+	std::string	relative;
+	std::string	fullPath;
+
+	// There is no location. Error 404
+	if (!s_resolve_location(cfg, reqPath, vars.path.size, &location, relative)) {
+		status = 404;
+		return error_path();
+	}
+	s_join_path(location->root, relative, fullPath);
+
+	struct stat	st;
+	if (stat(fullPath.c_str(), &st) == -1) {
+		status = (errno == ENOENT) ? 404 : 500;
+		return error_path();
+	}
+	if (S_ISDIR(st.st_mode)) {	// I think we shouldnt delete directories
+		status = 403;
+		return error_path();
+	}
+	if (unlink(fullPath.c_str()) == -1) {	// Maybe use std::remove bcs I dont see unlink in subject
+		status = (errno == EACCES || errno == EPERM) ? 403 : 500;
+		return error_path();
+	}
+
+	fd.readEnd = -1;	// probably unnecessary
+	fd.writeEnd = -1;
+
+	status = 204;
+	s_append_status_line(clientInput, 204, "No Content");
+	s_append_cstr(clientInput, "\r\n");
+
+	return 0;
 }
 
 template <usize bufferSize> inline
 isize Connection<bufferSize>::post_first_run() {
-		// Open files
-		// Set FDs
+	const char*	reqPath = (const char*)clientOutput.data + vars.path.index;
+	Location*	location = NULL;
+	std::string	relative;
+
+	if (s_resolve_location(cfg, reqPath, vars.path.size, &location, relative)) {
+		status = 404;
+		return error_path();
+	}
+
+	if (relative.empty() || relative[relative.size() - 1] == '/') {
+		status = 400;
+		return error_path();
+	}
+
+	const std::string&	uploadDir = location->upload_store.empty() ? location->root : location->upload_store;
+	if (uploadDir.empty()) {
+		status = 500;
+		return error_path();
+	}
+
+	std::string	destPath;
+	s_join_path(uploadDir, relative, destPath);
+
+	int	rawFd = open(destPath.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0644);
+	if (rawFd == -1) {
+		if (errno == EEXIST)
+			status = 409;
+		else if (errno == EACCES)
+			status = 403;
+		else
+			status = 500;
+		return error_path();
+	}
+
+	if (s_set_noblock(rawFd) == false) {
+		close(rawFd);
+		status = 500;
+		return error_path();
+	}
+
+	fd.writeEnd = rawFd;
+	fd.readEnd = -1;
+
+	return 0;
 }
 
 // === DEL ==========================================================================
@@ -187,6 +260,8 @@ isize Connection<bufferSize>::post_method(usize bytes, u32 events) {
 	// Return path until the operation isnt complete
 	if (status == 0 && fd.writeEnd == -1) {
 		status = 201;
+		s_append_status_line(clientInput, 201, "Created");
+		s_append_cstr(clientInput, "\r\n");
 		// set status
 		// build header
 	}
