@@ -52,7 +52,7 @@ bool Connection<bufferSize>::checkLocation(){
 
 	for(; it != cfg->locations.end(); it++)
 	{
-		if (MEMCMP(vars.path.index, it->path.c_str(), it->path.size()))
+		if (MEMCMP(vars.path.index, it->path.c_str(), it->path.size()) == 0 && vars.path.size == it->path.size())
 		{
 			found = true;
 			break ;

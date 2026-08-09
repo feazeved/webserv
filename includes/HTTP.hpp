@@ -5,16 +5,26 @@
 #include <map>
 
 #include "core.hpp"
+#include "Status.hpp"
 
 namespace HTTP {
 
+// It needs to be like the one in Connection.hpp...
+// Better have only one but this works
+enum Method {
+	GET = 1 << 0,
+	POST = 1 << 1,
+	DELETE = 1 << 2,
+};
+
 struct Location {
-	std::vector<std::string>	methods;
 	std::string					path;
 	std::string					root;
 	std::string					index;
 	std::string					upload_store;
+	u8							methods;
 	bool						autoindex;
+	Status						redirect;
 
 	Location() : autoindex(false) {}
 };
