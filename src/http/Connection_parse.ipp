@@ -39,13 +39,6 @@ isize Connection<bufferSize>::parse_header(usize bytes, u32 events) {
 }
 
 template <usize bufferSize> inline
-bool	Connection<bufferSize>::checkType(const std::string &method, std::vector<std::string>::iterator &mit, std::vector<std::string>::iterator &end){
-	for(; mit != end; mit++)
-		if(method == *mit) return true;
-	return false;
-}
-
-template <usize bufferSize> inline
 bool Connection<bufferSize>::checkLocation(){
 	bool found = false;
 	std::vector<Location>::iterator it = cfg->locations.begin();
@@ -60,23 +53,7 @@ bool Connection<bufferSize>::checkLocation(){
 	}
 
 	if (found)
-	{
-		// Changing this
-		std::string method;
-		std::vector<std::string>::iterator begin = it->methods.begin();
-		std::vector<std::string>::iterator end = it->methods.end();
-
-		if (type & (Attributes::GET))
-			method = "GET ";
-		else if (type & (Attributes::POST))
-			method = "POST ";
-		else if (type & (Attributes::DELETE))
-			method = "DELETE ";
-		else
-			return false;
-
-		return (checkType(method, begin, end));
-	}
+		return (it->methods & type) ? true : false;
 	return false;
 }
 
