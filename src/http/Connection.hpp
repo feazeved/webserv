@@ -23,6 +23,9 @@ namespace HTTP {
 template <usize bufferSize>
 class Connection {
 public:
+	static const usize numBytes = 4096;
+
+public:
 	ServerConfig* cfg;
 	Game::State* gameState;
 
@@ -59,26 +62,24 @@ public:
 	isize error_path();
 	isize configure();
 	void  build_header();
-	isize get_first_run();
-	isize post_first_run();
-	isize del_first_run();
-
-	// HTTP Methods
-	isize del_method(usize bytes, u32 events);
-	isize get_method(usize bytes, u32 events);
-	isize post_method(usize bytes, u32 events);
-
-	// CGI
-	isize cgi_first_run();
-	isize cgi_method(usize bytes, u32 events);
 	isize build_cgi_header();
 
+	// HTTP Methods
+	isize del_method();
+	isize del_first_run();
+	isize get_method();
+	isize get_first_run();
+	isize post_method();
+	isize post_first_run();
+	isize cgi_method();
+	isize cgi_first_run();
+
 	// Common
-	isize read_from_server(usize bytes);
-	isize write_to_server(usize bytes);
-	isize write_to_client(usize bytes, u32 events);
-	isize read_from_client(usize bytes, u32 events);
-	isize dechunk(usize bytes, Buffer<bufferSize>& src);
+	isize read_from_server();
+	isize write_to_server();
+	isize write_to_client(u32 events);
+	isize read_from_client(u32 events);
+	isize dechunk(Buffer<bufferSize>& src);
 
 	// ======== Constructors ====================
 	// Connection() :

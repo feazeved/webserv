@@ -26,11 +26,11 @@ BUFFER_INL
 	writePtr += length;
 }
 
-// BUFFER_INL
-// (void) appendInline(const u8 *ptr, usize length) {
-// 	MEMCPY_INLINE(data + size, ptr, length);
-// 	size += length;
-// }
+BUFFER_INL
+(template <usize N> void) append_inline(const u8 *ptr, usize length) {
+	MEMCPY_INLINE(writePtr, ptr, N);
+	writePtr += length;
+}
 
 // Should be impossible for dst buffer to not fit
 // TODO: Might remove MIN3 and have it overflow to guarantee behavior
@@ -49,7 +49,7 @@ BUFFER_INL
 // TODO: No length checks
 // TODO: separate functions
 BUFFER_INL
-(void) appendDigit10(usize number) {
+(void) append_digit10(usize number) {
 	char buffer[48];
 	char *mid = buffer + 24;
 	usize digitLength = itoa10(number, mid);

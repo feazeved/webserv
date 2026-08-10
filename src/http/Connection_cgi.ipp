@@ -91,15 +91,12 @@ CONNECTION_INL
 /*	The pipe fds here are configured to be non-blocking and read/write errors are ignored
 	Failure conditions for these fds are instead handled by CGI timeouts */
 CONNECTION_INL
-(isize) cgi_method(usize bytes, u32 events) {
+(isize) cgi_method() {
 	isize bytesRead, bytesWritten;
 
-	bytesRead = read_from_client(bytes, events);
-	if (bytesRead < 0)
-		return -1;
 
-	bytesWritten = write_to_server(bytes);
-	bytesRead = read_from_server(bytes);
+	bytesWritten = write_to_server();
+	bytesRead = read_from_server();
 
 	isize delta = ((bytesWritten < 0 || bytesRead < 0) ? -1 : 1);
 	bonusTime = CLAMP(bonusTime + delta, 0, 30);
@@ -113,6 +110,6 @@ CONNECTION_INL
 		}
 		build_cgi_header();
 	}
-	return write_to_client(bytes, events);
+	return bytesRead;
 }
 }

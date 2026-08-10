@@ -91,11 +91,11 @@ CONNECTION_INL
 
 // Header will already be built in the configure function
 CONNECTION_INL
-(isize) get_method(usize bytes, u32 events) {
-	isize bytesRead = read_from_server(bytes);
+(isize) get_method() {
+	isize bytesRead = read_from_server();
 	if (bytesRead < 0)
 		return bytesRead;
-	return write_to_client(bytes, events);
+	return bytesRead;
 }
 
 // namespace HTTP

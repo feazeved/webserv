@@ -75,9 +75,11 @@ public:
 	void append(const u8 *ptr, usize length);
 	bool prepend(const u8 *ptr, usize length);
 
-	void appendInline(const u8 *ptr, usize length);
+	template <usize N>
+	void append_inline(const u8 *ptr, usize length);
+
 	usize append(Buffer &src, usize length);
-	void appendDigit10(usize number);
+	void append_digit10(usize number);
 
 	void copy(const Buffer& other);
 	bool insert(const u8 *ptr, usize length, usize insertIndex);

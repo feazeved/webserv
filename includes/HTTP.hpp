@@ -32,13 +32,37 @@ struct ServerConfig {
 	ServerConfig() : host("localhost"), port(-1), maxBodySize(-1), autoindex(false) {}
 };
 
+
+// Switch (no read, read, read chunked, can read)
+// 
+
 namespace Mode {
 	enum e_http_mode {
 		GET = 1 << 0,
 		POST = 1 << 1,
 		DELETE = 1 << 2,
 		CGI = 1 << 3,
-		SSE = 1 << 4
+		SSE = 1 << 4,
+		FIRST_LINE = 1 << 5,
+		PARSING = 1 << 6
+	};
+}
+
+namespace State {
+	enum e_http_state {
+		ERROR = 0,
+		READING_FROM_CLIENT = 1,
+		WRITING_TO_CLIENT = 2,
+		DONE = 4
+	};
+}
+
+namespace Options {
+	enum e_http_options {
+		CHUNKED_LENGTH = 1 << 0,
+		FIXED_LENGTH = 1 << 1,
+		HOST = 1 << 2,
+		CONNECTION_TYPE = 1 << 3
 	};
 }
 
@@ -56,23 +80,20 @@ namespace Field {
 	};
 }
 
-namespace Options {
-	enum e_http_options {
-		CHUNKED_LENGTH = 1 << 0,
-		FIXED_LENGTH = 1 << 1,
-		HOST = 1 << 2,
-		CONNECTION_TYPE = 1 << 3
-	};
-}
-
-namespace State {
-	enum e_http_state {
-		ERROR = 0,
-		READING_FROM_CLIENT = 1,
-		WRITING_TO_CLIENT = 2,
-		FIRST_LINE = 4,
-		PARSING = 8,
-		DONE = 16
+namespace Mime {
+	enum e_mime_type {
+		HTML = 0,
+		HTM,
+		CSS,
+		JSON,
+		JS,
+		PNG,
+		JPG,
+		JPEG,
+		GIF,
+		TXT,
+		OCTET_STREAM,
+		COUNT
 	};
 }
 

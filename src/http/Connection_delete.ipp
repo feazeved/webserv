@@ -40,8 +40,7 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(isize) del_method(usize bytes, u32 events) {
-	return write_to_client(bytes, events);
+(isize) del_method() {
+	return 0;
 }
-
 }

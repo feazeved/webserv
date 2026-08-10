@@ -7,38 +7,42 @@ CONNECTION_INL
 (isize) dispatch(u32 events) {
 	isize rvalue;
 
-	if (state & READING_FROM_CLIENT) {
-		rvalue = read_from_client(4096, events);
+	if (state & State::READING_FROM_CLIENT) {
+		rvalue = read_from_client(numBytes, events);
 		if (rvalue < 0)
 			return -1;
 	}
 
-	u8 method = request.mode & 7;
-	switch (state) {
-		case FIRST_LINE:
+	switch (request.mode) {
+		case Mode::FIRST_LINE:
 			if (clientOutput.find_line_end() == 0)
 				return 0;	// Need to read more
 			if (request.parse_first_line(clientOutput, cfg) < 0)	// Calls parse_header, error might be unrelated to first line
 				return -1;
 			break;
-		
-		case PARSING:
+
+		case Mode::PARSING:
 			rvalue = request.parse_header(clientOutput);
 			if (rvalue <= 0)
 				return rvalue;
 			break;
+
+		case Mode::GET:
+			if (get_method(numBytes))
+			break;
+			
 	}
 
-	if (state & WRITING_TO_CLIENT) {
-		rvalue = write_to_client(4096, events);
+	if (state & State::WRITING_TO_CLIENT) {
+		rvalue = write_to_client(numBytes, events);
 		if (rvalue < 0)
 			return -1;
 	}
 }
 
 CONNECTION_INL
-(isize) read_from_server(usize bytes) {
-	isize bytesRead = clientInput.read(readFd, bytes);
+(isize) read_from_server() {
+	isize bytesRead = clientInput.read(readFd);
 	if (bytesRead == 0) {
 		close(readFd);
 		readFd = -1;
@@ -47,11 +51,11 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(isize) write_to_server(usize bytes) {
+(isize) write_to_server() {
 	isize bytesWritten;
 
 	if (request.options & Options::CHUNKED_LENGTH)
-		bytesWritten = dechunk(bytes, clientOutput);
+		bytesWritten = dechunk(clientOutput);
 	else {
 		bytesWritten = clientOutput.write(writeFd, request.bodySize);
 		if (bytesWritten > 0)
@@ -67,9 +71,9 @@ CONNECTION_INL
 
 // Common to all
 CONNECTION_INL
-(isize) write_to_client(usize bytes, u32 events) {
+(isize) write_to_client(u32 events) {
 	// TODO: epoll event checks to see if valid
-	isize bytesWritten = clientInput.write(clientFd, bytes);
+	isize bytesWritten = clientInput.write(clientFd, numBytes);
 	if (bytesWritten < 0)
 		return bytesWritten;	// TODO: tmp error path
 	return bytesWritten;
@@ -77,11 +81,11 @@ CONNECTION_INL
 
 // Common to POST and CGI
 CONNECTION_INL
-(isize) read_from_client(usize bytes, u32 events) {
+(isize) read_from_client(u32 events) {
 	// TODO: epoll event checks to see if valid
 	if (clientOutput.index < clientOutput.size)	// Still have things to process
 		return 0;
-	isize bytesRead = clientOutput.read(clientFd, bytes);
+	isize bytesRead = clientOutput.read(clientFd, numBytes);
 	if (bytesRead < 0)
 		return bytesRead;
 	return bytesRead;
@@ -91,7 +95,7 @@ CONNECTION_INL
 // Any bytes that weren't consumed by the write are copied back to the start of the source buffer, 
 // effectively performing compaction.
 CONNECTION_INL
-(isize) dechunk(usize bytes, Buffer<bufferSize>& src) {
+(isize) dechunk(Buffer<bufferSize>& src) {
 	Buffer<bufferSize> tmpBuffer;
 	const usize maxLength = src.size != 0 ? src.size - 1 : 0;
 
@@ -126,7 +130,7 @@ CONNECTION_INL
 	if (tmpBuffer.size == 0)
 		return 0;				// CHECK: Nothing was appended
 
-	isize bytesWritten = tmpBuffer.write(writeFd, bytes);	// Writes may be reattempted, so regardless it should compact
+	isize bytesWritten = tmpBuffer.write(writeFd, numBytes);	// Writes may be reattempted, so regardless it should compact
 
 	// TODO: The buffer is only going to fill with data related to the chunks, decide if compaction is worth given current length
 	// Optimization opportunity here to have src copy directly to itself

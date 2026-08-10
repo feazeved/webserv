@@ -45,12 +45,8 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(isize) post_method(usize bytes, u32 events) {
-	isize bytesRead = read_from_client(bytes, events);
-	if (bytesRead < 0)
-		return bytesRead;
-
-	isize bytesWritten = write_to_server(bytes);
+(isize) post_method() {
+	isize bytesWritten = write_to_server(4096);
 	if (bytesWritten < 0)
 		return bytesWritten;
 
@@ -59,6 +55,6 @@ CONNECTION_INL
 		request.status = Status::i201;
 		build_header();
 	}
-	return write_to_client(bytes, events);
+	return bytesWritten;
 }
 }

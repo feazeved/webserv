@@ -3,19 +3,6 @@
 
 namespace HTTP {
 
-static inline
-isize s_get_mime_type(const char *dotPos, const char *end) {
-	static const char *mimeStrings[] = {"\x09" "text/html", "\x09" "text/html", 
-	"\x08" "text/css", "\x10" "application/json", "\x16" "application/javascript",
-	"\x09" "image/png", "\x0A" "image/jpeg", "\x0A" "image/jpeg", 
-	"\x09" "image/gif", "\x0A" "text/plain", "\x18" "application/octet-stream"};
-
-	// isize matchId = match_mime_type(ptr, end);
-	// cache.append("Content-Type: ");
-	// cache.appendInline(mimeStrings[matchId] + 1, mimeStrings[matchId][0]);
-
-}
-
 REQUEST_INL
 (isize) check_location(Buffer<bufferSize> &src, ServerConfig* cfg) {
 	bool found = false;
@@ -40,33 +27,33 @@ REQUEST_INL
 
 REQUEST_INL
 (isize) parse_target(Buffer<bufferSize> &src, ServerConfig* cfg) {
-	const char *p = str;
-	const char *questionMark = NULL;
 
-	while (p < end) {
-		if (*p <= 32)
-			return -1;
-		if (*p == '?') {
-			if(!questionMark)
-				questionMark = p;
-			else
+	u8 *optr = src.linePtr;
+	u8* &ptr = src.linePtr;
+	u8 *end = src.lineEnd;
+
+	query.index = 0;
+	query.size = 0;
+	path.index = 0;
+	path.size = src.lineEnd - src.linePtr;
+	while (ptr < end) {
+		if (g_asciiLut[*ptr] > ASCII_RFC_SYMBOLS) {
+			if (*ptr != '?')
 				return -1;
+			path.size = ptr - optr;
+			ptr++;
+			query.index = ptr - src.data;
+			query.size = src.lineEnd - ptr;
+			break;
 		}
-		if (*p == '.' && p[1] == '.')
-			return -1;
-		if (*p == '%' && ((!IS_DIGIT(p[1]) || !IS_DIGIT(p[2]) || (p[1] == '0' && p[2] == '0'))))	// TODO: should be hex i was wrong
+		if (*ptr == '%') {
+			if (!(g_asciiLut[ptr[1]] <= ASCII_HEX && g_asciiLut[ptr[2]] <= ASCII_HEX))
 				return -1;
-		p++;
+			ptr += 2;
+		}
+		ptr++;
 	}
-
-	path.index = str - (const char *)clientOutput.data;
-	if (questionMark) {
-		path.size = questionMark - str;
-		query.index = (questionMark + 1) - (const char *)clientOutput.data;
-		query.size = end - (questionMark + 1);
-	}
-	else
-		path.size = end - str;
+	contentType = src.match_mime();	// TODO: 
 
 	if(!s_checkLocation(src.data + path.index, path.size, cfg))
 		return -1;
@@ -88,7 +75,8 @@ REQUEST_INL
 	else
 		return -1;	// ERROR: Invalid method
 
-	if (MEMCMP(src.lineEnd - 9, "HTTP/1.1", 8) != 0)
+	src.lineEnd -= 9;
+	if (MEMCMP(src.lineEnd, "HTTP/1.1", 8) != 0)
 		return -1; // ERROR: Invalid version
 
 	i32 rvalue = parse_target(src, cfg);	// TODO: meaningful return

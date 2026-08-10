@@ -9,13 +9,12 @@ namespace HTTP {
 
 REQUEST_INL
 (isize) parse_header(Buffer<bufferSize> &src) {
-
 	isize rvalue;
 	while ((rvalue = src.find_line_end()) != 0) {
 		if (parse_line(src) < 0)
 			return -1;	// ERROR: Invalid header
 		if (rvalue == 2) {
-			// Header end, call configure() and setup
+			// TODO: Header end, call configure() and setup
 			return 1;
 		}
 	}

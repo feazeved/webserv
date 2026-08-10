@@ -40,6 +40,17 @@ CONNECTION_INL
 		return post_first_run();
 }
 
+template <usize bufferSize>
+static inline
+isize s_append_mime(Buffer<bufferSize> &src, u8 mimeIndex) {
+	static const char mimeStrings[][32] = {"\x09" "text/html", "\x09" "text/html", 
+	"\x08" "text/css", "\x10" "application/json", "\x16" "application/javascript",
+	"\x09" "image/png", "\x0A" "image/jpeg", "\x0A" "image/jpeg", 
+	"\x09" "image/gif", "\x0A" "text/plain", "\x18" "application/octet-stream"};
+
+	src.append_inline<24>(mimeStrings[mimeIndex] + 1, mimeStrings[mimeIndex]);	// ignore warning, clang is being dumb
+}
+
 CONNECTION_INL
 (void) build_header() {
 
@@ -49,22 +60,17 @@ CONNECTION_INL
 		clientInput.append("\r\n");
 	}
 	else {
-		clientInput.appendInline(request.status.c_str(), 3);
+		clientInput.append_inline(request.status.c_str(), 3);
 		clientInput.append("OK\r\n");
 	}
 
 	clientInput.append("Content-Type: ");
-	// clientInput.append(s_get_mime_type(fullpath));	// lets have this already parsed, only print
+	s_append_mime(clientInput, request.contentType);
 
 	clientInput.append("\r\n\r\n");
 
-	// s_append_cstr(clientInput, "Content-Type: ");
-	// s_append_cstr(clientInput, s_get_mime_type(fullpath));
-	// s_append_cstr(clientInput, "\r\n");
 	// clientInput.append("Content-Length: ");
 	// s_append_content_length(clientInput, (usize)st.st_size);
-	// s_append_cstr(clientInput, "\r\n");
-	// s_append_cstr(clientInput, "\r\n");
 
 	// client.append("HTTP/1.1 ");
 
@@ -74,17 +80,6 @@ CONNECTION_INL
 	// {
 	// 	client.append("Content-Length: ");
 	// 	client.append(requestSize, false);	// Auto performs itoa
-	// }
-
-	// Other lines here
-	// Location
-	// Content Type
-	// Content Encoding?
-
-	// client.append("\r\n");
-	// if (isBad(status)) {
-	// 	client.append(client.data + 9, statusEnd - 9);
-	// 	return;
 	// }
 }
 }
