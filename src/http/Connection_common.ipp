@@ -4,6 +4,39 @@
 namespace HTTP {
 
 CONNECTION_INL
+(isize) dispatch(u32 events) {
+	isize rvalue;
+
+	if (state & READING_FROM_CLIENT) {
+		rvalue = read_from_client(4096, events);
+		if (rvalue < 0)
+			return -1;
+	}
+
+	u8 method = request.mode & 7;
+	switch (state) {
+		case FIRST_LINE:
+			if (clientOutput.find_line_end() == 0)
+				return 0;	// Need to read more
+			if (request.parse_first_line(clientOutput, cfg) < 0)	// Calls parse_header, error might be unrelated to first line
+				return -1;
+			break;
+		
+		case PARSING:
+			rvalue = request.parse_header(clientOutput);
+			if (rvalue <= 0)
+				return rvalue;
+			break;
+	}
+
+	if (state & WRITING_TO_CLIENT) {
+		rvalue = write_to_client(4096, events);
+		if (rvalue < 0)
+			return -1;
+	}
+}
+
+CONNECTION_INL
 (isize) read_from_server(usize bytes) {
 	isize bytesRead = clientInput.read(readFd, bytes);
 	if (bytesRead == 0) {
@@ -17,7 +50,7 @@ CONNECTION_INL
 (isize) write_to_server(usize bytes) {
 	isize bytesWritten;
 
-	if (request.type & Attributes::CHUNKED)
+	if (request.options & Options::CHUNKED_LENGTH)
 		bytesWritten = dechunk(bytes, clientOutput);
 	else {
 		bytesWritten = clientOutput.write(writeFd, request.bodySize);

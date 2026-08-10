@@ -71,7 +71,7 @@ BUFFER_INL
 (isize) match_field() {
 	static const u8 ltable[][32] = {
 		"status", "location", "transfer-encoding", "content-length", 
-		"content-type", "host", "connection"};	
+		"content-type", "host", "connection", "accept"};	// TODO: add sse, remove location
 
 	u8 *optr = linePtr;
 

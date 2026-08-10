@@ -14,16 +14,16 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) configure() {
-	const bool isBodyMethod = request.type & (Attributes::POST | Attributes::CGI);
-	const bool encodingSet = !(request.type & Attributes::CHUNKED) && request.bodySize == SIZE_MAX;
+	const bool isBodyMethod = request.mode & (Mode::POST | Mode::CGI);
+	const bool encodingSet = !(request.options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH));
 
 	if (request.status.is_set())
 		return error_path();	// An error caused early interruption
 
-	if ((request.type & 0xF) == 0)
+	if ((request.mode & 0xF) == 0)
 		return error_path();	// TODO: Method not set, should be impossible. Remove in future
 
-	if ((request.type & Attributes::HOST) == 0)
+	if ((request.mode & Options::HOST) == 0)
 		return error_path();	// Host not set
 
 	if (isBodyMethod && !encodingSet)
@@ -32,9 +32,9 @@ CONNECTION_INL
 		return error_path();	// Encoding set for non-body methods
 	request.bodySize = (request.bodySize == SIZE_MAX) ? SIZE_MAX : cfg->maxBodySize;
 	
-	if (request.type & Attributes::CGI)
+	if (request.mode & Mode::CGI)
 		return cgi_first_run();
-	else if (request.type & (Attributes::GET | Attributes::DELETE))
+	else if (request.mode & (Mode::GET | Mode::DELETE))
 		return get_first_run();
 	else
 		return post_first_run();

@@ -3,28 +3,16 @@
 
 namespace HTTP {
 
-/*
-Functions:
-Something that takes the config file for the server and a request, and validates:
-
-Function receives a file path, a buffer, IO direction (read or write), number of bytes:
-
-1) Checks if the file path exists, if the server has permission to access it
-2) Finally return an FD or -1
-*/
-// (Reentrant) Reading state for the header, returns true when finished parsing the header
-
 // isize bytesRead = read_from_client(bytes, events);
 // if (bytesRead < 0)
 // 	return bytesRead;
 
 REQUEST_INL
 (isize) parse_header(Buffer<bufferSize> &src) {
+
 	isize rvalue;
 	while ((rvalue = src.find_line_end()) != 0) {
-		char *lineStart = src.data + src.start;
-		char *lineEnd = src.data + src.end;
-		if (parse_line(lineStart, lineEnd) < 0)
+		if (parse_line(src) < 0)
 			return -1;	// ERROR: Invalid header
 		if (rvalue == 2) {
 			// Header end, call configure() and setup
@@ -48,19 +36,19 @@ REQUEST_INL
 			return 0;
 
 		case Field::LOCATION:
-
+			
 			break;
 
 		case Field::TRANSFER_ENCODING:
-			if ((type & Attributes::CHUNKED) || bodySize != SIZE_MAX)
+			if ((options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH)))
 				return -1; // ERROR: bad request, transfer method had already been set
 			if (src.strcasecmp("chunked") == false)
 				return -1; // ERROR: bad request, transfer encoding isnt chunked
-			type |= Attributes::CHUNKED;
+			options |= Options::CHUNKED_LENGTH;
 			break;
 
 		case Field::CONTENT_LENGTH:
-			if ((type & Attributes::CHUNKED) || bodySize != SIZE_MAX)
+			if ((options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH)))
 				return -1; // ERROR: bad request, transfer method had already been set
 			bodySize = src.strtol10();
 			if (bodySize == SIZE_MAX)
@@ -68,12 +56,12 @@ REQUEST_INL
 			break;
 
 		case Field::HOST:
-			if (type & Attributes::HOST)
+			if (options & Options::HOST)
 				return -1;	// ERROR: Multiple hosts
 			if (src.strcasecmp("localhost") == false)
 				return -1;
 			src.strcasecmp(":8080");
-			type |= Attributes::HOST;
+			options |= Options::HOST;
 			break;
 	}
 

@@ -17,7 +17,7 @@ CONNECTION_INL
     const char* path = reinterpret_cast<const char*>(clientOutput.data + request.path.index);
     usize path_len = request.path.size;
 
-    if ((request.type & Attributes::GET) && isPath(path, path_len, "/events", 7)) {
+    if ((request.mode & Mode::GET) && isPath(path, path_len, "/events", 7)) {
         std::string headers =
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: text/event-stream\r\n"
@@ -30,7 +30,7 @@ CONNECTION_INL
         return 2;
     }
 
-    if ((request.type & Attributes::POST) && isPath(path, path_len, "/join", 5)) {
+    if ((request.mode & Mode::POST) && isPath(path, path_len, "/join", 5)) {
         i32 id = gameState->addPlayer();
 
         std::ostringstream body;
@@ -48,7 +48,7 @@ CONNECTION_INL
         return 0;
     }
 
-    if ((request.type & Attributes::POST) && isPath(path, path_len, "/move", 5)) {
+    if ((request.mode & Mode::POST) && isPath(path, path_len, "/move", 5)) {
         i32 playerId = 0;
         f64 x = 0.0, y = 0.0;
         const char* q = reinterpret_cast<const char*>(clientOutput.data + request.query.index);

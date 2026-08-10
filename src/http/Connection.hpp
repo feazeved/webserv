@@ -3,15 +3,20 @@
 #include <unistd.h>
 #include <sys/epoll.h>
 #include <ctime>
+#include "HTTP.hpp"
+#include <fcntl.h>
+#include <vector>
+#include <cstring>
+#include <sys/stat.h>
+#include <string>
 
 #include "HTTP.hpp"
 #include "core.hpp"
 #include "Buffer.hpp"
 #include "Request.hpp"
+#include "State.hpp"
 
 #define CONNECTION_INL(ret_type) template <usize bufferSize> ret_type inline HTTP::Connection<bufferSize>::
-
-namespace Game { class State; }	// alex: ta certo isso? wtf
 
 namespace HTTP {
 
@@ -23,6 +28,7 @@ public:
 
 	Buffer<bufferSize> clientInput, clientOutput;
 	Request<bufferSize> request;
+	u8 state;
 
 	time_t startTime, cgiStartTime, bonusTime; // Value ranging from -30s to 30s
 
@@ -34,21 +40,17 @@ public:
 	bool isSSE;
 	std::string sse_buffer;	// TODO: find out what this is
 
-	i32 dispatch() {
-		
-	}
+	isize dispatch(u32 events);
 
 	// TODO
-	i32 init(i32 f, ServerConfig* c) {
+	isize init(i32 f, ServerConfig* c) {
 		(void)f;
 		cfg = c;
 		return 1;
 	}
 
 	// TODO
-	i32 clear() {
-		return 1;
-	}
+	isize clear();
 
 	// Game
 	i32 handle_game_request();
@@ -86,10 +88,14 @@ public:
 	// }
 };
 
-} // namespace HTTP
+// namespace HTTP
+}
 
 #include "Connection_configure.ipp"
-#include "Connection_methods.ipp"
 #include "Connection_common.ipp"
-#include "Connection_cgi.ipp"
 #include "Connection_game.ipp"
+
+#include "Connection_cgi.ipp"
+#include "Connection_get.ipp"
+#include "Connection_post.ipp"
+#include "Connection_delete.ipp"
