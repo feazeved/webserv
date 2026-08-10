@@ -22,8 +22,21 @@ isize s_close_all(int *fdInput, int *fdOutput) {
 	return -1;
 }
 
-template <usize bufferSize> inline
-isize Connection<bufferSize>::cgi_first_run() {
+static inline
+bool s_set_noblock(int fd)
+{
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1)
+		return false;
+
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+		return false;
+
+	return true;
+}
+
+CONNECTION_INL
+(isize) cgi_first_run() {
 	int fdInput[2];
 	int fdOutput[2];
 
@@ -52,57 +65,24 @@ isize Connection<bufferSize>::cgi_first_run() {
 
 	close(fdInput[0]);
 	close(fdOutput[1]);
-	fd.readEnd = fdOutput[0];
-	fd.writeEnd = fdInput[1];
+	readFd = fdOutput[0];
+	writeFd = fdInput[1];
 	cgiStartTime = g_timeNow;
-}
-
-// NOTES: i think the call here is because CGI output is server controlled, 
-// we perform little error checking and presume the output is correct. 
-// Only quick sanity checks
-template <usize bufferSize> inline
-isize Connection<bufferSize>::parse_cgi_line(Buffer<bufferSize> &src, Buffer<bufferSize> &dst) {
-	char *field = src.data + src.start;
-	char *value = src.data + src.start;
-	char *end = src.data + src.end;
-	const usize totalLength = src.end - src.start;
-
-	isize type = s_match_field(value, end);
-	if (type <= 0) {
-		if (type < 0)
-			status = Status::i500;
-		return type;
-	}
-
-	if (type == Field::STATUS) {
-		status = value;
-		isize rvalue = status.is_valid() == true ? 0 : -1;
-		if (rvalue == -1)
-			status = Status::i500;	// CGI output an invalid status, should be server error
-		const char *str = status.c_str();
-		usize length = status.size();
-		dst.insert(str, length, 256 - length);
-		return rvalue;
-	}
-	else {
-		dst.append(field, totalLength);
-	}
-	return type;
 }
 
 /*	Header is built in stack memory while parsing the header from client output
 	When the header is built, it then appends part of the CGI body to tmp buffer
 	up to how many bytes will fit in a single write */
-template <usize bufferSize> inline
-isize Connection<bufferSize>::build_cgi_header() {
+CONNECTION_INL
+(isize) build_cgi_header() {
 	Buffer<2 * bufferSize> tmpBuffer;
 
-	tmpBuffer.index = 256;
+	tmpBuffer.index = 256;	// this isnt needed with header cache
 	tmpBuffer.size = 256;
 	tmpBuffer.start = 256;
 
 	while (clientOutput.find_line_end() == 1) {
-		if (parse_cgi_line() == -1) {
+		if (request.parse_cgi_line() == -1) {
 			
 		}
 	}
@@ -110,8 +90,8 @@ isize Connection<bufferSize>::build_cgi_header() {
 
 /*	The pipe fds here are configured to be non-blocking and read/write errors are ignored
 	Failure conditions for these fds are instead handled by CGI timeouts */
-template <usize bufferSize> inline
-isize Connection<bufferSize>::cgi_method(usize bytes, u32 events) {
+CONNECTION_INL
+(isize) cgi_method(usize bytes, u32 events) {
 	isize bytesRead, bytesWritten;
 
 	bytesRead = read_from_client(bytes, events);
@@ -125,7 +105,7 @@ isize Connection<bufferSize>::cgi_method(usize bytes, u32 events) {
 	bonusTime = CLAMP(bonusTime + delta, 0, 30);
 
 	// Return path until the operation isnt complete
-	if (status.is_set()) {
+	if (request.status.is_set()) {
 		if (clientOutput.find_header_end() == false) {
 			if (clientOutput.is_full())
 				return -1;	// ERROR: CGI Header is too big

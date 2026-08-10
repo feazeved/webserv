@@ -69,7 +69,7 @@ void Game::State::broadcastEvents(ServerManager& manager) {
 	for (usize i = 0; i < sseClients.size(); ++i) {
 		HTTP::Connection<bufSize>* conn = static_cast<HTTP::Connection<bufSize>*>(sseClients[i]);
 		conn->sse_buffer += data;
-		manager.markConnectionWritable(conn->fd.client, conn);
+		manager.markConnectionWritable(conn->clientFd, conn);
 	}
 }
 

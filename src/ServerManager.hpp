@@ -76,7 +76,7 @@ public:
 							closeConnection(conn);
 							break;
 						case 2:
-							modifyEpollEvent(conn->fd.client, EPOLLOUT, conn);
+							modifyEpollEvent(conn->clientFd, EPOLLOUT, conn);
 							break;
 						default:
 							break;
@@ -171,7 +171,7 @@ private:
 	void closeConnection(HTTP::Connection<s_bufferSize>* conn) {
 		if (conn->gameState)
 			conn->gameState->removeSSEClient(conn);
-		removeFromEpoll(conn->fd.client);
+		removeFromEpoll(conn->clientFd);
 	}
 
 	void broadcastAllServerEvents() {

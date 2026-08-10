@@ -1,166 +1,93 @@
 #pragma once
 #include <unistd.h>
 #include "core.hpp"
-#include "Connection_helpers.ipp"
+
+#define BUFFER_INL(ret_type) template <usize bufferSize> ret_type inline Buffer<bufferSize>::
 
 template <usize bufferSize>
 class Buffer {
-private:
-
 public:
-
-union {
-	u8 rawData[bufferSize];
-	struct {
-		u8 data[bufferSize - sizeof(usize) * 8];	// Last cache line is reserved for unbounded memory loads
-		usize reserved[4];
-		usize index, size, start, end;
+	union {
+		u8 rawData[bufferSize];
+		struct {
+			u8 data[bufferSize - sizeof(usize) * 8];	// Last cache line is reserved for unbounded memory loads
+			usize reserved[4];
+			u8 *readPtr, *writePtr, *linePtr, *lineEnd;
+		};
 	};
-};
 
-isize read(i32 fd, usize bytes) {
-	if (size + bytes > sizeof(data))
-		return -1;	// ERROR: Buffer overflow
+	isize read(i32 fd, usize bytes) {
+		if (writePtr + bytes > data + sizeof(data))
+			return -1;	// ERROR: Buffer overflow
 
-	isize bytesRead = ::read(fd, data + size, bytes);
-	if (bytesRead < 0)
-		return -2;
-	size += (usize) bytesRead;	// TODO: what do we do on failures?
-	return bytesRead;
-}
+		isize bytesRead = ::read(fd, writePtr, bytes);
+		if (bytesRead < 0)
+			return -2;
+		writePtr += (usize) bytesRead;	// TODO: what do we do on failures?
+		return bytesRead;
+	}
 
-isize write(i32 fd, usize bytes) {
-	usize bytesCapped = MIN(bytes, size - index);
-	isize bytesWritten = ::write(fd, data + index, bytesCapped);
+	isize write(i32 fd, usize bytes) {
+		usize bytesCapped = MIN(bytes, writePtr - readPtr);
+		isize bytesWritten = ::write(fd, readPtr, bytesCapped);
 
-	if (bytesWritten < 0)
+		if (bytesWritten < 0)
+			return bytesWritten;
+		readPtr += bytesWritten;
+		isize tailBytes = writePtr - readPtr;
+		if (tailBytes <= 32) {	// Check if this is needed
+			MEMMOVE(data, readPtr, 32);
+			writePtr = data + tailBytes;
+			readPtr = data;
+		}
 		return bytesWritten;
-	index += (u32) bytesWritten;
-	if (size - index <= 32) {	// Check if this is needed
-		MEMMOVE(data, data + index, 32);
-		size -= index;
-		index = 0;
 	}
-	return bytesWritten;
-}
 
-void reset() {
-	index = 0;
-	size = 0;
-}
-
-bool is_full() {
-	return size == sizeof(data);
-}
-
-isize find_line_end() {
-	start = end != SIZE_MAX ? end : start;	// Previous call found a match
-	end = SIZE_MAX;
-	const usize maxLength = size == 0 ? 0 : size - 3;
-
-	while (index < maxLength) {
-		if (MEMCMP(data + index, "\r\n", 2) == 0) {
-			index += 2;
-			end = index;
-			if (MEMCMP(data + index, "\r\n", 2) == 0) {
-				index += 2;
-				return 2; // Found header end
-			}
-			return 1; // Found line end
-		}
-		else
-			index++;
+	void reset() {
+		readPtr = data;
+		writePtr = data;
 	}
-	return 0;
-}
 
-// Does not update start and end (not for line parsing)
-bool find_header_end() {
-	const usize maxLength = size == 0 ? 0 : size - 3;
-
-	while (index < maxLength) {
-		if (MEMCMP(data + index, "\r\n\r\n", 4) == 0) {
-			index += 4;
-			return true; // Found header end
-		}
-		else
-			index++;
+	bool is_full() {
+		return writePtr >= (data + sizeof(data));
 	}
-	return false;
-}
 
-bool prepend(const u8 *ptr, usize length) {
-	if (length > index)
-		return false;
-	index -= length;
-	MEMCPY(data + index, ptr, length);
-}
+	isize find_line_end();
+	bool find_header_end();
+	isize match_field();
+	isize match_mime();
 
-bool insert(const u8 *ptr, usize length, usize insertIndex) {
-	MEMCPY(data + insertIndex, ptr, length);
-}
+	usize itoa10(usize number, char *bufferEnd);
+	usize itoa16(usize number, char *bufferEnd);
+	usize strtol10();
+	usize strtol16();
 
-template <usize N>
-void append(const char (&string)[N]) {
-	MEMCPY_INLINE(data + size, string, N - 1);
-	size += N - 1;
-}
+	template <usize N>
+	bool strcmp(const char (&string)[N]);
 
-void append(const u8 *ptr, usize length) {
-	MEMCPY(data + size, ptr, length);
-	size += length;
-}
+	template <usize N>
+	bool strcasecmp(const char (&string)[N]);
+	bool skip_spaces();
 
-void appendInline(const u8 *ptr, usize length) {
-	MEMCPY_INLINE(data + size, ptr, length);
-	size += length;
-}
+	template <usize N>
+	void append(const char (&string)[N]);
 
-// Should be impossible for dst buffer to not fit
-// TODO: Might remove MIN3 and have it overflow to guarantee behavior
-usize append(Buffer &src, usize length) {
-	usize remainingSrc = src.size - src.index;	// How many bytes it has read
-	usize remainingDst = sizeof(data) - size;	// How many bytes are free in the buffer
-	usize appendLength = MIN3(length, remainingSrc, remainingDst);
+	void append(const u8 *ptr, usize length);
+	bool prepend(const u8 *ptr, usize length);
 
-	MEMCPY(data + size, src.data + index, appendLength);
-	src.index += appendLength;
-	size += appendLength;
-	return appendLength;
-}
+	void appendInline(const u8 *ptr, usize length);
+	usize append(Buffer &src, usize length);
+	void appendDigit10(usize number);
 
-// TODO: No length checks
-// TODO: separate functions
-void append(usize number) {
-	char buffer[48];
-	char *mid = buffer + 24;
-	usize digitLength = s_itoa10(number, mid);
-	char *start = buffer + 24 - digitLength;
-
-	*mid++ = '\r';
-	*mid = '\n';
-
-	MEMCPY_INLINE(data + size, start, 24);
-	size += digitLength;
-}
-
-void copy(const Buffer& other) {
-	size = other.size - other.index;
-	index = 0;
-	MEMCPY(data, other.data + other.index, size);
-}
+	void copy(const Buffer& other);
+	bool insert(const u8 *ptr, usize length, usize insertIndex);
 
 Buffer()
-	: index(0), size(0), start(0), end(SIZE_MAX)
+	: readPtr(data), writePtr(data), linePtr(data), lineEnd(NULL)
 	{
 	}
 };
 
-// template <usize bufferSize>
-// union u_buffer {
-// 	struct s_buffer {
-// 		Buffer<bufferSize> reader;
-// 		Buffer<bufferSize> writer;
-// 	};
-// 	Buffer<bufferSize * 2> whole;
-// };
+#include "Buffer_add.ipp"
+#include "Buffer_search.ipp"
+#include "Buffer_string.ipp"

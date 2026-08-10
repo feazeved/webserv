@@ -6,77 +6,36 @@
 
 #include "HTTP.hpp"
 #include "core.hpp"
-#include "Connection_helpers.ipp"
 #include "Buffer.hpp"
-#include "Status.hpp"
+#include "Request.hpp"
 
-namespace Game { class State; }
+#define CONNECTION_INL(ret_type) template <usize bufferSize> ret_type inline HTTP::Connection<bufferSize>::
+
+namespace Game { class State; }	// alex: ta certo isso? wtf
 
 namespace HTTP {
-
-namespace Attributes {
-
-enum Attributes {
-	GET = 1 << 0,
-	POST = 1 << 1,
-	DELETE = 1 << 2,
-	CGI = 1 << 3,
-	HOST = 1 << 4,
-	CHUNKED = 1 << 5,
-	DONE = 1 << 7
-};
-}
-
-namespace Field {
-	enum Type {
-		ERROR = -1,	// Field name is too large
-		UNKNOWN = 0,
-		STATUS = 1,
-		LOCATION = 2,
-		TRANSFER_ENCODING = 3,
-		CONTENT_LENGTH = 4
-	};
-}
-
-typedef struct {
-	struct {
-		u32 index;
-		u32 size;
-	}	path, query, cookie;
-}	RequestVars;
-
 
 template <usize bufferSize>
 class Connection {
 public:
-	RequestVars vars;
-	usize bodySize, chunkSize;
 	ServerConfig* cfg;
-	Buffer<bufferSize> clientInput, clientOutput;
-
-	time_t startTime, cgiStartTime;
-	time_t bonusTime;	// Value ranging from -30s to 30s
-	pid_t processId;
-
-	struct {
-		i32 client;		// Duplex FD
-		i32 writeEnd;	// CGI Input or POST
-		i32 readEnd;	// CGI Output or GET/DEL
-	} fd;
-
-	u32 metadata;
-	Status status;
-	u8 info;
-	u8 type;
-	u8 contentType;	// TODO: make enum
-
-public:
 	Game::State* gameState;
+
+	Buffer<bufferSize> clientInput, clientOutput;
+	Request<bufferSize> request;
+
+	time_t startTime, cgiStartTime, bonusTime; // Value ranging from -30s to 30s
+
+	pid_t processId;
+	i32 clientFd;	// Duplex FD
+	i32 writeFd;	// CGI Input or POST
+	i32 readFd;		// CGI Output or GET/DEL
+
 	bool isSSE;
-	bool headerParsed;
-	std::string sse_buffer;
+	std::string sse_buffer;	// TODO: find out what this is
 
 	i32 dispatch() {
+		
 	}
 
 	// TODO
@@ -91,17 +50,8 @@ public:
 		return 1;
 	}
 
-
 	// Game
 	i32 handle_game_request();
-
-	// Parsing
-	bool  checkType(const std::string& method, std::vector<std::string>::iterator& mit, std::vector<std::string>::iterator& end);
-	bool  checkLocation();
-	isize parse_header(usize bytes, u32 events);
-	isize parse_first_line(char *str, char *end);
-	isize parse_line(char *str, char *end);
-	isize parse_target(char *str, char *end);
 
 	// Configuration
 	isize error_path();
@@ -119,7 +69,6 @@ public:
 	// CGI
 	isize cgi_first_run();
 	isize cgi_method(usize bytes, u32 events);
-	isize parse_cgi_line(Buffer<bufferSize> &src, Buffer<bufferSize> &dst);
 	isize build_cgi_header();
 
 	// Common
@@ -130,18 +79,15 @@ public:
 	isize dechunk(usize bytes, Buffer<bufferSize>& src);
 
 	// ======== Constructors ====================
-	Connection() :
-		bodySize(SIZE_MAX),
-		type(0),
-		gameState(NULL),
-		isSSE(false),
-		headerParsed(false) {
-	}
+	// Connection() :
+	// 	gameState(NULL),
+	// 	isSSE(false),
+	// 	headerParsed(false) {
+	// }
 };
 
 } // namespace HTTP
 
-#include "Connection_parse.ipp"
 #include "Connection_configure.ipp"
 #include "Connection_methods.ipp"
 #include "Connection_common.ipp"
