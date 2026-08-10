@@ -44,6 +44,29 @@
 
 // }
 
+
+let x = 0;
+let y = 0;
+
+const penguin = document.getElementById('penguin');
+
+
+function keyPress(event) {
+	if (event.key == 'ArrowUp')
+		y -= 5;
+	if (event.key == 'ArrowDown')
+		y += 5;
+	if (event.key == 'ArrowLeft')
+		x -= 5;
+	if (event.key == 'ArrowRight')
+		x += 5;
+	penguin.style.top = `${x}px`;
+	penguin.style.left = `${y}px`;
+}
+
+document.addEventListener('keydown', keyPress);
+
+
 function startGame() {
 	const canvas = document.getElementById('gameCanvas');
 
