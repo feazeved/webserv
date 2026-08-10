@@ -58,7 +58,8 @@ isize Connection<bufferSize>::get_first_run() {
 	}
 
 	if (S_ISDIR(st.st_mode)) {
-		if (location->index.empty()) {
+		if (location->index.empty() && location->autoindex == true) {
+			// build autoindex
 			status = Status::i403;
 			return error_path();
 		}
@@ -73,8 +74,8 @@ isize Connection<bufferSize>::get_first_run() {
 		}
 		if (S_ISDIR(st.st_mode)) {	// Index is directory (maybe should be parsing error?)
 			status = Status::i500;
-			return error_path();
 			fullpath = indexPath;
+			return error_path();
 		}
 	}
 

@@ -52,7 +52,7 @@ bool Connection<bufferSize>::checkLocation(){
 
 	for(; it != cfg->locations.end(); it++)
 	{
-		if (MEMCMP(vars.path.index, it->path.c_str(), it->path.size()))
+		if (MEMCMP(vars.path.index, it->path.c_str(), it->path.size()) == 0 && vars.path.size == it->path.size())
 		{
 			found = true;
 			break ;
@@ -61,6 +61,7 @@ bool Connection<bufferSize>::checkLocation(){
 
 	if (found)
 	{
+		// Changing this
 		std::string method;
 		std::vector<std::string>::iterator begin = it->methods.begin();
 		std::vector<std::string>::iterator end = it->methods.end();
