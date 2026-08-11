@@ -50,22 +50,22 @@ let y = 0;
 
 const penguin = document.getElementById('penguin');
 
+const range = 50;
 
 function keyPress(event) {
-	if (event.key == 'ArrowUp')
-		y -= 5;
-	if (event.key == 'ArrowDown')
-		y += 5;
-	if (event.key == 'ArrowLeft')
-		x -= 5;
-	if (event.key == 'ArrowRight')
-		x += 5;
-	penguin.style.top = `${x}px`;
-	penguin.style.left = `${y}px`;
+  if (event.key == 'ArrowUp')
+    x = Math.max(0, x - range);
+  if (event.key == 'ArrowDown')
+    x = Math.min(300 - 80, x + range);
+  if (event.key == 'ArrowLeft')
+    y = Math.max(0, y - range);
+  if (event.key == 'ArrowRight')
+    y = Math.min(500 - 60, y + range);
+  penguin.style.top = `${x}px`;
+  penguin.style.left = `${y}px`;
 }
 
-document.addEventListener('keydown', keyPress);
-
+document.addEventListener('keyup', keyPress);
 
 function startGame() {
 	const canvas = document.getElementById('gameCanvas');
