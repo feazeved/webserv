@@ -41,43 +41,79 @@
 // 		how to remove penguin
 // }
 
+function startGame() {
 
-// }
+}
 
-const json_s = '{"username": "wlucas-f", "x": "10", "y": "50"}'
+const BACKEND = ""
 
-const obj = JSON.parse(json_s);
-const user = obj.username;
-const jx = obj.x;
-const jy = obj.y;
-console.log("Name: ", user, "X: ", jx, "Y: ", jy);
+const arena = document.getElementById("arena");
 
-let x = parseInt(jx);
-let y = parseInt(jy);
+function renderState(state) {
+	let ids = [];
 
-const penguin = document.getElementById('penguin');
+	state.forEach(({ username, x, y }) => {
+		const id = `penguin-${username}`;
+		ids.push(id);
+		let el = arena.querySelector('#' + id);
+		if (el == null) {
+			el = htmlToElement(`<div class="penguin" id="${id}">🐧<p>${username}</p></div>`);
+			arena.append(el);
+		}
+		el.style.top = `${y}px`;
+		el.style.left = `${x}px`;
+	});
 
-const range = 50;
+	arena.querySelectorAll('.penguin').forEach(el => ids.includes(el.id) || el.remove());
+
+}
+
+const eu = { username: "meuovo", x: 0, y: 0 }
+
+async function update(eu)
+{
+	try {
+		renderState(await fetch(`${BACKEND}/update`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(eu)
+		}).then(data => data.json()))
+	} catch { }
+}
+
+
+
+function htmlToElement(htmlText)
+{
+	const tmp = document.createElement("div");
+	tmp.innerHTML = htmlText;
+	const child = tmp.firstElementChild;
+	child.remove();
+	return child;
+}
+
+const range = 40;
 
 function keyPress(event) {
   if (event.key == 'ArrowUp')
-    x = Math.max(0, x - range);
+    eu.y = Math.max(0, eu.y - range);
   if (event.key == 'ArrowDown')
-    x = Math.min(300 - 80, x + range);
+    eu.y = Math.min(300 - 80, eu.y + range);
   if (event.key == 'ArrowLeft')
-    y = Math.max(0, y - range);
+    eu.x = Math.max(0, eu.x - range);
   if (event.key == 'ArrowRight')
-    y = Math.min(500 - 60, y + range);
-  penguin.style.top = `${x}px`;
-  penguin.style.left = `${y}px`;
+    eu.x = Math.min(500 - 60, eu.x + range);
+
+	update(eu);
+	// penguin.style.left =
+	// 	penguin.style.top = ;
 }
 
 document.addEventListener('keyup', keyPress);
 
 
-function startGame() {
-	const canvas = document.getElementById('gameCanvas');
-
-	canvas.style.backgroundImage = "url('images/town.webp')";
-	canvas.style.backgroundPosition = "center";
-}
+setInterval(async function() {
+	try {
+		renderState(await fetch(`${BACKEND}/state`).then(data => data.json()))
+	} catch {}
+}, 200);
