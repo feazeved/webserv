@@ -3,19 +3,11 @@
 #include <string>
 #include <vector>
 #include <map>
-
+#include <unistd.h>
 #include "core.hpp"
 #include "Status.hpp"
 
 namespace HTTP {
-
-// It needs to be like the one in Connection.hpp...
-// Better have only one but this works
-enum Method {
-	GET = 1 << 0,
-	POST = 1 << 1,
-	DELETE = 1 << 2,
-};
 
 struct Location {
 	std::string					path;
@@ -40,23 +32,82 @@ struct ServerConfig {
 	ServerConfig() : host("localhost"), port(-1), maxBodySize(-1), autoindex(false) {}
 };
 
-#define STATUS_200 "200 OK"
-#define STATUS_201 "201 Created"
-#define STATUS_204 "204 No Content"
-#define STATUS_301 "301 Moved Permanently"
-#define STATUS_302 "302 Found"
-#define STATUS_400 "400 Bad Request"
-#define STATUS_403 "403 Forbidden"
-#define STATUS_404 "404 Not Found"
-#define STATUS_405 "405 Method Not Allowed"
-#define STATUS_411 "411 Length Required"
-#define STATUS_413 "413 Content Too Large"
-#define STATUS_414 "414 URI Too Long"
-#define STATUS_431 "431 Request Header Fields Too Large"
-#define STATUS_500 "500 Internal Server Error"
-#define STATUS_501 "501 Not Implemented"
-#define STATUS_502 "502 Bad Gateway"
-#define STATUS_504 "504 Gateway Timeout"
-#define STATUS(code) HTTP_STATUS_##code
+#ifdef PIPE_BUF
+	#if PIPE_BUF > 4096
+		#define ATOMIC_IOSIZE 4096
+	#else
+		#define ATOMIC_IOSIZE PIPE_BUF
+	#endif
+#else
+	#ifdef _POSIX_PIPE_BUF
+		#define ATOMIC_IOSIZE _POSIX_PIPE_BUF
+	#else
+		#define ATOMIC_IOSIZE 512
+	#endif
+#endif
 
+// Switch (no read, read, read chunked, can read)
+// 
+
+// These are exclusive states
+namespace Mode {
+	enum e_http_mode {
+		GET = 1 << 0,
+		POST = 1 << 1,
+		DELETE = 1 << 2,
+		CGI = 1 << 3,
+		SSE = 1 << 4
+	};
+}
+
+namespace State {
+	enum e_http_state {
+		ERROR = 0,
+		READING_FROM_CLIENT = 1,
+		WRITING_TO_CLIENT = 2,
+		PARSING = 4,
+		FIRST_LINE = 8,
+		DONE = 16
+	};
+}
+
+namespace Options {
+	enum e_http_options {
+		CHUNKED_LENGTH = 1 << 0,
+		FIXED_LENGTH = 1 << 1,
+		HOST = 1 << 2,
+		CONNECTION_TYPE = 1 << 3	// Keep alive or
+	};
+}
+
+namespace Field {
+	enum e_http_field {
+		INVALID = -1,
+		UNKNOWN = 0,
+		STATUS = 1,
+		LOCATION = 2,
+		TRANSFER_ENCODING = 3,
+		CONTENT_LENGTH = 4,
+		CONTENT_TYPE = 5,
+		HOST = 6,
+		CONNECTION = 7
+	};
+}
+
+namespace Mime {
+	enum e_mime_type {
+		HTML = 0,
+		HTM,
+		CSS,
+		JSON,
+		JS,
+		PNG,
+		JPG,
+		JPEG,
+		GIF,
+		TXT,
+		OCTET_STREAM,
+		COUNT
+	};
+}
 }

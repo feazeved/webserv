@@ -8,10 +8,6 @@
 
 class ServerManager;
 
-namespace HTTP {
-	template <usize bufferSize> class Connection;
-}
-
 namespace Game {
 
 class State {

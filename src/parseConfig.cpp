@@ -123,11 +123,11 @@ void setMethods(std::vector<std::string> &methods, HTTP::Location &location){
 	for(; it != methods.end(); it++)
 	{
 		if (it->size() == 3 && MEMCMP(it->c_str(), "GET", 3) == 0)
-			location.methods |= HTTP::GET;
+			location.methods |= HTTP::Mode::GET;
 		else if (it->size() == 4 && MEMCMP(it->c_str(), "POST", 4) == 0)
-			location.methods |= HTTP::POST;
+			location.methods |= HTTP::Mode::POST;
 		else if(it->size() == 6 && MEMCMP(it->c_str(), "DELETE", 6) == 0)
-			location.methods |= HTTP::DELETE;
+			location.methods |= HTTP::Mode::DELETE;
 		else
 			throw std::runtime_error("Invalid method");
 	}

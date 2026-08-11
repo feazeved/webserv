@@ -3,52 +3,102 @@
 
 namespace HTTP {
 
-template <usize bufferSize> inline
-isize Connection<bufferSize>::read_from_server(usize bytes) {
-	isize bytesRead = clientInput.read(fd.readEnd, bytes);
+// Connection returns whether or not the FD should be removed from epoll
+// 0: keep it, -1 remove it
+CONNECTION_INL
+(isize) dispatch(u32 events) {
+	isize rvalue;
+
+	if (state & State::READING_FROM_CLIENT) {
+		rvalue = read_from_client(events);
+		if (rvalue < 0)
+			return error_path();
+	}
+
+	if (state & State::PARSING) {
+		if (state & State::FIRST_LINE) {
+			if (clientOutput.cursor.find_line_end() == 0)
+				return 0;	// Need to read more
+			if (request.parse_first_line(clientOutput.cursor, cfg) != 0)
+				return error_path();
+			state ^= State::FIRST_LINE;
+		}
+		rvalue = request.parse_header(clientOutput.cursor);
+		if (rvalue == 0)
+			return rvalue;
+		else if (rvalue < 0)
+			return error_path();
+		if (configure() < 0)
+			return error_path();
+		return 0;
+	}
+
+	switch (request.mode) { // Felipe: Why not a del_method as well?
+		case Mode::GET:		rvalue = get_method();	break;
+		case Mode::POST:	rvalue = post_method();	break;
+		case Mode::CGI:		rvalue = cgi_method();	break;
+		case Mode::SSE:		rvalue = sse_method();	break;
+		default:			break;
+	}
+
+	if (rvalue < 0)
+		return error_path();
+
+	if (state & State::WRITING_TO_CLIENT) {
+		rvalue = write_to_client(events);
+		if (rvalue < 0)
+			return error_path();
+	}
+
+	return 0;
+}
+
+CONNECTION_INL
+(isize) read_from_server() {
+	isize bytesRead = clientInput.cursor.read(readFd, ATOMIC_IOSIZE);
 	if (bytesRead == 0) {
-		close(fd.readEnd);
-		fd.readEnd = -1;
+		close(readFd);
+		readFd = -1;
 	}
 	return bytesRead;
 }
 
-template <usize bufferSize> inline
-isize Connection<bufferSize>::write_to_server(usize bytes) {
+CONNECTION_INL
+(isize) write_to_server() {
 	isize bytesWritten;
 
-	if (type & Attributes::CHUNKED)
-		bytesWritten = dechunk(bytes, clientOutput);
+	if (request.options & Options::CHUNKED_LENGTH)
+		bytesWritten = decode();
 	else {
-		bytesWritten = clientOutput.write(fd.writeEnd, bodySize);
+		bytesWritten = clientOutput.cursor.write(writeFd, request.bodySize);
 		if (bytesWritten > 0)
-			bodySize -= bytesWritten;
+			request.bodySize -= (usize) bytesWritten;
 	}
 
-	if (bodySize == 0) {	// Must guarantee that bodySize is 0
-		close(fd.writeEnd);
-		fd.writeEnd = -1;	// Finished reading
+	if (request.bodySize == 0) {	// Must guarantee that bodySize is 0
+		close(writeFd);
+		writeFd = -1;	// Finished reading
 	}
 	return bytesWritten;
 }
 
 // Common to all
-template <usize bufferSize> inline
-isize Connection<bufferSize>::write_to_client(usize bytes, u32 events) {
-	// TODO: epoll event checks to see if valid
-	isize bytesWritten = clientInput.write(fd.client, bytes);
+// TODO: epoll event checks to see if valid
+CONNECTION_INL
+(isize) write_to_client(u32 events) {
+	isize bytesWritten = clientInput.cursor.write(clientFd, ATOMIC_IOSIZE);
 	if (bytesWritten < 0)
 		return bytesWritten;	// TODO: tmp error path
 	return bytesWritten;
 }
 
 // Common to POST and CGI
-template <usize bufferSize> inline
-isize Connection<bufferSize>::read_from_client(usize bytes, u32 events) {
-	// TODO: epoll event checks to see if valid
-	if (clientOutput.index < clientOutput.size)	// Still have things to process
+// TODO: epoll event checks to see if valid
+CONNECTION_INL
+(isize) read_from_client(u32 events) {
+	if (clientOutput.cursor.readPtr < clientOutput.cursor.writePtr)	// Still have things to process
 		return 0;
-	isize bytesRead = clientOutput.read(fd.client, bytes);
+	isize bytesRead = clientOutput.cursor.read(clientFd, ATOMIC_IOSIZE);
 	if (bytesRead < 0)
 		return bytesRead;
 	return bytesRead;
@@ -57,54 +107,60 @@ isize Connection<bufferSize>::read_from_client(usize bytes, u32 events) {
 // This function dechunks from a source buffer to a stack buffer, then writes from this stack buffer
 // Any bytes that weren't consumed by the write are copied back to the start of the source buffer, 
 // effectively performing compaction.
-template <usize bufferSize> inline
-isize Connection<bufferSize>::dechunk(usize bytes, Buffer<bufferSize>& src) {
-	Buffer<bufferSize> tmpBuffer;
-	const usize maxLength = src.size != 0 ? src.size - 1 : 0;
+CONNECTION_INL
+(isize) dechunk(Cursor& src, Cursor& dst) {
+	const u8 *const searchEnd = src.writePtr > src.memStart ? src.writePtr - 1 : src.memStart;
 
-	while (src.index < maxLength) {
-		if (chunkSize == SIZE_MAX) {
+	while (src.readPtr < searchEnd) {
+		if (request.chunkSize == SIZE_MAX) {
 			isize rvalue = src.find_line_end();
 			if (rvalue == 0)
 				break;
-			chunkSize = s_strtol16(src.data + src.start);
-			if (chunkSize == 0) {
+			request.chunkSize = src.strtol16();
+			if (request.chunkSize == 0) {
 				if (rvalue != 2)
-					return -1;
-				bodySize = 0;
+					return -1;	// CLOSING ERROR: no header end after 0
+				request.bodySize = 0;
 				break;
 			}
-			if (chunkSize > bodySize)
+			if (request.chunkSize > request.bodySize)
 				return -1;			// CLOSING ERROR: Body size was greater than maximum allowed or Wrong
-			bodySize -= chunkSize;
+			request.bodySize -= request.chunkSize;
 		}
-		else if (chunkSize > 0) {
-			usize bytesAppended = tmpBuffer.append(src, chunkSize);
-			chunkSize -= bytesAppended;	// Guaranteed to be chunksize or less
+		else if (request.chunkSize > 0) {
+			usize bytesAppended = dst.append(src, request.chunkSize);
+			request.chunkSize -= bytesAppended;	// Guaranteed to be chunksize or less
 		}
 		else {
-			if (MEMCMP(src.data + src.index, "\r\n", 2) != 0)
+			if (!src.strcmp("\r\n"))
 				return -1;
-			src.index += 2;
-			chunkSize = SIZE_MAX;
+			request.chunkSize = SIZE_MAX;
 		}
 	}
 
-	if (tmpBuffer.size == 0)
-		return 0;				// CHECK: Nothing was appended
+	return dst.writePtr - dst.memStart;
+}
 
-	isize bytesWritten = tmpBuffer.write(fd.writeEnd, bytes);	// Writes may be reattempted, so regardless it should compact
+// TODO: The buffer is only going to fill with data related to the chunks, decide if compaction is worth given current length
+// Optimization opportunity here to have src copy directly to itself
+// Otherwise just prepend the remainder to the end of what was read
+CONNECTION_INL
+(isize) decode() {
+	Buffer<sizeof(clientInput)> tmpBuffer;
+	Cursor &src = clientOutput.cursor;
+	Cursor &tmp = tmpBuffer.cursor;
 
-	// TODO: The buffer is only going to fill with data related to the chunks, decide if compaction is worth given current length
-	// Optimization opportunity here to have src copy directly to itself
-	// Otherwise just prepend the remainder to the end of what was read
-	if (src.size > src.index) { 
-		isize bytesRemaining = src.size - src.index;
-		tmpBuffer.append(src, (usize)bytesRemaining);
+	if (dechunk(src, tmp) < 0)
+		return -1;
+
+	isize bytesWritten = tmp.write(writeFd, ATOMIC_IOSIZE); // This is always going to be a server write
+	if (src.writePtr > src.readPtr) { 
+		isize bytesRemaining = src.writePtr - src.readPtr;
+		tmp.append(src, (usize)bytesRemaining);
 	}
 
-	if (tmpBuffer.size > tmpBuffer.index)
-		src.copy(tmpBuffer);
+	if (tmp.writePtr > tmp.readPtr)
+		src.copy(tmp);
 
 	return bytesWritten;
 }

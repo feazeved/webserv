@@ -36,7 +36,7 @@ public:
 	usize find_free_slot() {
 		usize freeIndex = metadata.find_first_clear();
 
-		if (freeIndex > capacity()) {
+		if (freeIndex >= capacity()) {
 			if (freeIndex > maxElements)
 				return SIZE_MAX;
 			if (grow() == false)

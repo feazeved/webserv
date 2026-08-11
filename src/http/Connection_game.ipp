@@ -1,11 +1,10 @@
 #pragma once
-
-#include "core.hpp"
 #include "Connection.hpp"
-#include "State.hpp"
-#include <sstream>
+
 #include <cstdlib>
+#include <sstream>
 #include <sys/socket.h>
+#include "State.hpp"
 
 namespace {
     inline bool isPath(const char* path, usize path_len, const char* str, usize len) {
@@ -13,12 +12,12 @@ namespace {
     }
 }
 
-template <usize bufferSize>
-i32 HTTP::Connection<bufferSize>::handle_game_request() {
-    const char* path = reinterpret_cast<const char*>(clientOutput.data + vars.path.index);
-    usize path_len = vars.path.size;
+CONNECTION_INL
+(i32) handle_game_request() {
+    const char* path = reinterpret_cast<const char*>(clientOutput.cursor.memStart + request.path.index);
+    usize path_len = request.path.size;
 
-    if ((type & Attributes::GET) && isPath(path, path_len, "/events", 7)) {
+    if ((request.mode & Mode::GET) && isPath(path, path_len, "/events", 7)) {
         std::string headers =
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: text/event-stream\r\n"
@@ -31,7 +30,7 @@ i32 HTTP::Connection<bufferSize>::handle_game_request() {
         return 2;
     }
 
-    if ((type & Attributes::POST) && isPath(path, path_len, "/join", 5)) {
+    if ((request.mode & Mode::POST) && isPath(path, path_len, "/join", 5)) {
         i32 id = gameState->addPlayer();
 
         std::ostringstream body;
@@ -45,15 +44,15 @@ i32 HTTP::Connection<bufferSize>::handle_game_request() {
              << "\r\n"
              << body_str;
         std::string response = resp.str();
-        send(fd.client, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
+        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
         return 0;
     }
 
-    if ((type & Attributes::POST) && isPath(path, path_len, "/move", 5)) {
+    if ((request.mode & Mode::POST) && isPath(path, path_len, "/move", 5)) {
         i32 playerId = 0;
         f64 x = 0.0, y = 0.0;
-        const char* q = reinterpret_cast<const char*>(clientOutput.data + vars.query.index);
-        usize q_len = vars.query.size;
+        const char* q = reinterpret_cast<const char*>(clientOutput.cursor.memStart + request.query.index);
+        usize q_len = request.query.size;
         if (q_len > 0) {
             std::string query(q, q_len);
             size_t pos = query.find("playerId=");
@@ -69,7 +68,7 @@ i32 HTTP::Connection<bufferSize>::handle_game_request() {
         if (playerId > 0)
             gameState->movePlayer(playerId, x, y);
         std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n";
-        send(fd.client, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
+        send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
         return 0;
     }
 
