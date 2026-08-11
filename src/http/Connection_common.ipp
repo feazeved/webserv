@@ -13,24 +13,29 @@ CONNECTION_INL
 			return -1;
 	}
 
-	switch (request.mode) {
-		case Mode::FIRST_LINE:
+	if (state & State::PARSING) {
+		if (state & State::FIRST_LINE) {
 			if (clientOutput.cursor.find_line_end() == 0)
 				return 0;	// Need to read more
 			if (request.parse_first_line(clientOutput.cursor, cfg) != 0)
 				return -1;
-			// Fallthrough here is intentional
-		case Mode::PARSING:
-			rvalue = request.parse_header(clientOutput.cursor);
-			if (rvalue <= 0)
-				return rvalue;
-			// Fallthrough here is intentional
-		case Mode::GET:
-			if (get_method())
-			break;
-		default:
-			break;
+			state ^= State::FIRST_LINE;
+		}
+		rvalue = request.parse_header(clientOutput.cursor);
+		if (rvalue <= 0)
+			return rvalue;
 	}
+
+	switch (request.mode) {
+		case Mode::GET:		rvalue = get_method();	break;
+		case Mode::POST:	rvalue = post_method();	break;
+		case Mode::CGI:		rvalue = cgi_method();	break;
+		case Mode::SSE:		rvalue = sse_method();	break;
+		default:			break;
+	}
+
+	if (rvalue < 0)
+		return rvalue;
 
 	if (state & State::WRITING_TO_CLIENT) {
 		rvalue = write_to_client(events);
@@ -60,7 +65,7 @@ CONNECTION_INL
 	else {
 		bytesWritten = clientOutput.cursor.write(writeFd, request.bodySize);
 		if (bytesWritten > 0)
-			request.bodySize -= bytesWritten;
+			request.bodySize -= (usize) bytesWritten;
 	}
 
 	if (request.bodySize == 0) {	// Must guarantee that bodySize is 0
@@ -71,9 +76,9 @@ CONNECTION_INL
 }
 
 // Common to all
+// TODO: epoll event checks to see if valid
 CONNECTION_INL
 (isize) write_to_client(u32 events) {
-	// TODO: epoll event checks to see if valid
 	isize bytesWritten = clientInput.cursor.write(clientFd, ATOMIC_IOSIZE);
 	if (bytesWritten < 0)
 		return bytesWritten;	// TODO: tmp error path
@@ -81,9 +86,9 @@ CONNECTION_INL
 }
 
 // Common to POST and CGI
+// TODO: epoll event checks to see if valid
 CONNECTION_INL
 (isize) read_from_client(u32 events) {
-	// TODO: epoll event checks to see if valid
 	if (clientOutput.cursor.readPtr < clientOutput.cursor.writePtr)	// Still have things to process
 		return 0;
 	isize bytesRead = clientOutput.cursor.read(clientFd, ATOMIC_IOSIZE);
@@ -107,7 +112,7 @@ CONNECTION_INL
 			request.chunkSize = src.strtol16();
 			if (request.chunkSize == 0) {
 				if (rvalue != 2)
-					return -1;
+					return -1;	// CLOSING ERROR: no header end after 0
 				request.bodySize = 0;
 				break;
 			}
@@ -120,13 +125,13 @@ CONNECTION_INL
 			request.chunkSize -= bytesAppended;	// Guaranteed to be chunksize or less
 		}
 		else {
+			if (!src.strcmp("\r\n"))
+				return -1;
 			request.chunkSize = SIZE_MAX;
 		}
 	}
 
-	if (dst.writePtr == dst.memStart)
-		return 0;				// CHECK: Nothing was appended
-	return 1;
+	return dst.writePtr - dst.memStart;
 }
 
 // TODO: The buffer is only going to fill with data related to the chunks, decide if compaction is worth given current length

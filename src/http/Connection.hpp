@@ -70,6 +70,7 @@ public:
 	isize post_first_run();
 	isize cgi_method();
 	isize cgi_first_run();
+	isize sse_method();
 
 	// Common
 	isize read_from_server();

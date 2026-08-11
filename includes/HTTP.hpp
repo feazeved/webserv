@@ -49,16 +49,14 @@ struct ServerConfig {
 // Switch (no read, read, read chunked, can read)
 // 
 
-// These are exclusive, not multiple
+// These are exclusive states
 namespace Mode {
 	enum e_http_mode {
 		GET = 1 << 0,
 		POST = 1 << 1,
 		DELETE = 1 << 2,
-		CGI = 1 << 3,	// TODO: the methods are here
-		SSE = 1 << 4,
-		FIRST_LINE = 1 << 5,
-		PARSING = 1 << 6
+		CGI = 1 << 3,
+		SSE = 1 << 4
 	};
 }
 
@@ -67,7 +65,9 @@ namespace State {
 		ERROR = 0,
 		READING_FROM_CLIENT = 1,
 		WRITING_TO_CLIENT = 2,
-		DONE = 4
+		PARSING = 4,
+		FIRST_LINE = 8,
+		DONE = 16
 	};
 }
 
@@ -76,7 +76,7 @@ namespace Options {
 		CHUNKED_LENGTH = 1 << 0,
 		FIXED_LENGTH = 1 << 1,
 		HOST = 1 << 2,
-		CONNECTION_TYPE = 1 << 3	// Keep alive or not
+		CONNECTION_TYPE = 1 << 3	// Keep alive or
 	};
 }
 
@@ -110,5 +110,4 @@ namespace Mime {
 		COUNT
 	};
 }
-
 }

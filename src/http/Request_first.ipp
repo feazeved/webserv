@@ -60,6 +60,7 @@ REQUEST_INL
 	return 0;
 }
 
+// Returning 
 REQUEST_INL
 (isize) parse_first_line(Cursor &src, ServerConfig* cfg) {
 	const usize lineLength = src.lineEnd - src.linePtr;
@@ -79,11 +80,7 @@ REQUEST_INL
 	if (MEMCMP(src.lineEnd, " HTTP/1.1", 9) != 0)
 		return -1; // ERROR: Invalid version
 	*src.lineEnd = 0;
-	i32 rvalue = parse_target(src, cfg);	// TODO: meaningful return
-	if (rvalue < 0)
-		return rvalue;
-	mode = Mode::PARSING;
-	return 0;	// No problems (YET, return code for success only happens when finally executing the method)
+	return parse_target(src, cfg);	// No problems (YET, return code for success only happens when finally executing the method)
 }
 
 // HTTP NAMESPACE END
