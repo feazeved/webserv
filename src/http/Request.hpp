@@ -16,6 +16,7 @@ namespace HTTP {
 
 class Request {
 public:
+
 	struct Span16 {
 		u16 index;
 		u16 size;

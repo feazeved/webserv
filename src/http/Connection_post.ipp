@@ -11,18 +11,18 @@ CONNECTION_INL
 
 	if (s_resolve_location(cfg, reqPath, request.path.size, &location, relative)) {
 		request.status = Status::i404;
-		return error_path();
+		return -1;
 	}
 
 	if (relative.empty() || relative[relative.size() - 1] == '/') {
 		request.status = Status::i400;
-		return error_path();
+		return -1;
 	}
 
 	const std::string&	uploadDir = location->upload_store.empty() ? location->root : location->upload_store;
 	if (uploadDir.empty()) {
 		request.status = Status::i500;
-		return error_path();
+		return -1;
 	}
 
 	std::string	destPath;
@@ -36,7 +36,7 @@ CONNECTION_INL
 			request.status = Status::i403;
 		else
 			request.status = Status::i500;
-		return error_path();
+		return -1;
 	}
 
 	writeFd = rawFd;

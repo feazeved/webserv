@@ -10,29 +10,44 @@ struct Cursor {
 	u8 *const memEnd;
 	u8 *readPtr, *writePtr, *linePtr, *lineEnd;
 
-	isize read(i32 fd, usize bytes) {
-		if (writePtr + bytes > memEnd)
-			return -1;	// ERROR: Buffer overflow
+	// Could add a (is trivially compactable function)
+	usize compact() {
+		const usize bytesUsed = (usize)(writePtr - readPtr);
+		const usize bytesFreed = (usize)(readPtr - memStart);
 
-		isize bytesRead = ::read(fd, writePtr, bytes);
-		if (bytesRead < 0)
-			return -2;
-		writePtr += (usize) bytesRead;	// TODO: what do we do on failures?
+		MEMMOVE(memStart, readPtr, bytesUsed);
+		readPtr -= bytesFreed;
+		writePtr -= bytesFreed;
+		return (usize)(writePtr - memStart);
+	}
+
+	isize read(i32 fd, usize bytes) {
+		usize bytesFree = (usize)(memEnd - writePtr);
+		if (bytesFree < bytes) {
+			bytesFree = compact();
+			if (bytesFree == 0)
+				return -2;
+		}
+
+		const usize bytesCapped = MIN(bytesFree, bytes);
+		isize bytesRead = ::read(fd, writePtr, bytesCapped);
+		if (bytesRead > 0)
+			writePtr += (usize) bytesRead;
 		return bytesRead;
 	}
 
 	isize write(i32 fd, usize bytes) {
-		usize bytesCapped = MIN(bytes, writePtr - readPtr);
+		usize bytesCapped = MIN(bytes, (usize)(writePtr - readPtr));
 		isize bytesWritten = ::write(fd, readPtr, bytesCapped);
 
 		if (bytesWritten < 0)
 			return bytesWritten;
 		readPtr += bytesWritten;
 		isize tailBytes = writePtr - readPtr;
-		if (tailBytes <= 32) {	// Check if this is needed
+		if (tailBytes <= 32) {
 			MEMMOVE(memStart, readPtr, 32);
 			writePtr = memStart + tailBytes;
-			readPtr = memStart;
+			readPtr = memStart;	// TODO: Check if linePtr is potentially used after this
 		}
 		return bytesWritten;
 	}
@@ -40,10 +55,12 @@ struct Cursor {
 	void reset() {
 		readPtr = memStart;
 		writePtr = memStart;
+		linePtr = memStart;
+		lineEnd = NULL;
 	}
 
 	bool is_full() {
-		return writePtr >= (memEnd);
+		return writePtr >= memEnd;
 	}
 
 	// Search
@@ -83,7 +100,7 @@ struct Cursor {
 	bool insert(const u8 *ptr, usize length, usize insertIndex);
 
 	Cursor(u8* start, usize totalSize) :
-		reserved(), memStart(start), memEnd(start + totalSize), 
+		reserved(), memStart(start), memEnd(start + totalSize - sizeof(Cursor)),
 		readPtr(start), writePtr(start), linePtr(start), lineEnd(NULL) {
 		}
 };

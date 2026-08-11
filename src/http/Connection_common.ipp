@@ -3,6 +3,8 @@
 
 namespace HTTP {
 
+// Connection returns whether or not the FD should be removed from epoll
+// 0: keep it, -1 remove it
 CONNECTION_INL
 (isize) dispatch(u32 events) {
 	isize rvalue;
@@ -10,7 +12,7 @@ CONNECTION_INL
 	if (state & State::READING_FROM_CLIENT) {
 		rvalue = read_from_client(events);
 		if (rvalue < 0)
-			return -1;
+			return error_path();
 	}
 
 	if (state & State::PARSING) {
@@ -18,12 +20,17 @@ CONNECTION_INL
 			if (clientOutput.cursor.find_line_end() == 0)
 				return 0;	// Need to read more
 			if (request.parse_first_line(clientOutput.cursor, cfg) != 0)
-				return -1;
+				return error_path();
 			state ^= State::FIRST_LINE;
 		}
 		rvalue = request.parse_header(clientOutput.cursor);
-		if (rvalue <= 0)
+		if (rvalue == 0)
 			return rvalue;
+		else if (rvalue < 0)
+			return error_path();
+		if (configure() < 0)
+			return error_path();
+		return 0;
 	}
 
 	switch (request.mode) {
@@ -35,12 +42,12 @@ CONNECTION_INL
 	}
 
 	if (rvalue < 0)
-		return rvalue;
+		return error_path();
 
 	if (state & State::WRITING_TO_CLIENT) {
 		rvalue = write_to_client(events);
 		if (rvalue < 0)
-			return -1;
+			return error_path();
 	}
 
 	return 0;

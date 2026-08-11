@@ -44,21 +44,21 @@ CONNECTION_INL
 	// There is no location. Error 404
 	if (!s_resolve_location(cfg, reqPath, request.path.size, &location, relative)) {
 		request.status = Status::i404;
-		return error_path();
+		return -1;
 	}
 	s_join_path(location->root, relative, fullpath);
 
 	struct stat st;
 	if (stat(fullpath.c_str(), &st) == -1) {
 		request.status = (errno == ENOENT) ? Status::i404 : (errno == EACCES ? Status::i403 : Status::i500);
-		return error_path();
+		return -1;
 	}
 
 	if (S_ISDIR(st.st_mode)) {
 		if (location->index.empty() && location->autoindex == true) {
 			// build autoindex
 			request.status = Status::i403;
-			return error_path();
+			return -1;
 		}
 		std::string	indexPath = fullpath;
 		if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
@@ -67,19 +67,19 @@ CONNECTION_INL
 
 		if (stat(indexPath.c_str(), &st) == -1) {
 			request.status = (errno == ENOENT) ? Status::i404 : Status::i500;
-			return error_path();
+			return -1;
 		}
 		if (S_ISDIR(st.st_mode)) {	// Index is directory (maybe should be parsing error?)
 			request.status = Status::i500;
 			fullpath = indexPath;
-			return error_path();
+			return -1;
 		}
 	}
 
 	i32	rawFd = open(fullpath.c_str(), O_RDONLY);
 	if (rawFd == -1) {
 		request.status = (errno == ENOENT) ? Status::i404 : (errno == EACCES ? Status::i403 : Status::i500);
-		return error_path();
+		return -1;
 	}
 
 	readFd = rawFd;

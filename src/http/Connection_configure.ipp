@@ -18,18 +18,18 @@ CONNECTION_INL
 	const bool encodingSet = !(request.options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH));
 
 	if (request.status.is_set())
-		return error_path();	// An error caused early interruption
+		return -1;	// An error caused early interruption
 
 	if ((request.mode & 0xF) == 0)
-		return error_path();	// TODO: Method not set, should be impossible. Remove in future
+		return -1;	// TODO: Method not set, should be impossible. Remove in future
 
 	if ((request.mode & Options::HOST) == 0)
-		return error_path();	// Host not set
+		return -1;	// Host not set
 
 	if (isBodyMethod && !encodingSet)
-		return error_path();	// Transfer encoding not set
+		return -1;	// Transfer encoding not set
 	if (!isBodyMethod && encodingSet)
-		return error_path();	// Encoding set for non-body methods
+		return -1;	// Encoding set for non-body methods
 	request.bodySize = (request.bodySize == SIZE_MAX) ? SIZE_MAX : cfg->maxBodySize;
 	
 	if (request.mode & Mode::CGI)

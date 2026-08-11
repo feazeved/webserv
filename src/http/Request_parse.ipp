@@ -3,28 +3,22 @@
 
 namespace HTTP {
 
-// isize bytesRead = read_from_client(bytes, events);
-// if (bytesRead < 0)
-// 	return bytesRead;
-
 REQUEST_INL
 (isize) parse_header(Cursor &src) {
 	isize rvalue;
 	while ((rvalue = src.find_line_end()) != 0) {
 		if (parse_line(src) < 0)
 			return -1;	// ERROR: Invalid header
-		if (rvalue == 2) {
-			// TODO: Header end, call configure() and setup
+		if (rvalue == 2)
 			return 1;
-		}
 	}
-	return 0;	// Actually should return something more useful like request status (processing, etc)
+	return 0;
 }
 
 // TODO: set status here
 REQUEST_INL
 (isize) parse_line(Cursor &src) {
-	const usize lineLength = src.lineEnd - src.linePtr;
+	const usize lineLength = (usize)(src.lineEnd - src.linePtr);
 	if (lineLength < 2 || lineLength >= 8192)
 		return -1;
 
