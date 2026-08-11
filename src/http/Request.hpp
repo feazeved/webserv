@@ -35,6 +35,8 @@ public:
 	isize parse_header(Cursor &src);
 	isize parse_line(Cursor &src);
 	isize parse_cgi_line(Cursor &src, Cursor &dst);
+	isize validate_header();
+
 };
 }
 
