@@ -32,6 +32,8 @@ struct ServerConfig {
 	ServerConfig() : host("localhost"), port(-1), maxBodySize(-1), autoindex(false) {}
 };
 
+#define HTTP_BUFFERSIZE 16384
+
 #ifdef PIPE_BUF
 	#if PIPE_BUF > 4096
 		#define ATOMIC_IOSIZE 4096
