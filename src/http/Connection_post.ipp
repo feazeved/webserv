@@ -5,7 +5,7 @@ namespace HTTP {
 
 CONNECTION_INL
 (isize) post_first_run() {
-	const char*	reqPath = (const char*)clientOutput.data + request.path.index;
+	const char*	reqPath = (const char*)clientOutput.cursor.data + request.path.index;
 	Location*	location = NULL;
 	std::string	relative;
 
@@ -46,7 +46,7 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) post_method() {
-	isize bytesWritten = write_to_server(4096);
+	isize bytesWritten = write_to_server(numBytes);
 	if (bytesWritten < 0)
 		return bytesWritten;
 

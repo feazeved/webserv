@@ -8,7 +8,7 @@ namespace HTTP {
 // 	return bytesRead;
 
 REQUEST_INL
-(isize) parse_header(Buffer<bufferSize> &src) {
+(isize) parse_header(Cursor &src) {
 	isize rvalue;
 	while ((rvalue = src.find_line_end()) != 0) {
 		if (parse_line(src) < 0)
@@ -23,7 +23,7 @@ REQUEST_INL
 
 // TODO: set status here
 REQUEST_INL
-(isize) parse_line(Buffer<bufferSize> &src) {
+(isize) parse_line(Cursor &src) {
 	const usize lineLength = src.lineEnd - src.linePtr;
 	if (lineLength < 2 || lineLength >= 8192)
 		return -1;
@@ -31,11 +31,9 @@ REQUEST_INL
 	isize fieldIndex = src.match_field();
 	switch (fieldIndex) {
 		case Field::INVALID:
-			src.start = src.end;
 			return -1;
 
 		default:
-			src.start = src.end;
 			return 0;
 
 		case Field::LOCATION:
@@ -77,8 +75,8 @@ REQUEST_INL
 // we perform little error checking and presume the output is correct. 
 // Only quick sanity checks
 REQUEST_INL
-(isize) parse_cgi_line(Buffer<bufferSize> &src, Buffer<bufferSize> &dst) {
-	const char *field = src.linePtr;
+(isize) parse_cgi_line(Cursor &src, Cursor &dst) {
+	const u8 *field = src.linePtr;
 	const usize totalLength = src.lineEnd - src.linePtr;
 
 	isize fieldIndex = src.match_field();
@@ -89,11 +87,11 @@ REQUEST_INL
 	}
 
 	if (fieldIndex == Field::STATUS) {
-		status = src.linePtr;
+		status = (char*) src.linePtr;
 		isize rvalue = status.is_valid() == true ? 0 : -1;
 		if (rvalue == -1)
 			status = Status::i500;	// CGI output an invalid status, should be server error
-		const char *str = status.c_str();
+		const u8 *str = (const u8*) status.c_str();
 		usize length = status.size();
 		dst.insert(str, length, 256 - length);
 		return rvalue;

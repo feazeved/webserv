@@ -4,11 +4,11 @@
 namespace HTTP {
 
 REQUEST_INL
-(isize) check_location(Buffer<bufferSize> &src, ServerConfig* cfg) {
+(isize) check_location(Cursor &src, ServerConfig* cfg) {
 	bool found = false;
 	std::vector<Location>::iterator it = cfg->locations.begin();
 
-	const char *pathPtr = src.data + path.index;
+	const u8 *pathPtr = src.memStart + path.index;
 	const usize pathLength = path.size;
 
 	for(; it != cfg->locations.end(); it++)
@@ -26,7 +26,7 @@ REQUEST_INL
 }
 
 REQUEST_INL
-(isize) parse_target(Buffer<bufferSize> &src, ServerConfig* cfg) {
+(isize) parse_target(Cursor &src, ServerConfig* cfg) {
 
 	u8 *const lineStart = src.linePtr;
 	u8* &ptr = src.linePtr;
@@ -42,7 +42,7 @@ REQUEST_INL
 				return -1;
 			path.size = ptr - lineStart;
 			ptr++;
-			query.index = ptr - src.data;
+			query.index = ptr - src.memStart;
 			query.size = src.lineEnd - ptr;
 			break;
 		}
@@ -55,13 +55,13 @@ REQUEST_INL
 	}
 	contentType = src.match_mime();	// TODO: 
 
-	if(!s_checkLocation(src.data + path.index, path.size, cfg))
+	if(!check_location(src, cfg))
 		return -1;
 	return 0;
 }
 
 REQUEST_INL
-(isize) parse_first_line(Buffer<bufferSize> &src, ServerConfig* cfg) {
+(isize) parse_first_line(Cursor &src, ServerConfig* cfg) {
 	const usize lineLength = src.lineEnd - src.linePtr;
 	if (lineLength < 14 || lineLength >= 8192)
 		return -1;	// ERROR: Bad request "GET / HTTP/1.1" shortest possible

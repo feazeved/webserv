@@ -1,7 +1,7 @@
 #pragma once
 #include "Buffer.hpp"
 
-BUFFER_INL
+CURSOR_INL
 (usize) itoa10(usize number, char *bufferEnd) {
 	*bufferEnd = 0;
 	char *obuffer = --bufferEnd;
@@ -14,7 +14,7 @@ BUFFER_INL
 	return digitLength;
 }
 
-BUFFER_INL
+CURSOR_INL
 (usize) itoa16(usize number, char *bufferEnd) {
 	static const char digits[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
@@ -31,7 +31,7 @@ BUFFER_INL
 	return digitLength;
 }
 
-BUFFER_INL
+CURSOR_INL
 (usize) strtol16() {
 	usize value = 0;
 	usize digit = 0;
@@ -50,7 +50,7 @@ BUFFER_INL
 	return value;
 }
 
-BUFFER_INL
+CURSOR_INL
 (usize) strtol10() {
 	usize value = 0;
 	usize digit = 0;
@@ -69,7 +69,7 @@ BUFFER_INL
 	return value;
 }
 
-BUFFER_INL
+CURSOR_INL
 (bool) skip_spaces() {
 	while ((*linePtr == ' ' || *linePtr == '\t'))
 		linePtr++;
@@ -77,14 +77,14 @@ BUFFER_INL
 }
 
 // Compares and advances pointer if valid
-BUFFER_INL
+CURSOR_INL
 (template <usize N> bool) strcmp(const char (&string)[N]) {
 	bool isMatch = MEMCMP(linePtr, string, N) != 0;
 	linePtr += isMatch ? N : 0;
 	return isMatch;
 }
 
-BUFFER_INL
+CURSOR_INL
 (template <usize N> bool) strcasecmp(const char (&string)[N]) {
 	u8 buffer[N];
 

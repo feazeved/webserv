@@ -36,7 +36,7 @@ void s_join_path(const std::string &base, const std::string &relative, std::stri
 
 CONNECTION_INL
 (isize) get_first_run() {
-	const char*	reqPath = (const char*)clientOutput.data + request.path.index;
+	const char*	reqPath = (const char*)clientOutput.cursor.data + request.path.index;
 	Location*	location = NULL;
 	std::string	relative;
 	std::string	fullpath;

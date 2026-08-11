@@ -30,7 +30,7 @@ public:
 	Game::State* gameState;
 
 	Buffer<bufferSize> clientInput, clientOutput;
-	Request<bufferSize> request;
+	Request request;
 	u8 state;
 
 	time_t startTime, cgiStartTime, bonusTime; // Value ranging from -30s to 30s
@@ -79,7 +79,7 @@ public:
 	isize write_to_server();
 	isize write_to_client(u32 events);
 	isize read_from_client(u32 events);
-	isize dechunk(Buffer<bufferSize>& src);
+	isize dechunk(Cursor& src);
 
 	// ======== Constructors ====================
 	// Connection() :

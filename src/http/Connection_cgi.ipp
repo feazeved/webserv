@@ -81,8 +81,8 @@ CONNECTION_INL
 	tmpBuffer.size = 256;
 	tmpBuffer.start = 256;
 
-	while (clientOutput.find_line_end() == 1) {
-		if (request.parse_cgi_line() == -1) {
+	while (clientOutput.cursor.find_line_end() == 1) {
+		if (request.parse_cgi_line(clientOutput.cursor, clientInput.cursor) == -1) {
 			
 		}
 	}
@@ -103,8 +103,8 @@ CONNECTION_INL
 
 	// Return path until the operation isnt complete
 	if (request.status.is_set()) {
-		if (clientOutput.find_header_end() == false) {
-			if (clientOutput.is_full())
+		if (clientOutput.cursor.find_header_end() == false) {
+			if (clientOutput.cursor.is_full())
 				return -1;	// ERROR: CGI Header is too big
 			return 0;	// Still no CGI Header
 		}

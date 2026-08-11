@@ -12,9 +12,8 @@
 
 namespace HTTP {
 
-#define REQUEST_INL(ret_type) template <usize bufferSize> ret_type inline HTTP::Request<bufferSize>::
+#define REQUEST_INL(ret_type) ret_type inline HTTP::Request::
 
-template <usize bufferSize>
 class Request {
 public:
 	struct Span16 {
@@ -29,12 +28,12 @@ public:
 	u8 contentType;
 
 	// Parsing
-	isize check_location(Buffer<bufferSize> &src, ServerConfig* cfg);
-	isize parse_target(Buffer<bufferSize> &src, ServerConfig* cfg);
-	isize parse_first_line(Buffer<bufferSize> &src, ServerConfig* cfg);
-	isize parse_header(Buffer<bufferSize> &src);
-	isize parse_line(Buffer<bufferSize> &src);
-	isize parse_cgi_line(Buffer<bufferSize> &src, Buffer<bufferSize> &dst);
+	isize check_location(Cursor &src, ServerConfig* cfg);
+	isize parse_target(Cursor &src, ServerConfig* cfg);
+	isize parse_first_line(Cursor &src, ServerConfig* cfg);
+	isize parse_header(Cursor &src);
+	isize parse_line(Cursor &src);
+	isize parse_cgi_line(Cursor &src, Cursor &dst);
 };
 }
 

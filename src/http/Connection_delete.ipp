@@ -5,7 +5,7 @@ namespace HTTP {
 
 CONNECTION_INL
 (isize) del_first_run() {
-	const char*	reqPath = (const char*)clientOutput.data + request.path.index;
+	const char*	reqPath = (const char*)clientOutput.cursor.data + request.path.index;
 	Location*	location = NULL;
 	std::string	relative;
 	std::string	fullPath;
@@ -43,4 +43,6 @@ CONNECTION_INL
 (isize) del_method() {
 	return 0;
 }
+
+// HTTP namespace
 }

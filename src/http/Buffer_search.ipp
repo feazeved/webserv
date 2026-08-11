@@ -1,11 +1,11 @@
 #pragma once
 #include "Buffer.hpp"
 
-BUFFER_INL
+CURSOR_INL
 (isize) find_line_end() {
 	linePtr = lineEnd != NULL ? lineEnd : linePtr;	// Previous call found a match
 	lineEnd = NULL;
-	const u8 *const searchEnd = writePtr - data >= 3 ? writePtr - 3 : data;
+	const u8 *const searchEnd = writePtr - memStart >= 3 ? writePtr - 3 : memStart;
 
 	while (readPtr < searchEnd) {
 		if (MEMCMP(readPtr, "\r\n", 2) == 0) {
@@ -24,9 +24,9 @@ BUFFER_INL
 }
 
 // Does not update start and end (not for line parsing)
-BUFFER_INL
+CURSOR_INL
 (bool) find_header_end() {
-	const u8 *const searchEnd = writePtr - data >= 3 ? writePtr - 3 : data;
+	const u8 *const searchEnd = writePtr - memStart >= 3 ? writePtr - 3 : memStart;
 
 	while (readPtr < searchEnd) {
 		if (MEMCMP(readPtr, "\r\n\r\n", 4) == 0) {
@@ -67,7 +67,7 @@ isize s_match(const u8 *ptr, usize length, const u8 (&ltable)[count][size]) {
 	return 0;
 }
 
-BUFFER_INL
+CURSOR_INL
 (isize) match_field() {
 	static const u8 ltable[][32] = {
 		"status", "location", "transfer-encoding", "content-length", 
@@ -84,7 +84,7 @@ BUFFER_INL
 	return s_match(optr, length, ltable);
 }
 
-BUFFER_INL
+CURSOR_INL
 (isize) match_mime() {
 	static const u8 ltable[][8] = {
 		"html", "htm", "css", "json", "js", 

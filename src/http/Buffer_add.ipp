@@ -1,32 +1,34 @@
 #pragma once
 #include "Buffer.hpp"
 
-BUFFER_INL
+CURSOR_INL
 (bool) prepend(const u8 *ptr, usize length) {
-	if (readPtr - data < length)
+	const usize readSize = (usize)(readPtr - memStart);
+	if (readSize < length)
 		return false;
 	readPtr -= length;
 	MEMCPY(readPtr, ptr, length);
+	return true;
 }
 
-BUFFER_INL
+CURSOR_INL
 (bool) insert(const u8 *ptr, usize length, usize insertIndex) {
-	MEMCPY(data + insertIndex, ptr, length);
+	MEMCPY(memStart + insertIndex, ptr, length);
 }
 
-BUFFER_INL
+CURSOR_INL
 (template <usize N> void) append(const char (&string)[N]) {
 	MEMCPY_INLINE(writePtr, string, N - 1);
 	writePtr += N - 1;
 }
 
-BUFFER_INL
+CURSOR_INL
 (void) append(const u8 *ptr, usize length) {
 	MEMCPY(writePtr, ptr, length);
 	writePtr += length;
 }
 
-BUFFER_INL
+CURSOR_INL
 (template <usize N> void) append_inline(const u8 *ptr, usize length) {
 	MEMCPY_INLINE(writePtr, ptr, N);
 	writePtr += length;
@@ -34,10 +36,10 @@ BUFFER_INL
 
 // Should be impossible for dst buffer to not fit
 // TODO: Might remove MIN3 and have it overflow to guarantee behavior
-BUFFER_INL
-(usize) append(Buffer &src, usize length) {
+CURSOR_INL
+(usize) append(Cursor &src, usize length) {
 	usize remainingSrc = src.writePtr - src.readPtr;	// How many bytes it has read
-	usize remainingDst = data + sizeof(data) - writePtr;	// How many bytes are free in the buffer
+	usize remainingDst = memEnd - writePtr;	// How many bytes are free in the buffer
 	usize appendLength = MIN3(length, remainingSrc, remainingDst);
 
 	MEMCPY(writePtr, src.readPtr, appendLength);	// TODO: VERIFY CORRECTNESS
@@ -48,7 +50,7 @@ BUFFER_INL
 
 // TODO: No length checks
 // TODO: separate functions
-BUFFER_INL
+CURSOR_INL
 (void) append_digit10(usize number) {
 	char buffer[48];
 	char *mid = buffer + 24;
@@ -62,9 +64,11 @@ BUFFER_INL
 	writePtr += digitLength;
 }
 
-BUFFER_INL
-(void) copy(const Buffer& other) {
-	writePtr = other.writePtr - other.readPtr;
-	readPtr = 0;
-	MEMCPY(data, other.readPtr, writePtr);
+// TODO: what the fuck was i doing here
+CURSOR_INL
+(void) copy(const Cursor& other) {
+	const usize tailBytes = (usize)(other.writePtr - other.readPtr);
+	writePtr -= tailBytes;
+	readPtr = memStart;
+	MEMCPY(memStart, other.readPtr, tailBytes);
 }

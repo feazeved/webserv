@@ -40,36 +40,37 @@ CONNECTION_INL
 		return post_first_run();
 }
 
-template <usize bufferSize>
 static inline
-isize s_append_mime(Buffer<bufferSize> &src, u8 mimeIndex) {
-	static const char mimeStrings[][32] = {"\x09" "text/html", "\x09" "text/html", 
+void s_append_mime(Cursor &dst, u8 mimeIndex) {
+	static const u8 mimeStrings[][32] = {"\x09" "text/html", "\x09" "text/html", 
 	"\x08" "text/css", "\x10" "application/json", "\x16" "application/javascript",
 	"\x09" "image/png", "\x0A" "image/jpeg", "\x0A" "image/jpeg", 
 	"\x09" "image/gif", "\x0A" "text/plain", "\x18" "application/octet-stream"};
 
-	src.append_inline<24>(mimeStrings[mimeIndex] + 1, mimeStrings[mimeIndex]);	// ignore warning, clang is being dumb
+	const u8 *str = mimeStrings[mimeIndex];
+	dst.append_inline<24>(str + 1, *str);	// ignore warning, clang is being dumb
 }
 
 CONNECTION_INL
 (void) build_header() {
+	Cursor &dst = clientInput.cursor;
 
-	clientInput.append("HTTP/1.1 ");	// always use the buffer appends, cause it updates the cursors
+	dst.append("HTTP/1.1 ");	// always use the buffer appends, cause it updates the cursors
 	if (request.status.is_error()) {
-		clientInput.append(request.status.c_str(), request.status.size());
-		clientInput.append("\r\n");
+		dst.append((const u8*) request.status.c_str(), request.status.size());
+		dst.append("\r\n");
 	}
 	else {
-		clientInput.append_inline(request.status.c_str(), 3);
-		clientInput.append("OK\r\n");
+		dst.append_inline<3>((const u8*) request.status.c_str(), 3);
+		dst.append("OK\r\n");
 	}
 
-	clientInput.append("Content-Type: ");
-	s_append_mime(clientInput, request.contentType);
+	dst.append("Content-Type: ");
+	s_append_mime(dst, request.contentType);
 
-	clientInput.append("\r\n\r\n");
+	dst.append("\r\n\r\n");
 
-	// clientInput.append("Content-Length: ");
+	// clientInput.cursor.append("Content-Length: ");
 	// s_append_content_length(clientInput, (usize)st.st_size);
 
 	// client.append("HTTP/1.1 ");

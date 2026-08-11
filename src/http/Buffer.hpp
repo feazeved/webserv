@@ -2,22 +2,16 @@
 #include <unistd.h>
 #include "core.hpp"
 
-#define BUFFER_INL(ret_type) template <usize bufferSize> ret_type inline Buffer<bufferSize>::
+#define CURSOR_INL(ret_type) ret_type inline Cursor::
 
-template <usize bufferSize>
-class Buffer {
-public:
-	union {
-		u8 rawData[bufferSize];
-		struct {
-			u8 data[bufferSize - sizeof(usize) * 8];	// Last cache line is reserved for unbounded memory loads
-			usize reserved[4];
-			u8 *readPtr, *writePtr, *linePtr, *lineEnd;
-		};
-	};
+struct Cursor {
+	usize reserved[2];
+	u8 *const memStart;
+	u8 *const memEnd;
+	u8 *readPtr, *writePtr, *linePtr, *lineEnd;
 
 	isize read(i32 fd, usize bytes) {
-		if (writePtr + bytes > data + sizeof(data))
+		if (writePtr + bytes > memEnd)
 			return -1;	// ERROR: Buffer overflow
 
 		isize bytesRead = ::read(fd, writePtr, bytes);
@@ -36,20 +30,20 @@ public:
 		readPtr += bytesWritten;
 		isize tailBytes = writePtr - readPtr;
 		if (tailBytes <= 32) {	// Check if this is needed
-			MEMMOVE(data, readPtr, 32);
-			writePtr = data + tailBytes;
-			readPtr = data;
+			MEMMOVE(memStart, readPtr, 32);
+			writePtr = memStart + tailBytes;
+			readPtr = memStart;
 		}
 		return bytesWritten;
 	}
 
 	void reset() {
-		readPtr = data;
-		writePtr = data;
+		readPtr = memStart;
+		writePtr = memStart;
 	}
 
 	bool is_full() {
-		return writePtr >= (data + sizeof(data));
+		return writePtr >= (memEnd);
 	}
 
 	isize find_line_end();
@@ -78,16 +72,23 @@ public:
 	template <usize N>
 	void append_inline(const u8 *ptr, usize length);
 
-	usize append(Buffer &src, usize length);
+	usize append(Cursor &src, usize length);
 	void append_digit10(usize number);
 
-	void copy(const Buffer& other);
+	void copy(const Cursor& other);
 	bool insert(const u8 *ptr, usize length, usize insertIndex);
+};
 
-Buffer()
-	: readPtr(data), writePtr(data), linePtr(data), lineEnd(NULL)
-	{
-	}
+template <usize bufferSize>
+class Buffer {
+public:
+	u8 data[bufferSize - sizeof(Cursor)];	// Last cache line is reserved for unbounded memory loads
+	Cursor cursor;
+
+// Buffer()
+// 	: readPtr(data), writePtr(data), linePtr(data), lineEnd(NULL)
+// 	{
+// 	}
 };
 
 #include "Buffer_add.ipp"
