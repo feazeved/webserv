@@ -44,9 +44,16 @@
 
 // }
 
+const json_s = '{"username": "wlucas-f", "x": "10", "y": "50"}'
 
-let x = 0;
-let y = 0;
+const obj = JSON.parse(json_s);
+const user = obj.username;
+const jx = obj.x;
+const jy = obj.y;
+console.log("Name: ", user, "X: ", jx, "Y: ", jy);
+
+let x = parseInt(jx);
+let y = parseInt(jy);
 
 const penguin = document.getElementById('penguin');
 
@@ -66,6 +73,7 @@ function keyPress(event) {
 }
 
 document.addEventListener('keyup', keyPress);
+
 
 function startGame() {
 	const canvas = document.getElementById('gameCanvas');
