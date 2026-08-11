@@ -33,7 +33,7 @@ CONNECTION_INL
 		return 0;
 	}
 
-	switch (request.mode) {
+	switch (request.mode) { // Felipe: Why not a del_method as well?
 		case Mode::GET:		rvalue = get_method();	break;
 		case Mode::POST:	rvalue = post_method();	break;
 		case Mode::CGI:		rvalue = cgi_method();	break;

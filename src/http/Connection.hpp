@@ -58,13 +58,14 @@ public:
 	// Configuration
 	isize configure();
 	isize error_path();
-	void  build_header();
+	void  build_header(usize contentLength = SIZE_MAX, u8 mimeIndex = Mime::OCTET_STREAM);
 	isize build_cgi_header();
 
 	// HTTP Methods
 	isize del_method();
 	isize del_first_run();
 	isize get_method();
+	isize get_autoindex();
 	isize get_first_run();
 	isize post_method();
 	isize post_first_run();
@@ -92,6 +93,7 @@ public:
 // namespace HTTP
 }
 
+#include "Connection_fs_helpers.ipp"
 #include "Connection_configure.ipp"
 #include "Connection_common.ipp"
 #include "Connection_game.ipp"

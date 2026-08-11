@@ -19,6 +19,12 @@ CONNECTION_INL
 		return -1;
 	}
 
+	// Maybe unnecessary if handled earlier
+	if (relative.find("..") != std::string::npos) {
+		request.status = Status::i400;
+		return -1;
+	}
+
 	const std::string&	uploadDir = location->upload_store.empty() ? location->root : location->upload_store;
 	if (uploadDir.empty()) {
 		request.status = Status::i500;
@@ -28,7 +34,7 @@ CONNECTION_INL
 	std::string	destPath;
 	s_join_path(uploadDir, relative, destPath);
 
-	int	rawFd = open(destPath.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0644);
+	i32	rawFd = open(destPath.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0644);
 	if (rawFd == -1) {
 		if (errno == EEXIST)
 			request.status = Status::i409;
@@ -41,6 +47,9 @@ CONNECTION_INL
 
 	writeFd = rawFd;
 	readFd = -1;
+
+	// TODO: Shouldnt we have this:
+	// state = State::READING_FROM_CLIENT;
 	return 0;
 }
 
@@ -54,6 +63,8 @@ CONNECTION_INL
 	if (!request.status.is_set() && writeFd == -1) {
 		request.status = Status::i201;
 		build_header();
+		// TODO: Shouldnt we have this:
+		// state = State::WRITING_TO_CLIENT;
 	}
 	return bytesWritten;
 }

@@ -36,6 +36,9 @@ CONNECTION_INL
 
 	request.status = Status::i204;
 	build_header();
+
+	// TODO: shouldnt we have this?
+	// state = State::WRITING_TO_CLIENT;
 	return 0;
 }
 

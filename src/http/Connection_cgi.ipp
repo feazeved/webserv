@@ -70,6 +70,24 @@ CONNECTION_INL
 	cgiStartTime = g_timeNow;
 }
 
+/*	Header is built in stack memory while parsing the header from client output
+	When the header is built, it then appends part of the CGI body to tmp buffer
+	up to how many bytes will fit in a single write */
+CONNECTION_INL
+(isize) build_cgi_header() {
+	Buffer<2 * sizeof(clientInput)> tmpBuffer;
+
+	// tmpBuffer.cursor.index = 256;	// this isnt needed with header cache
+	// tmpBuffer.cursor.size = 256;
+	// tmpBuffer.cursor.start = 256;
+
+	while (clientOutput.cursor.find_line_end() == 1) {
+		if (request.parse_cgi_line(clientOutput.cursor, clientInput.cursor) == -1) {
+			
+		}
+	}
+}
+
 /*	The pipe fds here are configured to be non-blocking and read/write errors are ignored
 	Failure conditions for these fds are instead handled by CGI timeouts */
 CONNECTION_INL
