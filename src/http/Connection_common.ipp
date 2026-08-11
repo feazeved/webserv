@@ -37,6 +37,8 @@ CONNECTION_INL
 		if (rvalue < 0)
 			return -1;
 	}
+
+	return 0;
 }
 
 CONNECTION_INL
@@ -54,7 +56,7 @@ CONNECTION_INL
 	isize bytesWritten;
 
 	if (request.options & Options::CHUNKED_LENGTH)
-		bytesWritten = dechunk(clientOutput.cursor);
+		bytesWritten = decode();
 	else {
 		bytesWritten = clientOutput.cursor.write(writeFd, request.bodySize);
 		if (bytesWritten > 0)
@@ -94,10 +96,7 @@ CONNECTION_INL
 // Any bytes that weren't consumed by the write are copied back to the start of the source buffer, 
 // effectively performing compaction.
 CONNECTION_INL
-(isize) dechunk(Cursor& src) {
-	Buffer<sizeof(clientInput)> tmpBuffer;
-	Cursor &tmp = tmpBuffer.cursor;
-
+(isize) dechunk(Cursor& src, Cursor& dst) {
 	const u8 *const searchEnd = src.writePtr > src.memStart ? src.writePtr - 1 : src.memStart;
 
 	while (src.readPtr < searchEnd) {
@@ -117,25 +116,32 @@ CONNECTION_INL
 			request.bodySize -= request.chunkSize;
 		}
 		else if (request.chunkSize > 0) {
-			usize bytesAppended = tmp.append(src, request.chunkSize);
+			usize bytesAppended = dst.append(src, request.chunkSize);
 			request.chunkSize -= bytesAppended;	// Guaranteed to be chunksize or less
 		}
 		else {
-			// if (MEMCMP(src.data + src.index, "\r\n", 2) != 0)
-			// 	return -1;
-			// src.index += 2;
 			request.chunkSize = SIZE_MAX;
 		}
 	}
 
-	if (tmp.writePtr == tmp.memStart)
+	if (dst.writePtr == dst.memStart)
 		return 0;				// CHECK: Nothing was appended
+	return 1;
+}
 
-	isize bytesWritten = tmp.write(writeFd, ATOMIC_IOSIZE);	// Writes may be reattempted, so regardless it should compact
+// TODO: The buffer is only going to fill with data related to the chunks, decide if compaction is worth given current length
+// Optimization opportunity here to have src copy directly to itself
+// Otherwise just prepend the remainder to the end of what was read
+CONNECTION_INL
+(isize) decode() {
+	Buffer<sizeof(clientInput)> tmpBuffer;
+	Cursor &src = clientOutput.cursor;
+	Cursor &tmp = tmpBuffer.cursor;
 
-	// TODO: The buffer is only going to fill with data related to the chunks, decide if compaction is worth given current length
-	// Optimization opportunity here to have src copy directly to itself
-	// Otherwise just prepend the remainder to the end of what was read
+	if (dechunk(src, tmp) < 0)
+		return -1;
+
+	isize bytesWritten = tmp.write(writeFd, ATOMIC_IOSIZE); // This is always going to be a server write
 	if (src.writePtr > src.readPtr) { 
 		isize bytesRemaining = src.writePtr - src.readPtr;
 		tmp.append(src, (usize)bytesRemaining);

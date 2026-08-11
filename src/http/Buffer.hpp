@@ -46,11 +46,13 @@ struct Cursor {
 		return writePtr >= (memEnd);
 	}
 
+	// Search
 	isize find_line_end();
 	bool find_header_end();
 	isize match_field();
 	isize match_mime();
 
+	// String
 	usize itoa10(usize number, char *bufferEnd);
 	usize itoa16(usize number, char *bufferEnd);
 	usize strtol10();
@@ -61,8 +63,10 @@ struct Cursor {
 
 	template <usize N>
 	bool strcasecmp(const char (&string)[N]);
+
 	bool skip_spaces();
 
+	// Adds
 	template <usize N>
 	void append(const char (&string)[N]);
 
@@ -90,9 +94,8 @@ public:
 	u8 data[bufferSize - sizeof(Cursor)];	// Last cache line is reserved for unbounded memory loads
 	Cursor cursor;
 
-	Buffer() :
-		Cursor (data, bufferSize) {
-	}
+	// Constructors
+	Buffer() : Cursor (data, bufferSize) {}
 };
 
 #include "Buffer_add.ipp"

@@ -94,7 +94,6 @@ CONNECTION_INL
 (isize) cgi_method() {
 	isize bytesRead, bytesWritten;
 
-
 	bytesWritten = write_to_server();
 	bytesRead = read_from_server();
 

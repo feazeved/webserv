@@ -56,8 +56,8 @@ public:
 	i32 handle_game_request();
 
 	// Configuration
-	isize error_path();
 	isize configure();
+	isize error_path();
 	void  build_header();
 	isize build_cgi_header();
 
@@ -76,7 +76,9 @@ public:
 	isize write_to_server();
 	isize write_to_client(u32 events);
 	isize read_from_client(u32 events);
-	isize dechunk(Cursor& src);
+
+	isize dechunk(Cursor& src, Cursor& dst);
+	isize decode();
 
 	// ======== Constructors ====================
 	// Connection() :
