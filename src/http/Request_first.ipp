@@ -28,7 +28,7 @@ REQUEST_INL
 REQUEST_INL
 (isize) parse_target(Buffer<bufferSize> &src, ServerConfig* cfg) {
 
-	u8 *optr = src.linePtr;
+	u8 *const lineStart = src.linePtr;
 	u8* &ptr = src.linePtr;
 	u8 *end = src.lineEnd;
 
@@ -40,7 +40,7 @@ REQUEST_INL
 		if (g_asciiLut[*ptr] > ASCII_RFC_SYMBOLS) {
 			if (*ptr != '?')
 				return -1;
-			path.size = ptr - optr;
+			path.size = ptr - lineStart;
 			ptr++;
 			query.index = ptr - src.data;
 			query.size = src.lineEnd - ptr;
@@ -76,13 +76,14 @@ REQUEST_INL
 		return -1;	// ERROR: Invalid method
 
 	src.lineEnd -= 9;
-	if (MEMCMP(src.lineEnd, "HTTP/1.1", 8) != 0)
+	if (MEMCMP(src.lineEnd, " HTTP/1.1", 9) != 0)
 		return -1; // ERROR: Invalid version
-
+	*src.lineEnd = 0;
 	i32 rvalue = parse_target(src, cfg);	// TODO: meaningful return
 	if (rvalue < 0)
 		return rvalue;
-	return parse_header(src);	// No problems (YET, return code for success only happens when finally executing the method)
+	mode = Mode::PARSING;
+	return 0;	// No problems (YET, return code for success only happens when finally executing the method)
 }
 
 // HTTP NAMESPACE END

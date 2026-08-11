@@ -24,6 +24,10 @@ REQUEST_INL
 // TODO: set status here
 REQUEST_INL
 (isize) parse_line(Buffer<bufferSize> &src) {
+	const usize lineLength = src.lineEnd - src.linePtr;
+	if (lineLength < 2 || lineLength >= 8192)
+		return -1;
+
 	isize fieldIndex = src.match_field();
 	switch (fieldIndex) {
 		case Field::INVALID:
@@ -64,8 +68,7 @@ REQUEST_INL
 			break;
 	}
 
-	bool hasGarbage = src.skip_spaces();
-	if (hasGarbage)
+	if (src.skip_spaces())
 		return -1;	// ERROR: bad request, garbage after field value
 	return fieldIndex;	// Positive values mean something was matched, 0 means unknown
 }

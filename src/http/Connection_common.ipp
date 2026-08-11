@@ -17,16 +17,14 @@ CONNECTION_INL
 		case Mode::FIRST_LINE:
 			if (clientOutput.find_line_end() == 0)
 				return 0;	// Need to read more
-			if (request.parse_first_line(clientOutput, cfg) < 0)	// Calls parse_header, error might be unrelated to first line
+			if (request.parse_first_line(clientOutput, cfg) != 0)
 				return -1;
-			break;
-
+			// Fallthrough here is intentional
 		case Mode::PARSING:
 			rvalue = request.parse_header(clientOutput);
 			if (rvalue <= 0)
 				return rvalue;
-			break;
-
+			// Fallthrough here is intentional
 		case Mode::GET:
 			if (get_method(numBytes))
 			break;

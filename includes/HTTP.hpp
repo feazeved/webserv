@@ -36,12 +36,13 @@ struct ServerConfig {
 // Switch (no read, read, read chunked, can read)
 // 
 
+// These are exclusive, not multiple
 namespace Mode {
 	enum e_http_mode {
 		GET = 1 << 0,
 		POST = 1 << 1,
 		DELETE = 1 << 2,
-		CGI = 1 << 3,
+		CGI = 1 << 3,	// TODO: the methods are here
 		SSE = 1 << 4,
 		FIRST_LINE = 1 << 5,
 		PARSING = 1 << 6
