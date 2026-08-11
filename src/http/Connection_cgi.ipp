@@ -75,11 +75,11 @@ CONNECTION_INL
 	up to how many bytes will fit in a single write */
 CONNECTION_INL
 (isize) build_cgi_header() {
-	Buffer<2 * bufferSize> tmpBuffer;
+	Buffer<2 * sizeof(clientInput)> tmpBuffer;
 
-	tmpBuffer.index = 256;	// this isnt needed with header cache
-	tmpBuffer.size = 256;
-	tmpBuffer.start = 256;
+	// tmpBuffer.cursor.index = 256;	// this isnt needed with header cache
+	// tmpBuffer.cursor.size = 256;
+	// tmpBuffer.cursor.start = 256;
 
 	while (clientOutput.cursor.find_line_end() == 1) {
 		if (request.parse_cgi_line(clientOutput.cursor, clientInput.cursor) == -1) {

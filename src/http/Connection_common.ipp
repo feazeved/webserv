@@ -8,7 +8,7 @@ CONNECTION_INL
 	isize rvalue;
 
 	if (state & State::READING_FROM_CLIENT) {
-		rvalue = read_from_client(numBytes, events);
+		rvalue = read_from_client(events);
 		if (rvalue < 0)
 			return -1;
 	}
@@ -17,22 +17,23 @@ CONNECTION_INL
 		case Mode::FIRST_LINE:
 			if (clientOutput.cursor.find_line_end() == 0)
 				return 0;	// Need to read more
-			if (request.parse_first_line(clientOutput, cfg) != 0)
+			if (request.parse_first_line(clientOutput.cursor, cfg) != 0)
 				return -1;
 			// Fallthrough here is intentional
 		case Mode::PARSING:
-			rvalue = request.parse_header(clientOutput);
+			rvalue = request.parse_header(clientOutput.cursor);
 			if (rvalue <= 0)
 				return rvalue;
 			// Fallthrough here is intentional
 		case Mode::GET:
-			if (get_method(numBytes))
+			if (get_method())
 			break;
-			
+		default:
+			break;
 	}
 
 	if (state & State::WRITING_TO_CLIENT) {
-		rvalue = write_to_client(numBytes, events);
+		rvalue = write_to_client(events);
 		if (rvalue < 0)
 			return -1;
 	}
@@ -40,7 +41,7 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) read_from_server() {
-	isize bytesRead = clientInput.cursor.read(readFd);
+	isize bytesRead = clientInput.cursor.read(readFd, ATOMIC_IOSIZE);
 	if (bytesRead == 0) {
 		close(readFd);
 		readFd = -1;
@@ -71,7 +72,7 @@ CONNECTION_INL
 CONNECTION_INL
 (isize) write_to_client(u32 events) {
 	// TODO: epoll event checks to see if valid
-	isize bytesWritten = clientInput.cursor.write(clientFd, numBytes);
+	isize bytesWritten = clientInput.cursor.write(clientFd, ATOMIC_IOSIZE);
 	if (bytesWritten < 0)
 		return bytesWritten;	// TODO: tmp error path
 	return bytesWritten;
@@ -81,9 +82,9 @@ CONNECTION_INL
 CONNECTION_INL
 (isize) read_from_client(u32 events) {
 	// TODO: epoll event checks to see if valid
-	if (clientOutput.cursor.index < clientOutput.cursor.size)	// Still have things to process
+	if (clientOutput.cursor.readPtr < clientOutput.cursor.writePtr)	// Still have things to process
 		return 0;
-	isize bytesRead = clientOutput.cursor.read(clientFd, numBytes);
+	isize bytesRead = clientOutput.cursor.read(clientFd, ATOMIC_IOSIZE);
 	if (bytesRead < 0)
 		return bytesRead;
 	return bytesRead;
@@ -94,7 +95,7 @@ CONNECTION_INL
 // effectively performing compaction.
 CONNECTION_INL
 (isize) dechunk(Cursor& src) {
-	Buffer<bufferSize> tmpBuffer;
+	Buffer<sizeof(clientInput)> tmpBuffer;
 	Cursor &tmp = tmpBuffer.cursor;
 
 	const u8 *const searchEnd = src.writePtr > src.memStart ? src.writePtr - 1 : src.memStart;
@@ -130,7 +131,7 @@ CONNECTION_INL
 	if (tmp.writePtr == tmp.memStart)
 		return 0;				// CHECK: Nothing was appended
 
-	isize bytesWritten = tmp.write(writeFd, numBytes);	// Writes may be reattempted, so regardless it should compact
+	isize bytesWritten = tmp.write(writeFd, ATOMIC_IOSIZE);	// Writes may be reattempted, so regardless it should compact
 
 	// TODO: The buffer is only going to fill with data related to the chunks, decide if compaction is worth given current length
 	// Optimization opportunity here to have src copy directly to itself

@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <map>
-
+#include <unistd.h>
 #include "core.hpp"
 #include "Status.hpp"
 
@@ -32,6 +32,19 @@ struct ServerConfig {
 	ServerConfig() : host("localhost"), port(-1), maxBodySize(-1), autoindex(false) {}
 };
 
+#ifdef PIPE_BUF
+	#if PIPE_BUF > 4096
+		#define ATOMIC_IOSIZE 4096
+	#else
+		#define ATOMIC_IOSIZE PIPE_BUF
+	#endif
+#else
+	#ifdef _POSIX_PIPE_BUF
+		#define ATOMIC_IOSIZE _POSIX_PIPE_BUF
+	#else
+		#define ATOMIC_IOSIZE 512
+	#endif
+#endif
 
 // Switch (no read, read, read chunked, can read)
 // 

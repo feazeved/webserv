@@ -36,7 +36,7 @@ void s_join_path(const std::string &base, const std::string &relative, std::stri
 
 CONNECTION_INL
 (isize) get_first_run() {
-	const char*	reqPath = (const char*)clientOutput.cursor.data + request.path.index;
+	const char*	reqPath = (const char*)clientOutput.cursor.memStart + request.path.index;
 	Location*	location = NULL;
 	std::string	relative;
 	std::string	fullpath;
@@ -48,7 +48,7 @@ CONNECTION_INL
 	}
 	s_join_path(location->root, relative, fullpath);
 
-	struct stats st;
+	struct stat st;
 	if (stat(fullpath.c_str(), &st) == -1) {
 		request.status = (errno == ENOENT) ? Status::i404 : (errno == EACCES ? Status::i403 : Status::i500);
 		return error_path();

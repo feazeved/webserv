@@ -77,6 +77,11 @@ struct Cursor {
 
 	void copy(const Cursor& other);
 	bool insert(const u8 *ptr, usize length, usize insertIndex);
+
+	Cursor(u8* start, usize totalSize) :
+		reserved(), memStart(start), memEnd(start + totalSize), 
+		readPtr(start), writePtr(start), linePtr(start), lineEnd(NULL) {
+		}
 };
 
 template <usize bufferSize>
@@ -85,10 +90,9 @@ public:
 	u8 data[bufferSize - sizeof(Cursor)];	// Last cache line is reserved for unbounded memory loads
 	Cursor cursor;
 
-// Buffer()
-// 	: readPtr(data), writePtr(data), linePtr(data), lineEnd(NULL)
-// 	{
-// 	}
+	Buffer() :
+		Cursor (data, bufferSize) {
+	}
 };
 
 #include "Buffer_add.ipp"

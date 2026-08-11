@@ -16,20 +16,17 @@
 #include "Request.hpp"
 #include "State.hpp"
 
-#define CONNECTION_INL(ret_type) template <usize bufferSize> ret_type inline HTTP::Connection<bufferSize>::
+#define CONNECTION_INL(ret_type) ret_type inline HTTP::Connection::
 
 namespace HTTP {
 
-template <usize bufferSize>
 class Connection {
 public:
-	static const usize numBytes = 4096;
+	Buffer<16384> clientInput, clientOutput;
 
-public:
 	ServerConfig* cfg;
 	Game::State* gameState;
 
-	Buffer<bufferSize> clientInput, clientOutput;
 	Request request;
 	u8 state;
 
