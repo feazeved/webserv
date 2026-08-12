@@ -8,10 +8,9 @@ struct Cursor {
 	usize reserved[2];
 	u8 *const memStart;
 	u8 *const memEnd;
-	u8 *readPtr, *writePtr, *linePtr, *lineEnd;
+	u8 *readPtr, *scanPtr, *writePtr, *lineEnd;
 
 	// Could add a (is trivially compactable function)
-	// The contract could be linePtr is used if it isnt null
 	usize compact() {
 		const usize bytesUsed = (usize)(writePtr - readPtr);
 		const usize bytesFreed = (usize)(readPtr - memStart);
@@ -56,8 +55,7 @@ struct Cursor {
 	void reset() {
 		readPtr = memStart;
 		writePtr = memStart;
-		linePtr = memStart;
-		lineEnd = NULL;
+		scanPtr = memStart;
 	}
 
 	bool is_full() {
@@ -102,7 +100,7 @@ struct Cursor {
 
 	Cursor(u8* start, usize totalSize) :
 		reserved(), memStart(start), memEnd(start + totalSize - sizeof(Cursor)),
-		readPtr(start), writePtr(start), linePtr(start), lineEnd(NULL) {
+		readPtr(start), writePtr(start) {
 		}
 };
 

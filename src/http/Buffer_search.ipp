@@ -3,22 +3,21 @@
 
 CURSOR_INL
 (isize) find_line_end() {
-	linePtr = lineEnd != NULL ? lineEnd : linePtr;	// Previous call found a match
-	lineEnd = NULL;
 	const u8 *const searchEnd = writePtr - memStart >= 3 ? writePtr - 3 : memStart;
+	lineEnd = NULL;
 
-	while (readPtr < searchEnd) {
-		if (MEMCMP(readPtr, "\r\n", 2) == 0) {
-			readPtr += 2;
-			lineEnd = readPtr;
-			if (MEMCMP(readPtr, "\r\n", 2) == 0) {
-				readPtr += 2;
+	while (scanPtr < searchEnd) {
+		if (MEMCMP(scanPtr, "\r\n", 2) == 0) {
+			lineEnd = scanPtr;
+			scanPtr += 2;
+			if (MEMCMP(scanPtr, "\r\n", 2) == 0) {
+				scanPtr += 2;
 				return 2; // Found header end
 			}
 			return 1; // Found line end
 		}
 		else
-			readPtr++;
+			scanPtr++;
 	}
 	return 0;
 }
@@ -28,13 +27,13 @@ CURSOR_INL
 (bool) find_header_end() {
 	const u8 *const searchEnd = writePtr - memStart >= 3 ? writePtr - 3 : memStart;
 
-	while (readPtr < searchEnd) {
-		if (MEMCMP(readPtr, "\r\n\r\n", 4) == 0) {
-			readPtr += 4;
+	while (scanPtr < searchEnd) {
+		if (MEMCMP(scanPtr, "\r\n\r\n", 4) == 0) {
+			scanPtr += 4;
 			return true; // Found header end
 		}
 		else
-			readPtr++;
+			scanPtr++;
 	}
 	return false;
 }
@@ -73,14 +72,14 @@ CURSOR_INL
 		"status", "location", "transfer-encoding", "content-length", 
 		"content-type", "host", "connection", "accept"};	// TODO: add sse, remove location
 
-	u8 *optr = linePtr;
+	u8 *optr = readPtr;
 
-	while (linePtr < lineEnd && *linePtr != ':')
-		linePtr++;
-	usize length = (usize)(linePtr - optr);
-	if (length >= sizeof(*ltable) || *linePtr != ':')
-		return (*linePtr != ':') ? -1 : 0;
-	linePtr++;
+	while (readPtr < lineEnd && *readPtr != ':')
+		readPtr++;
+	usize length = (usize)(readPtr - optr);
+	if (length >= sizeof(*ltable) || *readPtr != ':')
+		return (*readPtr != ':') ? -1 : 0;
+	readPtr++;
 	return s_match(optr, length, ltable);
 }
 
@@ -90,13 +89,13 @@ CURSOR_INL
 		"html", "htm", "css", "json", "js", 
 		"png", "jpg", "jpeg", "gif", "txt"};
 
-	const usize minLength = (usize) MAX(0, lineEnd - linePtr - 3);
-	const u8 *searchLength = linePtr + MIN(minLength, 252);
+	const usize minLength = (usize) MAX(0, lineEnd - readPtr - 3);
+	const u8 *searchLength = readPtr + MIN(minLength, 252);
 
-	while (linePtr < searchLength && *linePtr != '.')
-		linePtr++;
-	if (linePtr >= searchLength)
+	while (readPtr < searchLength && *readPtr != '.')
+		readPtr++;
+	if (readPtr >= searchLength)
 		return -1;
-	linePtr++;
-	return s_match(linePtr, 5, ltable);
+	readPtr++;
+	return s_match(readPtr, 5, ltable);
 }

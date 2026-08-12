@@ -42,7 +42,7 @@ REQUEST_INL
 // TODO: set status here
 REQUEST_INL
 (isize) parse_line(Cursor &src) {
-	const usize lineLength = (usize)(src.lineEnd - src.linePtr);
+	const usize lineLength = (usize)(src.lineEnd - src.readPtr);
 	if (lineLength < 2 || lineLength >= 8192)
 		return -1;
 
@@ -94,8 +94,8 @@ REQUEST_INL
 // Only quick sanity checks
 REQUEST_INL
 (isize) parse_cgi_line(Cursor &src, Cursor &dst) {
-	const u8 *field = src.linePtr;
-	const usize totalLength = (usize)(src.lineEnd - src.linePtr);
+	const u8 *field = src.readPtr;
+	const usize totalLength = (usize)(src.lineEnd - src.readPtr);
 
 	isize fieldIndex = src.match_field();
 	if (fieldIndex <= 0) {
@@ -105,7 +105,7 @@ REQUEST_INL
 	}
 
 	if (fieldIndex == Field::STATUS) {
-		status = (char*) src.linePtr;
+		status = (char*) src.readPtr;
 		isize rvalue = status.is_valid() == true ? 0 : -1;
 		if (rvalue == -1)
 			status = Status::i500;	// CGI output an invalid status, should be server error

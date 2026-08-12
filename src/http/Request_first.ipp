@@ -28,14 +28,14 @@ REQUEST_INL
 REQUEST_INL
 (isize) parse_target(Cursor &src, ServerConfig* cfg) {
 
-	u8 *const lineStart = src.linePtr;
-	u8* &ptr = src.linePtr;
+	u8 *const lineStart = src.readPtr;
+	u8* &ptr = src.readPtr;
 	u8 *end = src.lineEnd;
 
 	query.index = 0;
 	query.size = 0;
 	path.index = 0;
-	path.size = src.lineEnd - src.linePtr;
+	path.size = src.lineEnd - src.readPtr;
 	while (ptr < end) {
 		if (g_asciiLut[*ptr] > ASCII_RFC_SYMBOLS) {
 			if (*ptr != '?')
@@ -63,7 +63,7 @@ REQUEST_INL
 // Returning 
 REQUEST_INL
 (isize) parse_first_line(Cursor &src, ServerConfig* cfg) {
-	const usize lineLength = (usize)(src.lineEnd - src.linePtr);
+	const usize lineLength = (usize)(src.lineEnd - src.readPtr);
 	if (lineLength < 14 || lineLength >= 8192)
 		return -1;	// ERROR: Bad request "GET / HTTP/1.1" shortest possible
 

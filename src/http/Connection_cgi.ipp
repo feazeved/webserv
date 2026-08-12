@@ -67,7 +67,7 @@ CONNECTION_INL
 	close(fdOutput[1]);
 	readFd = fdOutput[0];
 	writeFd = fdInput[1];
-	cgiStartTime = g_timeNow;
+	// cgiStartTime = g_timeNow;
 }
 
 /*	The pipe fds here are configured to be non-blocking and read/write errors are ignored
