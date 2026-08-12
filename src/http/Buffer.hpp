@@ -5,27 +5,29 @@
 #define CURSOR_INL(ret_type) ret_type inline Cursor::
 
 struct Cursor {
-	usize reserved[2];
+	static const usize bytesPadding = sizeof(u8*) * 8;
+	static const usize minReadSize = 4;
+
+	u8 *reserved[2];
 	u8 *const memStart;
 	u8 *const memEnd;
 	u8 *readPtr, *scanPtr, *writePtr, *lineEnd;
 
-	// Could add a (is trivially compactable function)
 	usize compact() {
 		const usize bytesUsed = (usize)(writePtr - readPtr);
-		const usize bytesFreed = (usize)(readPtr - memStart);
 
 		MEMMOVE(memStart, readPtr, bytesUsed);
-		readPtr -= bytesFreed;
-		writePtr -= bytesFreed;
+		readPtr = memStart;
+		writePtr = memStart + bytesUsed;
 		return (usize)(memEnd - writePtr);
 	}
 
 	isize read(i32 fd, usize bytes) {
 		usize bytesFree = (usize)(memEnd - writePtr);
+
 		if (bytesFree < bytes) {
 			bytesFree = compact();
-			if (bytesFree == 0)
+			if (bytesFree < minReadSize)
 				return -2;
 		}
 
@@ -40,15 +42,8 @@ struct Cursor {
 		usize bytesCapped = MIN(bytes, (usize)(writePtr - readPtr));
 		isize bytesWritten = ::write(fd, readPtr, bytesCapped);
 
-		if (bytesWritten < 0)
-			return bytesWritten;
-		readPtr += bytesWritten;
-		isize tailBytes = writePtr - readPtr;
-		if (tailBytes <= 32) {
-			MEMMOVE(memStart, readPtr, 32);
-			writePtr = memStart + tailBytes;
-			readPtr = memStart;	// TODO: Check if linePtr is potentially used after this
-		}
+		if (bytesWritten > 0)
+			readPtr += bytesWritten;
 		return bytesWritten;
 	}
 
@@ -56,6 +51,7 @@ struct Cursor {
 		readPtr = memStart;
 		writePtr = memStart;
 		scanPtr = memStart;
+		lineEnd = NULL;
 	}
 
 	bool is_full() {

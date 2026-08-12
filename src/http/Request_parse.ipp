@@ -5,10 +5,10 @@ namespace HTTP {
 
 // TODO: Add a check for line length here if it makes sense
 REQUEST_INL
-(isize) parse_header(Cursor &src) {
+(isize) parse_header(Cursor &src, ServerConfig* cfg) {
 	isize rvalue;
 	while ((rvalue = src.find_line_end()) != 0) {
-		if (parse_line(src) < 0)
+		if (parse_line(src, cfg) < 0)
 			return -1;	// ERROR: Invalid header
 		if (rvalue == 2)
 			return validate_header();
@@ -39,20 +39,20 @@ REQUEST_INL
 	return 1;
 }
 
-// TODO: set status here
 REQUEST_INL
-(isize) parse_line(Cursor &src) {
+(isize) parse_line(Cursor &src, ServerConfig* cfg) {
 	const usize lineLength = (usize)(src.lineEnd - src.readPtr);
-	if (lineLength < 2 || lineLength >= 8192)
+	if (lineLength < 2 || lineLength >= 8192) {	// TODO: Fix magic numbers
+		status = Status::i401;
 		return -1;
+	}
 
 	isize fieldIndex = src.match_field();
 	switch (fieldIndex) {
-		case Field::INVALID:
-			return -1;
-
 		default:
-			return 0;
+			if (fieldIndex < 0)
+				goto Error;
+			return fieldIndex;
 
 		case Field::LOCATION:
 			
@@ -60,33 +60,39 @@ REQUEST_INL
 
 		case Field::TRANSFER_ENCODING:
 			if ((options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH)))
-				return -1; // ERROR: bad request, transfer method had already been set
+				goto Error; // ERROR: bad request, transfer method had already been set
 			if (src.strcasecmp("chunked") == false)
-				return -1; // ERROR: bad request, transfer encoding isnt chunked
+				goto Error; // ERROR: bad request, transfer encoding isnt chunked
 			options |= Options::CHUNKED_LENGTH;
 			break;
 
 		case Field::CONTENT_LENGTH:
 			if ((options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH)))
-				return -1; // ERROR: bad request, transfer method had already been set
+				goto Error; // ERROR: bad request, transfer method had already been set
 			bodySize = src.strtol10();
-			if (bodySize == SIZE_MAX)
-				return -1;	// ERROR: not a number or too large
+			options |= Options::FIXED_LENGTH;
+			if (bodySize > cfg->maxBodySize)
+				goto Error;	// ERROR: not a number or too large
 			break;
 
 		case Field::HOST:
 			if (options & Options::HOST)
-				return -1;	// ERROR: Multiple hosts
+				goto Error;	// ERROR: Multiple hosts
 			if (src.strcasecmp("localhost") == false)
-				return -1;
+				goto Error;
 			src.strcasecmp(":8080");
 			options |= Options::HOST;
 			break;
 	}
 
 	if (src.skip_spaces())
-		return -1;	// ERROR: bad request, garbage after field value
+		goto Error;	// ERROR: bad request, garbage after field value
+
 	return fieldIndex;	// Positive values mean something was matched, 0 means unknown
+
+	Error:
+		status = Status::i400;
+		return -1;
 }
 
 // NOTES: i think the call here is because CGI output is server controlled, 

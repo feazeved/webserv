@@ -79,7 +79,7 @@ public:
 	// Configuration
 	isize configure();
 	isize error_path();
-	void  build_header(usize contentLength = SIZE_MAX, u8 mimeIndex = Mime::OCTET_STREAM);
+	void  build_header();	// Alex: Isso tem que tar no init do request, mime_index = contentType, contentLength = bodySize
 	isize build_cgi_header();
 
 	// HTTP Methods

@@ -31,14 +31,15 @@ public:
 	void reset() {
 		MEMSET_INLINE(this, 0, sizeof(Request));
 		status.reset();
+		contentType = Mime::OCTET_STREAM;
 	}
 
 	// Parsing
 	isize check_location(Cursor &src, ServerConfig* cfg);
 	isize parse_target(Cursor &src, ServerConfig* cfg);
 	isize parse_first_line(Cursor &src, ServerConfig* cfg);
-	isize parse_header(Cursor &src);
-	isize parse_line(Cursor &src);
+	isize parse_header(Cursor &src, ServerConfig* cfg);
+	isize parse_line(Cursor &src, ServerConfig* cfg);
 	isize parse_cgi_line(Cursor &src, Cursor &dst);
 	isize validate_header();
 

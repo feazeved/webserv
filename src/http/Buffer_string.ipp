@@ -73,7 +73,7 @@ CURSOR_INL
 (bool) skip_spaces() {
 	while ((*readPtr == ' ' || *readPtr == '\t'))
 		readPtr++;
-	return MEMCMP(readPtr, "\r\n", 2) == 0;
+	return readPtr == lineEnd;
 }
 
 // Compares and advances pointer if valid

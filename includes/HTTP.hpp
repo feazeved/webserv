@@ -26,10 +26,10 @@ struct ServerConfig {
 	std::vector<Location>		locations;
 	std::string					host;
 	long						port;
-	long						maxBodySize;
+	usize						maxBodySize;
 	bool						autoindex;
 
-	ServerConfig() : host("localhost"), port(-1), maxBodySize(-1), autoindex(false) {}
+	ServerConfig() : host("localhost"), port(-1), maxBodySize(SIZE_MAX), autoindex(false) {}
 };
 
 #define HTTP_BUFFERSIZE 16384
@@ -83,21 +83,22 @@ namespace Options {
 
 namespace Field {
 	enum e_http_field {
-		INVALID = -1,
 		UNKNOWN = 0,
-		STATUS = 1,
-		LOCATION = 2,
-		TRANSFER_ENCODING = 3,
-		CONTENT_LENGTH = 4,
-		CONTENT_TYPE = 5,
-		HOST = 6,
-		CONNECTION = 7
+		STATUS,
+		LOCATION,
+		TRANSFER_ENCODING,
+		CONTENT_LENGTH,
+		CONTENT_TYPE,
+		HOST,
+		CONNECTION,
+		COUNT
 	};
 }
 
 namespace Mime {
 	enum e_mime_type {
-		HTML = 0,
+		OCTET_STREAM = 0,
+		HTML,
 		HTM,
 		CSS,
 		JSON,
@@ -107,7 +108,6 @@ namespace Mime {
 		JPEG,
 		GIF,
 		TXT,
-		OCTET_STREAM,
 		COUNT
 	};
 }

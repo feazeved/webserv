@@ -64,11 +64,12 @@ CURSOR_INL
 	writePtr += digitLength;
 }
 
-// TODO: what the fuck was i doing here
+// Copies the contents of another buffer into this buffer
+// Good for defragmentation
 CURSOR_INL
 (void) copy(const Cursor& other) {
-	const usize tailBytes = (usize)(other.writePtr - other.readPtr);
-	writePtr = memStart + tailBytes;
+	const usize bytesUsed = (usize)(other.writePtr - other.readPtr);
+	writePtr = memStart + bytesUsed;
 	readPtr = memStart;
-	MEMCPY(memStart, other.readPtr, tailBytes);
+	MEMCPY(memStart, other.readPtr, bytesUsed);
 }

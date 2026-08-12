@@ -207,7 +207,7 @@ void setServerDirective(Directive &dir, HTTP::ServerConfig &server){
 	}
 	else if(dir.name == "client_max_body_size")
 	{
-		if(server.maxBodySize != -1 || dir.args.size() != 1)
+		if(server.maxBodySize != SIZE_MAX || dir.args.size() != 1)
 			throw std::runtime_error("Invalid max body size definition");
 		server.maxBodySize = stt_strtol(dir.args.at(0));
 		if(server.maxBodySize < 1 || server.maxBodySize > 20)
