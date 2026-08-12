@@ -193,6 +193,11 @@ public:
 	}
 
 	ALWAYS_INLINE
+	void reset() {
+		index = 1;
+	}
+
+	ALWAYS_INLINE
 	static const char* c_str(Code value) {
 		return s_strings(value);
 	}
@@ -224,7 +229,7 @@ public:
 
 	ALWAYS_INLINE
 	bool is_set() const {
-		return index == 1;
+		return index != 1;
 	}
 };
 }

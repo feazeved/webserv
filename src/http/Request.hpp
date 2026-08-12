@@ -28,6 +28,11 @@ public:
 	u8 options;
 	u8 contentType;
 
+	void reset() {
+		MEMSET_INLINE(this, 0, sizeof(Request));
+		status.reset();
+	}
+
 	// Parsing
 	isize check_location(Cursor &src, ServerConfig* cfg);
 	isize parse_target(Cursor &src, ServerConfig* cfg);

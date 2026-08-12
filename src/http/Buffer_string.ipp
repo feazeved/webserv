@@ -57,7 +57,7 @@ CURSOR_INL
 	const u8 *ostr = linePtr;
 	while (true) {
 		digit = (usize) g_asciiLut[(u8)*linePtr];
-		if (value >= (SIZE_MAX / 10 - 10))
+		if (value >= ((SIZE_MAX - 9) / 10))
 			return SIZE_MAX;
 		if (digit > 9)
 			break;
@@ -79,19 +79,21 @@ CURSOR_INL
 // Compares and advances pointer if valid
 CURSOR_INL
 (template <usize N> bool) strcmp(const char (&string)[N]) {
-	bool isMatch = MEMCMP(linePtr, string, N) != 0;
-	linePtr += isMatch ? N : 0;
+	const usize strLength = N - 1;
+	bool isMatch = MEMCMP(linePtr, string, strLength) == 0;
+	linePtr += isMatch ? strLength : 0;
 	return isMatch;
 }
 
 CURSOR_INL
 (template <usize N> bool) strcasecmp(const char (&string)[N]) {
 	u8 buffer[N];
+	const usize strLength = N - 1;
 
-	MEMCPY_INLINE(buffer, linePtr, N);
-	for (usize i = 0; i < N; i++)
+	MEMCPY_INLINE(buffer, linePtr, strLength);
+	for (usize i = 0; i < strLength; i++)
 		buffer[i] |= 32;
-	bool isMatch = MEMCMP(buffer, string, N) != 0;
-	linePtr += isMatch ? N : 0;
+	bool isMatch = MEMCMP(buffer, string, strLength) == 0;
+	linePtr += isMatch ? strLength : 0;
 	return isMatch;
 }

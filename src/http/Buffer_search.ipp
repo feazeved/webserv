@@ -78,7 +78,7 @@ CURSOR_INL
 	while (linePtr < lineEnd && *linePtr != ':')
 		linePtr++;
 	usize length = (usize)(linePtr - optr);
-	if (length >= sizeof(ltable) || *linePtr != ':')
+	if (length >= sizeof(*ltable) || *linePtr != ':')
 		return (*linePtr != ':') ? -1 : 0;
 	linePtr++;
 	return s_match(optr, length, ltable);

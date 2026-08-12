@@ -5,6 +5,7 @@ namespace HTTP {
 
 // Connection returns whether or not the FD should be removed from epoll
 // 0: keep it, -1 remove it
+// Upon finishing a header 
 CONNECTION_INL
 (isize) dispatch(u32 events) {
 	isize rvalue;
@@ -117,6 +118,7 @@ CONNECTION_INL
 			if (rvalue == 0)
 				break;
 			request.chunkSize = src.strtol16();
+				// TODO: skip spaces here
 			if (request.chunkSize == 0) {
 				if (rvalue != 2)
 					return -1;	// CLOSING ERROR: no header end after 0

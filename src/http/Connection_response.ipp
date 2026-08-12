@@ -19,18 +19,16 @@ void s_append_mime(Cursor &dst, u8 mimeIndex) {
 	up to how many bytes will fit in a single write */
 CONNECTION_INL
 (isize) build_cgi_header() {
-	Buffer<2 * sizeof(clientInput)> tmpBuffer;
+	Buffer<HTTP_BUFFERSIZE + 256> tmpBuffer;
 	Cursor &tmp = tmpBuffer.cursor;
-	Cursor &src = clientOutput.cursor;
-	Cursor &dst = clientInput.cursor;
+	Cursor &src = clientInput.cursor;
 
-	// tmpBuffer.cursor.index = 256;	// this isnt needed with header cache
-	// tmpBuffer.cursor.size = 256;
-	// tmpBuffer.cursor.start = 256;
+	tmp.writePtr += 256;
+	tmp.readPtr += 256;
 
-	while (clientOutput.cursor.find_line_end() == 1) {
-		if (request.parse_cgi_line(clientOutput.cursor, clientInput.cursor) == -1) {
-			
+	while (src.find_line_end() == 1) {
+		if (request.parse_cgi_line(src, tmp) == -1) {
+			return error_path();
 		}
 	}
 }
@@ -54,18 +52,6 @@ CONNECTION_INL
 
 	dst.append("\r\n\r\n");
 
-	// clientInput.cursor.append("Content-Length: ");
-	// s_append_content_length(clientInput, (usize)st.st_size);
-
-	// client.append("HTTP/1.1 ");
-
-	// if (bodySize != SIZE_MAX)
-	// 	client.append("Transfer-Encoding: chunked\r\n");
-	// else
-	// {
-	// 	client.append("Content-Length: ");
-	// 	client.append(requestSize, false);	// Auto performs itoa
-	// }
 }
 // Namespace HTTP
 }

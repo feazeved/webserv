@@ -11,6 +11,7 @@ struct Cursor {
 	u8 *readPtr, *writePtr, *linePtr, *lineEnd;
 
 	// Could add a (is trivially compactable function)
+	// The contract could be linePtr is used if it isnt null
 	usize compact() {
 		const usize bytesUsed = (usize)(writePtr - readPtr);
 		const usize bytesFreed = (usize)(readPtr - memStart);
@@ -18,7 +19,7 @@ struct Cursor {
 		MEMMOVE(memStart, readPtr, bytesUsed);
 		readPtr -= bytesFreed;
 		writePtr -= bytesFreed;
-		return (usize)(writePtr - memStart);
+		return (usize)(memEnd - writePtr);
 	}
 
 	isize read(i32 fd, usize bytes) {
@@ -112,7 +113,7 @@ public:
 	Cursor cursor;
 
 	// Constructors
-	Buffer() : Cursor (data, bufferSize) {}
+	Buffer() : cursor (data, bufferSize) {}
 };
 
 #include "Buffer_add.ipp"

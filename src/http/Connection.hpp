@@ -1,5 +1,5 @@
 #pragma once
-
+#include "core.hpp"
 #include <unistd.h>
 #include <sys/epoll.h>
 #include <ctime>
@@ -22,23 +22,28 @@ namespace HTTP {
 
 class Connection {
 public:
-	Buffer<16384> clientInput, clientOutput;
+	static const usize metadataSize = sizeof(ServerConfig*) + sizeof(Request) + sizeof(time_t) +
+		2 * sizeof(u8) + sizeof(pid_t) + 3 * sizeof(i32) + sizeof(std::string) + sizeof(bool);
+	static const usize metasizeAlign = ALIGN_UP(metadataSize / 2, 8ul);
+	static const usize bytesFree = 2 * metasizeAlign - metadataSize;	// Debug only
+	static const usize bufferSize = HTTP_BUFFERSIZE - metasizeAlign;
+
+public:
+	Buffer<bufferSize> clientInput, clientOutput;
 
 	ServerConfig* cfg;
-	Game::State* gameState;
-
 	Request request;
+	time_t startTime;
 	u8 state;
-
-	time_t startTime, cgiStartTime, bonusTime; // Value ranging from -30s to 30s
+	u8 bonusTime; // Value ranging from -30s to 30s
 
 	pid_t processId;
 	i32 clientFd;	// Duplex FD
 	i32 writeFd;	// CGI Input or POST
 	i32 readFd;		// CGI Output or GET/DEL
 
-	bool isSSE;
-	std::string sse_buffer;	// TODO: find out what this is
+	bool isSSE;				// TODO: these vars should be removed, is sse should belong in request.mode (it already has the enum)
+	std::string sse_buffer;	// This one too
 
 	isize dispatch(u32 events);
 
@@ -47,6 +52,22 @@ public:
 		(void)f;
 		cfg = c;
 		return 1;
+	}
+
+	void reset() {
+		if (readFd >= 0)
+			close(readFd);
+		if (writeFd >= 0)
+			close(writeFd);
+		writeFd = -1;
+		readFd = -1;
+		clientFd = -1;	// If its not closed here we're in big trouble
+		processId = -1;
+		bonusTime = 0;
+		startTime = 0;
+		cfg = NULL;
+
+		request.reset();
 	}
 
 	// TODO

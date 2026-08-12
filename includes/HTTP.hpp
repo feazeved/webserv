@@ -64,12 +64,11 @@ namespace Mode {
 
 namespace State {
 	enum e_http_state {
-		ERROR = 0,
 		READING_FROM_CLIENT = 1,
 		WRITING_TO_CLIENT = 2,
 		PARSING = 4,
 		FIRST_LINE = 8,
-		DONE = 16
+		CLOSE = 16
 	};
 }
 

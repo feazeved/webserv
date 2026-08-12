@@ -68,7 +68,7 @@ CURSOR_INL
 CURSOR_INL
 (void) copy(const Cursor& other) {
 	const usize tailBytes = (usize)(other.writePtr - other.readPtr);
-	writePtr -= tailBytes;
+	writePtr = memStart + tailBytes;
 	readPtr = memStart;
 	MEMCPY(memStart, other.readPtr, tailBytes);
 }
