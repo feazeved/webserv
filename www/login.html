@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Webserv Club Penguin</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" type="image/x_icon" href="/images/favicon_main.ico">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Playpen+Sans:wght@100..800&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="./css/login.css">
+
+    </head>
+
+    <body>
+        <div class="MyDiv">
+            <form action="/cgi-bin/process-login.py" method="post">
+                    Username: <input type = "text" name = "username"><br />
+
+                    <select name = "dropdown">
+                        <option value = "america" selected>America</option>
+                        <option value = "africa">Africa</option>
+                        <option value = "europe">Europe</option>
+                        <option value = "oceania">Oceania</option>
+                    </select><br />
+
+                    <input type = "checkbox" name = "terms" value = "on"  /> *I accept the terms of bla, bla... <br />
+                    <input type = "checkbox" name = "optional" value = "on" /> I want to report bugs and sign-in for the newsletter... <br />
+
+                    <button id="playButton" type="button"><em>Login</em></button>
+            </form>
+        </div>
+    </body>
+</html>
