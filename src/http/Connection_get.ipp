@@ -95,16 +95,16 @@ CONNECTION_INL
 		if (isDir)
 			body.append("-");
 		else
-			s_append_number(body, (usize)entryStat.st_size);
+			body.append_digit10((usize)(entryStat.st_size));
 		body.append("</td></tr>\n");
 	}
 	body.append("<tr><td colspan=\"3\"><hr></td></tr>\n</table>\n</body>\n</html>\n");
 
-	usize bodySize = (usize)(body.writePtr - body.memStart);
-
+	request.bodySize = (usize)(body.writePtr - body.memStart);
 	request.status = Status::i200;
-	build_header(bodySize, Mime::HTML);
-	clientInput.cursor.append((const u8*)body.memStart, bodySize);
+	request.contentType = Mime::HTML;
+	build_header();
+	clientInput.cursor.append(body, request.bodySize);
 
 	readFd = -1;
 	writeFd = -1;
@@ -165,11 +165,9 @@ CONNECTION_INL
 	readFd = rawFd;
 	writeFd = -1;
 	request.status = Status::i200;
-
-	build_header((usize)st.st_size, request.contentType);
-
-	// TODO: shouldnt we have this
-	// state = State::WRITING_TO_CLIENT
+	request.bodySize = (usize)st.st_size;
+	build_header();
+	state |= State::WRITING_TO_CLIENT;
 	return 0;
 }
 

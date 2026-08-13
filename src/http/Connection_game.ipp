@@ -26,12 +26,12 @@ CONNECTION_INL
             "\r\n";
         sse_buffer = headers;
         isSSE = true;
-        gameState->addSSEClient(this);
+        cfg->gameState->addSSEClient(this);
         return 2;
     }
 
     if ((request.mode & Mode::POST) && isPath(path, path_len, "/join", 5)) {
-        i32 id = gameState->addPlayer();
+        i32 id = cfg->gameState->addPlayer();
 
         std::ostringstream body;
         body << "{\"id\":" << id << "}";
@@ -66,7 +66,7 @@ CONNECTION_INL
                 y = atof(query.c_str() + pos + 2);
         }
         if (playerId > 0)
-            gameState->movePlayer(playerId, x, y);
+            cfg->gameState->movePlayer(playerId, x, y);
         std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n";
         send(clientFd, response.c_str(), response.size(), MSG_DONTWAIT | MSG_NOSIGNAL);
         return 0;

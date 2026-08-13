@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include "core.hpp"
 #include "Status.hpp"
+#include "State.hpp"
 
 namespace HTTP {
 
@@ -28,6 +29,7 @@ struct ServerConfig {
 	long						port;
 	usize						maxBodySize;
 	bool						autoindex;
+	Game::State					*gameState;
 
 	ServerConfig() : host("localhost"), port(-1), maxBodySize(SIZE_MAX), autoindex(false) {}
 };

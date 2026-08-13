@@ -28,14 +28,17 @@ public:
 	static const usize bytesFree = 2 * metasizeAlign - metadataSize;	// Debug only
 	static const usize bufferSize = HTTP_BUFFERSIZE - metasizeAlign;
 
-public:
-	Buffer<bufferSize> clientInput, clientOutput;
+	typedef Buffer<bufferSize> HTTP_Buffer;
 
+public:
 	ServerConfig* cfg;
+
+	HTTP_Buffer clientInput, clientOutput;
 	Request request;
+
 	time_t startTime;
-	u8 state;
 	u8 bonusTime; // Value ranging from -30s to 30s
+	u8 state;
 
 	pid_t processId;
 	i32 clientFd;	// Duplex FD

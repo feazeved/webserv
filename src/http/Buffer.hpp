@@ -4,12 +4,13 @@
 
 #define CURSOR_INL(ret_type) ret_type inline Cursor::
 
+// Start, readPtr, scanPtr, writePtr
 struct Cursor {
-	static const usize bytesPadding = sizeof(u8*) * 8;
+	static const usize bytesPadding = (sizeof(u8*) * 8) / 2;
 	static const usize minReadSize = 4;
 
-	u8 *reserved[2];
-	u8 *const memStart;
+	u8 *reserved[2];		// TODO: Need to figure out how to split the metadata so that:
+	u8 *const memStart;		// [pad32 data pad32] instead of [data pad64]
 	u8 *const memEnd;
 	u8 *readPtr, *scanPtr, *writePtr, *lineEnd;
 

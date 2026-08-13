@@ -3,7 +3,7 @@
 
 namespace HTTP {
 
-// If there is any error here, then the connection always assumes the form of
+// If there is any error here, then the connection always assumes the form of//////////////////////////////////////////
 // stream the error until finished, then close connection
 CONNECTION_INL
 (isize) error_path() {
@@ -20,6 +20,7 @@ CONNECTION_INL
 	state = State::CLOSE;
 	build_header();
 	
+	return -1;
 }
 
 CONNECTION_INL

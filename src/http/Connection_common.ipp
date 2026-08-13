@@ -24,7 +24,7 @@ CONNECTION_INL
 				return error_path();
 			state ^= State::FIRST_LINE;
 		}
-		rvalue = request.parse_header(clientOutput.cursor);
+		rvalue = request.parse_header(clientOutput.cursor, cfg);
 		if (rvalue == 0)
 			return rvalue;
 		else if (rvalue < 0)
