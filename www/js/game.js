@@ -22,15 +22,97 @@
 // 	});
 // });
 
+// function readState() {
+// 	const gameState = JSON.parse(text);
+//
+// if (gameState.type === "move")
+// {
+// 		let penguin = docum(gameState.id);
+//			penguin.style.x = g
+//			penguin.style.y = g
+//			direction/sprite = g
+//			direction/sprite = g
+// }
+//
+// if (JOIN) {
+//     how to add penguin
+// }
+// else if (LEFT) {
+// 		how to remove penguin
+// }
 
 function startGame() {
-	const canvas = document.getElementById('gameCanvas');
-	const ctx = canvas.getContext('2d');
 
-	const image = new Image();
-	image.src = 'images/town.webp';
-
-	image.onload = () => {
-		ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-	};
 }
+
+const BACKEND = ""
+
+const arena = document.getElementById("arena");
+
+function renderState(state) {
+	let ids = [];
+
+	state.forEach(({ username, x, y }) => {
+		const id = `penguin-${username}`;
+		ids.push(id);
+		let el = arena.querySelector('#' + id);
+		if (el == null) {
+			el = htmlToElement(`<div class="penguin" id="${id}">🐧<p>${username}</p></div>`);
+			arena.append(el);
+		}
+		el.style.top = `${y}px`;
+		el.style.left = `${x}px`;
+	});
+
+	arena.querySelectorAll('.penguin').forEach(el => ids.includes(el.id) || el.remove());
+}
+
+const eu = { username: "meuovo", x: 0, y: 0 }
+
+async function update(eu)
+{
+	try {
+		renderState(await fetch(`${BACKEND}/update`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(eu)
+		}).then(data => data.json()))
+	} catch { }
+}
+
+
+
+function htmlToElement(htmlText)
+{
+	const tmp = document.createElement("div");
+	tmp.innerHTML = htmlText;
+	const child = tmp.firstElementChild;
+	child.remove();
+	return child;
+}
+
+const range = 40;
+
+function keyPress(event) {
+  if (event.key == 'ArrowUp')
+    eu.y = Math.max(0, eu.y - range);
+  if (event.key == 'ArrowDown')
+    eu.y = Math.min(300 - 80, eu.y + range);
+  if (event.key == 'ArrowLeft')
+    eu.x = Math.max(0, eu.x - range);
+  if (event.key == 'ArrowRight')
+    eu.x = Math.min(500 - 60, eu.x + range);
+
+	update(eu);
+	// penguin.style.left =
+	// 	penguin.style.top = ;
+}
+
+document.addEventListener('keyup', keyPress);
+
+
+setInterval(async function() {
+	try {
+		renderState(await fetch(`${BACKEND}/state`).then(data => data.json()))
+	} catch {}
+}, 200);
