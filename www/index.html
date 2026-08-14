@@ -1,47 +1,44 @@
 <!DOCTYPE html>
 
 <html lang="en">
-<head>
-    <title>Webserv Club Penguin</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/x_icon" href="/images/favicon_main.ico">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playpen+Sans:wght@100..800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./css/styles.css">
+	<head>
+		<title>Webserv Club Penguin</title>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="icon" type="image/x_icon" href="/images/favicon_main.ico">
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Playpen+Sans:wght@100..800&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="./css/styles.css">
 
-</head>
+	</head>
 
-<body>
-	<div class="header">
-		<img class="logo"
+	<body>
+		<div class="header">
+			<img class="logo"
 				src="images/logo.png"
 				alt="Club Penguin Logo"
 				width="221"
 				height="100"
-		>
-		<div class="title">
-			<h1>Club Penguin: Webserv</h1>
-			<p>Nostalgic Tribute</p>
-		</div>
-	</div>
-	<nav>
-		<span><a href="./index.html" >Home</a></span>
-		<span><a href="./about.html">About Us</a></span>
-		<span><a href="./error-pages/invalid-requests-map.html">Invalid Requests</a></span>
-		<span>CGI's</span>
-	</nav>
-
-	<div class="game-container">
-		<button id="playButton" type="button"><em>Play</em></button>
-		<div id="gameCanvas">
-			<div id="arena" class="area">
+			>
+			<div class="title">
+				<h1>Club Penguin: Webserv</h1>
+				<p>Nostalgic Tribute</p>
 			</div>
 		</div>
-	</div>
+		<nav>
+			<span><a href="./about.html" target="_blank">About Us</a></span>
+			<span><a href="./error-pages/invalid-requests-map.html" target="_blank">Invalid Requests</a></span>
+			<span><a href="./cgis.html" target="_blank">CGI's</a></span>
+		</nav>
 
-	<script src="js/game.js"></script>
-	<script src="js/index.js"></script>
-</body>
+		<div class="game-container">
+			<div id="gameCanvas">
+				<div id="arena" class="area">
+				</div>
+			</div>
+		</div>
+
+		<script src="js/game.js"></script>
+	</body>
 </html>

@@ -76,33 +76,8 @@ h1, p {
 	height: 100%;
 }
 
-
-/* ----- Main Button ----- */
-#playButton{
-	border: 2px solid black;
-	color: white;
-	border-radius: 25px;
-	text-align: center;
-	text-decoration: none;
-	display: inline-block;
-	font-size: 42px;
-	margin: 4px 2px;
-	cursor: pointer;
-	background: #48ABEF;
-	background: linear-gradient(0deg,rgba(72, 171, 239, 1) 0%, rgba(0, 83, 176, 1) 50%, rgba(72, 171, 239, 1) 100%);
-
-	padding-inline: 5rem;
-	padding-block: 0.75rem;
-
-}
-
-#playButton:hover {
-	background: #3b8dc4;
-	background: linear-gradient(0deg,rgba(59, 141, 196, 1) 0%, rgba(6, 60, 122, 1) 50%, rgba(59, 141, 196, 1) 100%);
-}
-
 #gameCanvas {
-	display: none;
+	display: flex;
 
 	position: relative;
 	border: 4px solid #1a1a2e;
@@ -146,14 +121,6 @@ h1, p {
 		text-wrap: nowrap;
 		bottom: -10px;
 	}
-}
-
-body.game-started #playButton{
-	display: none;
-}
-
-body.game-started #gameCanvas {
-	display: flex;
 }
 
 nav{
