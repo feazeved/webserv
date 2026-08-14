@@ -2,116 +2,40 @@
 
 #include <map>
 #include <vector>
-#include <iterator>
 #include <string>
-#include <algorithm>
-#include <sstream>
 
-#include "core.hpp"
-#include "game.hpp"
 #include "Player.hpp"
+
+class ServerManager;
 
 namespace Game {
 
 class State {
-private:
-	std::map<i32, Player>	players;
-	std::vector<GameEvent>	pendingEvents;
-	std::vector<i32>		sseClients;
-	std::string				json;
-	i32						nextPlayerId;
-
-	static const i32		s_spawnX = 0;
-	static const i32		s_spawnY = 0;
-
 public:
-	State(): nextPlayerId(1) {}
+	std::vector<void*>      sseClients;
+	std::string             broadcastBuffer;
 
-	i32	addPlayer() {
-		i32	id = nextPlayerId++;
-		players[id] = Player(id);
+	State();
+	~State();
 
-		GameEvent	ev(
-			GameEvent::PLAYER_JOINED,
-			id,
-			s_spawnX,
-			s_spawnY,
-			Game::DOWN,
-			players[id].color
-		);
-		pendingEvents.push_back(ev);
-		return (id);
-	}
+	i32  addPlayer();
+	void removePlayer(i32 id);
+	void movePlayer(i32 id, f64 x, f64 y);
 
-	void	removePlayer(i32 id) {
-		players.erase(id);
+	void addSSEClient(void* conn);
+	void removeSSEClient(void* conn);
 
-		GameEvent	ev(
-			GameEvent::PLAYER_LEFT,
-			id
-		);
-		pendingEvents.push_back(ev);
-	}
+	std::string flushEvents();
+	void broadcastEvents(ServerManager& manager);
 
-	void	movePlayer(i32 id, f64 x, f64 y) {
-		std::map<i32, Player>::iterator	it = players.find(id);
+	Player* getPlayer(i32 id);
 
-		if (it == players.end())
-			return ;
+private:
+	std::map<i32, Player>   players;
+	i32                     nextPlayerId;
 
-		// Need to validate if the requested position is valid.
-		// Maybe only send request if its valid in the html!
-		GameEvent	ev(
-			GameEvent::PLAYER_MOVED,
-			id,
-			x,
-			y,
-			it->second.direction,
-			it->second.color
-		);
-		pendingEvents.push_back(ev);
-	}
-
-	void	addSSEClient(i32 fd) {
-		sseClients.push_back(fd);
-	}
-
-	void	removeSSEClient(i32 fd) {
-		std::vector<i32>::iterator	it = std::find(sseClients.begin(), sseClients.end(), fd);
-
-		if (it == sseClients.end())
-			return ;
-
-		sseClients.erase(it);
-	}
-
-	void	stringifyEvents() {
-		if (pendingEvents.empty())
-			return ;
-
-		std::ostringstream	ss;
-		for (usize i = 0; i < pendingEvents.size(); i++) {
-			ss << "data: {";
-			GameEvent ev = pendingEvents[i];
-			switch (ev.type) {
-				case GameEvent::PLAYER_JOINED:
-					ss << "\"type\":\"join\",\"id\":" << ev.playerId;
-					break ;
-				case GameEvent::PLAYER_LEFT:
-					ss << "\"type\":\"leave\",\"id\":" << ev.playerId;
-					break ;
-				case GameEvent::PLAYER_MOVED:
-					ss << "\"type\":\"move\",\"id\":" << ev.playerId
-					   << ",\"x\":" << ev.x << ",\"y\":" << ev.y;
-					break ;
-			}
-			ss << "}\n\n";
-		}
-		json = ss.str();
-		pendingEvents.clear();
-	}
-
-	Player*	getPlayer(i32 id) { return (&players[id]); }
-	const std::vector<i32>&	getSSEClients() const { return (sseClients); }
+	static const i32 s_spawnX = 0;
+	static const i32 s_spawnY = 0;
 };
+
 }

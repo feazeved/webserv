@@ -22,8 +22,21 @@ isize s_close_all(int *fdInput, int *fdOutput) {
 	return -1;
 }
 
-template <usize bufferSize> inline
-isize Connection<bufferSize>::cgi_first_run() {
+static inline
+bool s_set_noblock(int fd)
+{
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1)
+		return false;
+
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+		return false;
+
+	return true;
+}
+
+CONNECTION_INL
+(isize) cgi_first_run() {
 	int fdInput[2];
 	int fdOutput[2];
 
@@ -52,45 +65,32 @@ isize Connection<bufferSize>::cgi_first_run() {
 
 	close(fdInput[0]);
 	close(fdOutput[1]);
-	fd.readEnd = fdOutput[0];
-	fd.writeEnd = fdInput[1];
+	readFd = fdOutput[0];
+	writeFd = fdInput[1];
 	cgiStartTime = g_timeNow;
-}
-
-/*	Header is built in stack memory while parsing the header from client output
-	When the header is built, it then appends part of the CGI body to tmp buffer
-	up to how many bytes will fit in a single write */
-template <usize bufferSize> inline
-isize Connection<bufferSize>::buildCgiHeader() {
-	Buffer<bufferSize> tmpBuffer;
-
 }
 
 /*	The pipe fds here are configured to be non-blocking and read/write errors are ignored
 	Failure conditions for these fds are instead handled by CGI timeouts */
-template <usize bufferSize> inline
-isize Connection<bufferSize>::cgi_method(usize bytes, u32 events) {
+CONNECTION_INL
+(isize) cgi_method() {
 	isize bytesRead, bytesWritten;
 
-	bytesRead = read_from_client(bytes, events);
-	if (bytesRead < 0)
-		return -1;
-
-	bytesWritten = write_to_server(bytes);
-	bytesRead = read_from_server(bytes);
+	bytesWritten = write_to_server();
+	bytesRead = read_from_server();
 
 	isize delta = ((bytesWritten < 0 || bytesRead < 0) ? -1 : 1);
 	bonusTime = CLAMP(bonusTime + delta, 0, 30);
 
 	// Return path until the operation isnt complete
-	if (status == 0) {
-		if (clientOutput.find_header_end() == false) {
-			if (clientOutput.is_full())
+	if (request.status.is_set()) {
+		if (clientOutput.cursor.find_header_end() == false) {
+			if (clientOutput.cursor.is_full())
 				return -1;	// ERROR: CGI Header is too big
 			return 0;	// Still no CGI Header
 		}
-		buildCgiHeader();
+		build_cgi_header();
 	}
-	return write_to_client(bytes, events);
+	return bytesRead;
 }
 }
