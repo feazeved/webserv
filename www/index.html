@@ -34,6 +34,11 @@
 	</nav>
 
 	<div class="game-container">
+		<div id="cgi-fields">
+			<form action="/cgi-bin/hello_get.py" method="post">
+				Username: <input type = "text" name = "username"><br />
+			</form>
+		</div>
 		<button id="playButton" type="button"><em>Play</em></button>
 		<canvas id="gameCanvas" width="1080" height="675"></canvas>
 	</div>
