@@ -65,7 +65,6 @@ function renderState(state) {
 	});
 
 	arena.querySelectorAll('.penguin').forEach(el => ids.includes(el.id) || el.remove());
-
 }
 
 const eu = { username: "meuovo", x: 0, y: 0 }
