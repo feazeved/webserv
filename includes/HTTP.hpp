@@ -83,6 +83,10 @@ namespace Options {
 	};
 }
 
+#define FIELD_TABLE {"status", "location", "transfer-encoding", \
+	"content-length", "content-type", "host", "connection", \
+	"accept", "cookie"}	// TODO: add sse
+
 namespace Field {
 	enum e_http_field {
 		UNKNOWN = 0,
@@ -93,9 +97,13 @@ namespace Field {
 		CONTENT_TYPE,
 		HOST,
 		CONNECTION,
+		COOKIES,
 		COUNT
 	};
 }
+
+#define MIME_TABLE {"html", "htm", "css", "json", \
+	"js", "png", "jpg", "jpeg", "gif", "txt"};
 
 namespace Mime {
 	enum e_mime_type {

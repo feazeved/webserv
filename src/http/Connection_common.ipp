@@ -18,13 +18,13 @@ CONNECTION_INL
 
 	if (state & State::PARSING) {
 		if (state & State::FIRST_LINE) {
-			if (clientOutput.cursor.find_line_end() == 0)
+			if (recvBuffer.cursor.find_line_end() == 0)
 				return 0;	// Need to read more
-			if (request.parse_first_line(clientOutput.cursor, cfg) != 0)
+			if (request.parse_first_line(recvBuffer.cursor, cfg) != 0)
 				return error_path();
 			state ^= State::FIRST_LINE;
 		}
-		rvalue = request.parse_header(clientOutput.cursor, cfg);
+		rvalue = request.parse_header(recvBuffer.cursor, cfg);
 		if (rvalue == 0)
 			return rvalue;
 		else if (rvalue < 0)
@@ -56,7 +56,7 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) read_from_server() {
-	isize bytesRead = clientInput.cursor.read(readFd, ATOMIC_IOSIZE);
+	isize bytesRead = sendBuffer.cursor.read(readFd, ATOMIC_IOSIZE);
 	if (bytesRead == 0) {
 		close(readFd);
 		readFd = -1;
@@ -71,7 +71,7 @@ CONNECTION_INL
 	if (request.options & Options::CHUNKED_LENGTH)
 		bytesWritten = decode();
 	else {
-		bytesWritten = clientOutput.cursor.write(writeFd, request.bodySize);
+		bytesWritten = recvBuffer.cursor.write(writeFd, request.bodySize);
 		if (bytesWritten > 0)
 			request.bodySize -= (usize) bytesWritten;
 	}
@@ -87,7 +87,7 @@ CONNECTION_INL
 // TODO: epoll event checks to see if valid
 CONNECTION_INL
 (isize) write_to_client(u32 events) {
-	isize bytesWritten = clientInput.cursor.write(clientFd, ATOMIC_IOSIZE);
+	isize bytesWritten = sendBuffer.cursor.write(clientFd, ATOMIC_IOSIZE);
 	if (bytesWritten < 0)
 		return bytesWritten;	// TODO: tmp error path
 	return bytesWritten;
@@ -97,9 +97,9 @@ CONNECTION_INL
 // TODO: epoll event checks to see if valid
 CONNECTION_INL
 (isize) read_from_client(u32 events) {
-	if (clientOutput.cursor.readPtr < clientOutput.cursor.writePtr)	// Still have things to process
+	if (recvBuffer.cursor.readPtr < recvBuffer.cursor.writePtr)	// Still have things to process
 		return 0;
-	isize bytesRead = clientOutput.cursor.read(clientFd, ATOMIC_IOSIZE);
+	isize bytesRead = recvBuffer.cursor.read(clientFd, ATOMIC_IOSIZE);
 	if (bytesRead < 0)
 		return bytesRead;
 	return bytesRead;
@@ -148,8 +148,8 @@ CONNECTION_INL
 // Otherwise just prepend the remainder to the end of what was read
 CONNECTION_INL
 (isize) decode() {
-	Buffer<sizeof(clientInput)> tmpBuffer;
-	Cursor &src = clientOutput.cursor;
+	Buffer<sizeof(recvBuffer)> tmpBuffer;
+	Cursor &src = recvBuffer.cursor;
 	Cursor &tmp = tmpBuffer.cursor;
 
 	if (dechunk(src, tmp) < 0)

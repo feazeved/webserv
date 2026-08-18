@@ -1,5 +1,6 @@
 #pragma once
 #include "Buffer.hpp"
+#include "HTTP.hpp"
 
 CURSOR_INL
 (isize) find_line_end() {
@@ -68,9 +69,7 @@ isize s_match(const u8 *ptr, usize length, const u8 (&ltable)[count][size]) {
 
 CURSOR_INL
 (isize) match_field() {
-	static const u8 ltable[][32] = {
-		"status", "location", "transfer-encoding", "content-length", 
-		"content-type", "host", "connection", "accept"};	// TODO: add sse, remove location
+	static const u8 ltable[][32] = FIELD_TABLE;
 
 	u8 *optr = readPtr;
 
@@ -85,9 +84,7 @@ CURSOR_INL
 
 CURSOR_INL
 (isize) match_mime() {
-	static const u8 ltable[][8] = {
-		"html", "htm", "css", "json", "js", 
-		"png", "jpg", "jpeg", "gif", "txt"};
+	static const u8 ltable[][8] = MIME_TABLE;
 
 	const usize minLength = (usize) MAX(0, lineEnd - readPtr - 3);
 	const u8 *searchLength = readPtr + MIN(minLength, 252);

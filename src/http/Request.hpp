@@ -17,16 +17,18 @@ namespace HTTP {
 class Request {
 public:
 
+	// TODO: keeping track of size might not be necessary
 	struct Span16 {
 		u16 index;
 		u16 size;
-	}	path, query, cookie;
+	}	path, query, cookies;
 
 	usize bodySize, chunkSize;
 	Status status;
 	u8 mode;
 	u8 options;
 	u8 contentType;
+	u8 cgiType;			// TODO: create enum
 
 	void reset() {
 		MEMSET_INLINE(this, 0, sizeof(Request));
@@ -41,10 +43,11 @@ public:
 	isize parse_header(Cursor &src, ServerConfig* cfg);
 	isize parse_line(Cursor &src, ServerConfig* cfg);
 	isize parse_cgi_line(Cursor &src, Cursor &dst);
-	isize validate_header();
+	isize validate_header(Cursor &src, ServerConfig* cfg);
 
 };
 }
 
 #include "Request_first.ipp"
 #include "Request_parse.ipp"
+#include "Request_validate.ipp"

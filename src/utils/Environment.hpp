@@ -5,55 +5,37 @@ namespace HTTP {
 // Needed for cookies and queries
 class Environment {
 private:
-	static const usize envSize = 4ul * 1024;
-	static const usize bufferSize = 32ul * 1024;
+	static const usize envSize = 4096 - 2;		// To align
+	static const usize minElements = 64;
+	Environment();
 
 public:
-	u8 buffer[bufferSize];
-	char *envp[envSize];
-	usize envIndex, bufIndex;	// save path here
+	char* envp[envSize];
+	char** optr;
+	char** writePtr;
 
-	bool append(char *str, usize length) {
-		char *end = str + length - 1;	// The last null terminator is not important
-		if (length / 2 <= (envSize - envIndex)) {	// FAST PATH, should be guaranteed
-			envp[envIndex] = str++;
-			while (str < end) {
-				if (*str == 0)
-					envp[++envIndex] = ++str;	// Might seem like a bug to not have an else here, but its intended to guarantee min length of 2
-				str++;							// &&& inputs become \0\0\0, 
-			}
-			return true;
-		}
-		else if (envIndex < envSize) {
-			envp[envIndex] = str++;
-			while (str < end && envIndex < envSize) {
-				if (*str == 0)
-					envp[++envIndex] = ++str;
-				str++;
-			}
-			return true;
-		}
-		return false;
+	void append(char *ptr) {
+		*writePtr = ptr;
+		writePtr++;
 	}
 
-	Environment(const char **envpSrc) : 
-		buffer(), envp(), envIndex(0), bufIndex(0) {
-		usize length;
-		const char *str;
-
-		for (; envIndex < envSize / 2; envIndex++) {
-			str = envpSrc[envIndex];
-			if (str == NULL)
-				break;
-			length = STRLEN(str) + 1;
-			if (bufIndex + length > sizeof(buffer) / 2)
-				break;
-			MEMCPY(buffer + bufIndex, str, length);
-			bufIndex += length;
-		}
+	void append(u8 *ptr) {
+		*writePtr = (char*) ptr;
+		writePtr++;
 	}
 
-private:
-	Environment();
+	void reset() {
+		writePtr = optr;
+		*optr = NULL;
+	}
+
+	Environment(char *const *envpSrc) : envp(), optr(envp), writePtr(0) {
+		char** endPtr = envp + envSize - minElements;
+
+		while (optr < endPtr && *envpSrc != NULL)
+			*optr++ = *envpSrc++;
+		*optr = NULL;
+		writePtr = optr;
+	}
 };
 }

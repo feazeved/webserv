@@ -6,31 +6,30 @@
 #define restrict __restrict__
 
 // Types
-typedef char			i8;
-typedef unsigned char	u8;
-typedef int16_t			i16;
-typedef uint16_t		u16;
-typedef int32_t			i32;
-typedef uint32_t		u32;
-typedef int64_t			i64;
-typedef uint64_t		u64;
-typedef float			f32;
-typedef double			f64;	// Should I include 128?
-typedef __int128 		i128;
+typedef char				i8;
+typedef unsigned char		u8;
+typedef int16_t				i16;
+typedef uint16_t			u16;
+typedef int32_t				i32;
+typedef uint32_t			u32;
+typedef int64_t				i64;
+typedef uint64_t			u64;
+typedef float				f32;
+typedef double				f64;
+typedef __int128			i128;
 typedef unsigned __int128	u128;
-typedef size_t			usize;
-typedef ptrdiff_t		isize;
-typedef unsigned char	uchar;	// For completeness, to mirror platform's type
-typedef unsigned short	ushort;
-typedef unsigned int	uint;
-typedef unsigned long	ulong;
+typedef size_t				usize;
+typedef ptrdiff_t			isize;
+typedef uintptr_t			uptr;
+typedef unsigned char		uchar;	// For completeness, to mirror platform's type
+typedef unsigned short		ushort;
+typedef unsigned int		uint;
+typedef unsigned long		ulong;
 
 // Defines
 #define ALIGN_SIZE	alignof(std::max_align_t)
 #define WORD_SIZE	sizeof(size_t)
 #define WORD_BITS	(WORD_SIZE * CHAR_BIT)
-#define SIZE_MAX_BASE10_LENGTH ((sizeof(size_t) * CHAR_BIT * 30103) / 100000 + 1)
-#define SIZE_MAX_BASE16_LENGTH ((sizeof(size_t) * CHAR_BIT + 3) / 4)
 
 enum e_ascii {
 	ASCII_DIGITS      = 9,   // value <= digits
@@ -96,6 +95,6 @@ enum e_ascii {
 // 	240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255  // 0xF0–0xFF
 // };
 
-
 #include "core_builtins.ipp"
 #include "core_macros.ipp"
+#include "core_info.ipp"

@@ -5,10 +5,8 @@
 template <usize bitCount>
 class BitArray
 {
-private:
+private:	// Ghetto static asserts for C++ 98
 	typedef char bit_count_must_be_nonzero[(bitCount != 0) ? 1 : -1];
-	typedef char word_bits_must_be_power_of_two[((WORD_BITS & (WORD_BITS - 1)) == 0) ? 1 : -1];
-	typedef char usize_must_fit_ctz_type[(sizeof(usize) <= sizeof(unsigned long long)) ? 1 : -1];
 
 public:
 	static const usize metaSize = bitCount / WORD_BITS + (bitCount % WORD_BITS != 0);
@@ -23,20 +21,17 @@ public:
 		bitmap[index / WORD_BITS] |= ((usize)1 << (index % WORD_BITS));
 	}
 
-	void bitset(usize start, usize end) {
-		const usize wordStart = start / WORD_BITS;
-		const usize wordEnd = (end - 1) / WORD_BITS;
-		const usize startMask = SIZE_MAX << (start % WORD_BITS);
-		const usize endMask = SIZE_MAX >> ((usize)(0 - end) % WORD_BITS);
+	void bitset(usize bitStart, usize bitEnd) {
+		const usize wordStart = bitStart / WORD_BITS;
+		const usize wordEnd = (bitEnd - 1) / WORD_BITS;
+		const usize startMask = SIZE_MAX << (bitStart % WORD_BITS);
+		const usize endMask = SIZE_MAX >> ((usize)(0 - bitEnd) % WORD_BITS);
+		const usize diffMask = (size_t)-(wordStart != wordEnd);
 
-		if (wordStart == wordEnd) {
-			bitmap[wordStart] |= startMask & endMask;
-			return;
-		}
-		bitmap[wordStart] |= startMask;
+		bitmap[wordStart] |= startMask & (endMask | diffMask);
 		for (usize word = wordStart + 1; word < wordEnd; word++)
 			bitmap[word] = SIZE_MAX;
-		bitmap[wordEnd] |= endMask;
+		bitmap[wordEnd] |= endMask & diffMask;
 	}
 
 	void bitclr() {
@@ -48,20 +43,17 @@ public:
 		bitmap[index / WORD_BITS] &= ~((usize)1 << (index % WORD_BITS));
 	}
 
-	void bitclr(usize start, usize end)	{
-		const usize wordStart = start / WORD_BITS;
-		const usize wordEnd = (end - 1) / WORD_BITS;
-		const usize startMask = SIZE_MAX << (start % WORD_BITS);
-		const usize endMask = SIZE_MAX >> ((usize)(0 - end) % WORD_BITS);
+	void bitclr(usize bitStart, usize bitEnd)	{
+		const usize wordStart = bitStart / WORD_BITS;
+		const usize wordEnd = (bitEnd - 1) / WORD_BITS;
+		const usize startMask = SIZE_MAX << (bitStart % WORD_BITS);
+		const usize endMask = SIZE_MAX >> ((usize)(0 - bitEnd) % WORD_BITS);
+		const usize diffMask = (size_t)-(wordStart != wordEnd);
 
-		if (wordStart == wordEnd) {
-			bitmap[wordStart] &= ~(startMask & endMask);
-			return;
-		}
-		bitmap[wordStart] &= ~startMask;
+		bitmap[wordStart] &= ~(startMask & (endMask | diffMask));
 		for (usize word = wordStart + 1; word < wordEnd; word++)
 			bitmap[word] = 0;
-		bitmap[wordEnd] &= ~endMask;
+		bitmap[wordEnd] &= ~(endMask & diffMask);
 	}
 
 	void bitflip() {
@@ -74,21 +66,17 @@ public:
 		bitmap[index / WORD_BITS] ^= ((usize)1 << (index % WORD_BITS));
 	}
 
-	void bitflip(usize start, usize end) {
-		const usize wordStart = start / WORD_BITS;
-		const usize wordEnd = (end - 1) / WORD_BITS;
-		const usize startMask = SIZE_MAX << (start % WORD_BITS);
-		const usize endMask = SIZE_MAX >> ((usize)(0 - end) % WORD_BITS);
-	
-		if (wordStart == wordEnd) {
-			bitmap[wordStart] ^= startMask & endMask;
-			return;
-		}
-	
-		bitmap[wordStart] ^= startMask;
+	void bitflip(usize bitStart, usize bitEnd) {
+		const usize wordStart = bitStart / WORD_BITS;
+		const usize wordEnd = (bitEnd - 1) / WORD_BITS;
+		const usize startMask = SIZE_MAX << (bitStart % WORD_BITS);
+		const usize endMask = SIZE_MAX >> ((usize)(0 - bitEnd) % WORD_BITS);
+		const usize diffMask = (size_t)-(wordStart != wordEnd);
+
+		bitmap[wordStart] ^= startMask & (endMask | diffMask);
 		for (usize i = wordStart + 1; i < wordEnd; i++)
 			bitmap[i] = ~bitmap[i];
-		bitmap[wordEnd] ^= endMask;
+		bitmap[wordEnd] ^= endMask & diffMask;
 	}
 
 	void bitwrite(usize index, bool bit) {
@@ -101,12 +89,12 @@ public:
 		return (bitmap[index / WORD_BITS] & ((usize)1 << (index % WORD_BITS))) != 0;
 	}
 
-	usize bitfind(usize start, usize end, bool bit) const {
+	usize bitfind(usize bitStart, usize bitEnd, bool bit) const {
 		const usize invert = (usize)-(usize)!bit;
-		const usize last = (end - 1) / WORD_BITS;
-		const usize endMask = SIZE_MAX >> ((usize)(0 - end) % WORD_BITS);
-		usize wordIndex = start / WORD_BITS;
-		usize candidate = (bitmap[wordIndex] ^ invert) & (SIZE_MAX << (start % WORD_BITS));
+		const usize last = (bitEnd - 1) / WORD_BITS;
+		const usize endMask = SIZE_MAX >> ((usize)(0 - bitEnd) % WORD_BITS);
+		usize wordIndex = bitStart / WORD_BITS;
+		usize candidate = (bitmap[wordIndex] ^ invert) & (SIZE_MAX << (bitStart % WORD_BITS));
 	
 		if (wordIndex == last)
 			candidate &= endMask;

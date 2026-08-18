@@ -22,7 +22,7 @@ CONNECTION_INL
 	Location*	location = NULL;
 	std::string	relative;
 	std::string	dirPath;
-	const char*	reqPath = (const char*)clientOutput.cursor.memStart + request.path.index;
+	const char*	reqPath = (const char*)recvBuffer.cursor.memStart + request.path.index;
 	std::string	urlPath(reqPath, request.path.size);
 
 	if (!s_resolve_location(cfg, reqPath, request.path.size, &location, relative)) {
@@ -104,7 +104,7 @@ CONNECTION_INL
 	request.status = Status::i200;
 	request.contentType = Mime::HTML;
 	build_header();
-	clientInput.cursor.append(body, request.bodySize);
+	sendBuffer.cursor.append(body, request.bodySize);
 
 	readFd = -1;
 	writeFd = -1;
@@ -115,7 +115,7 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) get_first_run() {
-	const char*	reqPath = (const char*)clientOutput.cursor.memStart + request.path.index;
+	const char*	reqPath = (const char*)recvBuffer.cursor.memStart + request.path.index;
 	Location*	location = NULL;
 	std::string	relative;
 	std::string	fullpath;

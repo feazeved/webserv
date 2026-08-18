@@ -5,7 +5,7 @@ namespace HTTP {
 
 CONNECTION_INL
 (isize) post_first_run() {
-	const char*	reqPath = (const char*)clientOutput.cursor.memStart + request.path.index;
+	const char*	reqPath = (const char*)recvBuffer.cursor.memStart + request.path.index;
 	Location*	location = NULL;
 	std::string	relative;
 

@@ -9,7 +9,7 @@
 	const usize mf_strSize = sizeof(str) - 1; \
 	usize mf_result = SIZE_MAX; \
     for (usize mf_i = 0; mf_i <= mf_dstSize - mf_strSize; mf_i++) { \
-        if (__builtin_memcmp(mf_dst + mf_i, (str), mf_strSize) == 0) { \
+        if (MEMCMP(mf_dst + mf_i, (str), mf_strSize) == 0) { \
             mf_result = mf_i; \
             break; \
         } \
@@ -48,7 +48,6 @@
 #define ABSMAX3(x, y, z)	MAX3(ABS(x), ABS(y), ABS(z))
 #define ABSMIN4(x, y, z, w)	MIN4(ABS(x), ABS(y), ABS(z), ABS(w))
 #define ABSMAX4(x, y, z, w)	MAX4(ABS(x), ABS(y), ABS(z), ABS(w))
-
 
 // === Generic Helpers =====================================
 #define ARRAY_SIZE(arr)		(sizeof(arr) / sizeof((arr)[0]))

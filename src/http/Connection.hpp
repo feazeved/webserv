@@ -33,7 +33,7 @@ public:
 public:
 	ServerConfig* cfg;
 
-	HTTP_Buffer clientInput, clientOutput;
+	HTTP_Buffer recvBuffer, sendBuffer;
 	Request request;
 
 	time_t startTime;
@@ -82,7 +82,7 @@ public:
 	// Configuration
 	isize configure();
 	isize error_path();
-	void  build_header();	// Alex: Isso tem que tar no init do request, mime_index = contentType, contentLength = bodySize
+	void  build_header();
 	isize build_cgi_header();
 
 	// HTTP Methods
