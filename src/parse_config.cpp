@@ -9,14 +9,14 @@
 #include <cstdlib>
 #include <sstream>
 
-#include "parseConfig.hpp"
+#include "parse_config.hpp"
 #include "HTTP.hpp"
 #include "Server.hpp"
 #include "Status.hpp"
 
-#include "parseConfig_helpers.ipp"
+#include "parse_config_helpers.ipp"
 
-using namespace parseConfig;
+using namespace parse_config;
 
 static std::vector<token> tokenizer(std::stringstream &config)
 {
@@ -79,12 +79,12 @@ void parse_directive(tokIter &cursor, tokIter &end, Directive &dir) {
 
 	dir.name = cursor->value;
 	cursor++;
-	while (cursor != end && cursor->type != parseConfig::SEMICOLON)
+	while (cursor != end && cursor->type != parse_config::SEMICOLON)
 	{
 		arguments.push_back(cursor->value);
 		s_advance(cursor, end);
 	}
-	if (cursor->type != parseConfig::SEMICOLON)
+	if (cursor->type != parse_config::SEMICOLON)
 		throw std::runtime_error("Unexpected token");
 	dir.args = arguments;
 }
@@ -144,19 +144,19 @@ void set_location_directive(Directive &dir, HTTP::Location &location) {
 
 void parse_location(tokIter &cursor, tokIter &end, HTTP::Location &loc) {
 	s_match(cursor, "location");
-	if (cursor->type != parseConfig::WORD)
+	if (cursor->type != parse_config::WORD)
 		throw std::runtime_error("Expected location");
 	loc.path = cursor->value;
 	cursor++;
 	s_match(cursor, "{");
-	while (cursor != end && cursor->type != parseConfig::CLOSE_BRACKET)
+	while (cursor != end && cursor->type != parse_config::CLOSE_BRACKET)
 	{
 		Directive dir;
 		parse_directive(cursor, end, dir);
 		set_location_directive(dir, loc);
 		cursor++;
 	}
-	if (cursor->type != parseConfig::CLOSE_BRACKET)
+	if (cursor->type != parse_config::CLOSE_BRACKET)
 		throw std::runtime_error("Unexpected token");
 }
 
@@ -217,7 +217,7 @@ void parse_server(tokIter cursor, tokIter end, HTTP::ServerConfig &server) {
 		}
 		s_advance(cursor, end);
 	}
-	if (end->type != parseConfig::CLOSE_BRACKET)
+	if (end->type != parse_config::CLOSE_BRACKET)
 		throw std::runtime_error("Unexpected token");
 }
 
@@ -229,12 +229,12 @@ size_t scope_end(tokIter &begin, tokIter &end) {
 
 	while (it != end)
 	{
-		if (it->type == parseConfig::OPEN_BRACKET)
+		if (it->type == parse_config::OPEN_BRACKET)
 		{
 			startedCount = true;
 			braces++;
 		}
-		else if (it->type == parseConfig::CLOSE_BRACKET)
+		else if (it->type == parse_config::CLOSE_BRACKET)
 		{
 			startedCount = true;
 			braces--;
@@ -247,7 +247,7 @@ size_t scope_end(tokIter &begin, tokIter &end) {
 	return distance;
 }
 
-std::vector<HTTP::ServerConfig> parseConfig::parse_config(char *filePath) {
+std::vector<HTTP::ServerConfig> parse_config::parse_config(char *filePath) {
 	std::vector<HTTP::ServerConfig> ret;
 	std::stringstream stream;
 	std::ifstream inputFile(filePath);

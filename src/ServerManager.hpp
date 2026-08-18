@@ -68,8 +68,8 @@ public:
 				if (isListeningSocket(ptr)) {
 					handleNewConnection(static_cast<Server*>(ptr));
 				} else {
-					HTTP::Connection<s_bufferSize>* conn = static_cast<HTTP::Connection<s_bufferSize>*>(ptr);
-					i32 ret = conn->dispatch();
+					HTTP::Connection* conn = static_cast<HTTP::Connection*>(ptr);
+					isize ret = conn->dispatch(events[i].events);
 
 					switch (ret) {
 						case 0:
@@ -95,12 +95,11 @@ private:
 	static const usize s_maxEvents = 16;
 	static const usize s_serverBlockSize = 8;
 	static const usize s_connectionBlockSize = 32;
-	static const usize s_bufferSize = 1024;
 
-	BlockVector<Server, s_serverBlockSize, 16>                              servers;
-	BlockVector<HTTP::Connection<s_bufferSize>, s_connectionBlockSize, 64>  connections;
-	i32                                                                     epoll_fd;
-	volatile bool                                                           running;
+	BlockVector<Server, s_serverBlockSize, 16> servers;
+	BlockVector<HTTP::Connection, s_connectionBlockSize, 64> connections;
+	i32 epoll_fd;
+	volatile bool running;
 
 	static ServerManager*& instance() {
 		static ServerManager* inst = NULL;
@@ -164,13 +163,12 @@ private:
 			throw std::bad_alloc();
 		}
 		connections[index].init(clientFd, &server->getConfig());
-		connections[index].gameState = &server->getState();
 		addToEpoll(clientFd, EPOLLIN | EPOLLOUT, &connections[index]);
 	}
 
-	void closeConnection(HTTP::Connection<s_bufferSize>* conn) {
-		if (conn->gameState)
-			conn->gameState->removeSSEClient(conn);
+	void closeConnection(HTTP::Connection* conn) {
+		// if (conn->gameState)
+		// 	conn->gameState->removeSSEClient(conn);
 		removeFromEpoll(conn->clientFd);
 	}
 

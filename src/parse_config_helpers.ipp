@@ -11,13 +11,13 @@
 #include <cstdlib>
 #include <sstream>
 
-#include "parseConfig.hpp"
+#include "parse_config.hpp"
 #include "HTTP.hpp"
 #include "Server.hpp"
 #include "Status.hpp"
 #include "core_builtins.ipp"
 
-namespace parseConfig {
+namespace parse_config {
 
 static inline
 void s_match(tokIter &cursor, const std::string &value) {

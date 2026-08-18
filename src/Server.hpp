@@ -37,7 +37,7 @@ public:
 		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
 			throw std::runtime_error(std::string("setsockopt: ") + std::strerror(errno));
 
-		sockaddr_in	addr = resolveHostAndPort(config.host, config.port);
+		sockaddr_in	addr = resolve_host_and_port(config.host, config.port);
 
 		if (bind(listenFd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1)
 			throw std::runtime_error(std::string("bind: ") + std::strerror(errno));
@@ -56,11 +56,11 @@ private:
 	i32					listenFd;
 	Game::State			gameState;
 
-	static sockaddr_in	resolveHostAndPort(const std::string& host, i64 port) {
+	static sockaddr_in	resolve_host_and_port(const std::string& host, i64 port) {
 		std::string	hostToResolve = host.empty() ? "0.0.0.0" : host;
 
 		addrinfo hints;
-		MEMSET(&hints, 0, sizeof(hints));
+		MEMSET_INLINE(&hints, 0, sizeof(hints));
 		hints.ai_family = AF_INET;
 		hints.ai_socktype = SOCK_STREAM;
 
@@ -73,8 +73,8 @@ private:
 		}
 
 		sockaddr_in	addr;
-		MEMSET(&addr, 0, sizeof(addr));
-		MEMCPY(&addr, result->ai_addr, sizeof(sockaddr_in));
+		MEMSET_INLINE(&addr, 0, sizeof(addr));
+		MEMCPY_INLINE(&addr, result->ai_addr, sizeof(sockaddr_in));
 
 		addr.sin_port = htons(port);
 
