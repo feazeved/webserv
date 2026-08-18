@@ -14,15 +14,42 @@
 #include "State.hpp"
 #include "core.hpp"
 
-class Server {
+static inline
+sockaddr_in s_resolve_host_and_port(const std::string& host, i64 port) {
+	std::string	hostToResolve = host.empty() ? "0.0.0.0" : host;
+
+	addrinfo hints;
+	MEMSET_INLINE(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+
+	addrinfo*	result = NULL;
+	int			status;
+
+	status = getaddrinfo(hostToResolve.c_str(), NULL, &hints, &result);
+	if (status != 0) {
+		throw std::runtime_error("resolveHost '" + hostToResolve + "': " + gai_strerror(status));
+	}
+
+	sockaddr_in	addr;
+	MEMSET_INLINE(&addr, 0, sizeof(addr));
+	MEMCPY_INLINE(&addr, result->ai_addr, sizeof(sockaddr_in));
+
+	addr.sin_port = htons(port);
+	freeaddrinfo(result);
+
+	return (addr);
+}
+
+class VirtualServer {
 public:
-	Server(const HTTP::ServerConfig& c) : listenFd(-1) {
+	VirtualServer(const HTTP::ServerConfig& c) : listenFd(-1) {
 		init(c);
 	}
 
-	Server() : listenFd(-1) {}
+	VirtualServer() : listenFd(-1) {}
 
-	~Server() {
+	~VirtualServer() {
 		if (listenFd != -1)
 			close(listenFd);
 	}
@@ -37,7 +64,7 @@ public:
 		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
 			throw std::runtime_error(std::string("setsockopt: ") + std::strerror(errno));
 
-		sockaddr_in	addr = resolve_host_and_port(config.host, config.port);
+		sockaddr_in	addr = s_resolve_host_and_port(config.host, config.port);
 
 		if (bind(listenFd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1)
 			throw std::runtime_error(std::string("bind: ") + std::strerror(errno));
@@ -47,39 +74,7 @@ public:
 			throw std::runtime_error(std::string("fcntl: ") + std::strerror(errno));
 	}
 
-	i32	getFd() const { return (listenFd); }
-	HTTP::ServerConfig&	getConfig() { return (config); }
-	Game::State&		getState() { return (gameState); }
-
-private:
 	HTTP::ServerConfig	config;
 	i32					listenFd;
 	Game::State			gameState;
-
-	static sockaddr_in	resolve_host_and_port(const std::string& host, i64 port) {
-		std::string	hostToResolve = host.empty() ? "0.0.0.0" : host;
-
-		addrinfo hints;
-		MEMSET_INLINE(&hints, 0, sizeof(hints));
-		hints.ai_family = AF_INET;
-		hints.ai_socktype = SOCK_STREAM;
-
-		addrinfo*	result = NULL;
-		int			status;
-
-		status = getaddrinfo(hostToResolve.c_str(), NULL, &hints, &result);
-		if (status != 0) {
-			throw std::runtime_error("resolveHost '" + hostToResolve + "': " + gai_strerror(status));
-		}
-
-		sockaddr_in	addr;
-		MEMSET_INLINE(&addr, 0, sizeof(addr));
-		MEMCPY_INLINE(&addr, result->ai_addr, sizeof(sockaddr_in));
-
-		addr.sin_port = htons(port);
-
-		freeaddrinfo(result);
-
-		return (addr);
-	}
 };

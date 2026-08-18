@@ -55,7 +55,7 @@ std::string Game::State::flushEvents() {
 	return temp;
 }
 
-void Game::State::broadcastEvents(ServerManager& manager) {
+void Game::State::broadcastEvents(Server& manager) {
 	if (sseClients.empty()) {
 		broadcastBuffer.clear();
 		return;
@@ -69,7 +69,7 @@ void Game::State::broadcastEvents(ServerManager& manager) {
 	for (usize i = 0; i < sseClients.size(); ++i) {
 		HTTP::Connection<bufSize>* conn = static_cast<HTTP::Connection<bufSize>*>(sseClients[i]);
 		conn->sse_buffer += data;
-		manager.markConnectionWritable(conn->clientFd, conn);
+		manager.mark_connection_writable(conn->clientFd, conn);
 	}
 }
 

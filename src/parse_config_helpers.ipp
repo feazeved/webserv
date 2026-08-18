@@ -1,23 +1,16 @@
 #pragma once
 #include "core.hpp"
-#include <algorithm>
-#include <cerrno>
-#include <cstddef>
+
+#include "stdlib.h"
 #include <iostream>
-#include <fstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <cstdlib>
-#include <sstream>
-
-#include "parse_config.hpp"
 #include "HTTP.hpp"
-#include "Server.hpp"
-#include "Status.hpp"
-#include "core_builtins.ipp"
 
-namespace parse_config {
+namespace HTTP {
+// 
+typedef std::vector<ParseToken>::const_iterator tokIter;
 
 static inline
 void s_match(tokIter &cursor, const std::string &value) {
@@ -45,17 +38,17 @@ long s_strtol(std::string& str) {
 	return (ret);
 }
 
-void tokenizer_dump(std::vector<token> &tokens) {
+void tokenizer_dump(std::vector<ParseToken> &tokens) {
 	tokIter it =  tokens.begin();
 	std::cout << "---Print tokens---\n\n";
 	for (;it != tokens.end(); it++)
 	{
 		std::string tp;
 		switch (it->type) {
-			case OPEN_BRACKET: tp = "open bracket"; break;
-			case CLOSE_BRACKET: tp = "close bracket"; break;
-			case SEMICOLON: tp = "semicolon"; break;
-			case WORD: tp = "word"; break;
+			case Token::OPEN_BRACKET: tp = "open bracket"; break;
+			case Token::CLOSE_BRACKET: tp = "close bracket"; break;
+			case Token::SEMICOLON: tp = "semicolon"; break;
+			case Token::WORD: tp = "word"; break;
 			// TODO: default?
 		}
 		std::cout << tp ;
@@ -87,7 +80,5 @@ void config_dump(std::vector<HTTP::ServerConfig> &config) {
 			std::cout << "\n";
 		}
 	}
-
 }
-
 }

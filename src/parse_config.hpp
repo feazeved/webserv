@@ -1,69 +1,61 @@
-#include <algorithm>
-#include <cerrno>
-#include <cstddef>
+#pragma once
+
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <cstdlib>
 #include <sstream>
-
-#include "parse_config.hpp"
 #include "HTTP.hpp"
-#include "Server.hpp"
-#include "Status.hpp"
-
 #include "parse_config_helpers.ipp"
 
-using namespace parse_config;
-
-static std::vector<token> tokenizer(std::stringstream &config)
-{
-	std::vector<token> ret;
+namespace HTTP {
+//
+static
+std::vector<ParseToken> tokenizer(std::stringstream &config) {
+	std::vector<ParseToken> ret;
 	std::string tk;
-	token tkn;
+	ParseToken tkn;
 	int braces = 0;
 
-	if (config.peek() == EOF) {
+	if (config.peek() == EOF)
 		throw std::runtime_error("Empty file");
-	}
 
 	while (config >> tk) {
-		size_t pos = tk.find_first_of("{};");
+		usize pos = tk.find_first_of("{};");
 		if (pos != std::string::npos) {
 			char delimiter = tk[pos];
 			if (pos + 1 != tk.size())
 				throw std::runtime_error("Syntax error");
 			if (pos != 0)
 			{
-				tkn.type = WORD;
+				tkn.type = Token::WORD;
 				tkn.value = tk.substr(0, pos);
 				ret.push_back(tkn);
 			}
 			switch (delimiter) {
 				case '{' :
-					tkn.type = OPEN_BRACKET;
+					tkn.type = Token::OPEN_BRACKET;
 					tkn.value = '{';
 					braces++;
 					break;
 				case '}' :
-					tkn.type = CLOSE_BRACKET;
+					tkn.type = Token::CLOSE_BRACKET;
 					tkn.value = '}';
 					if (--braces < 0)
 						throw std::runtime_error("Extraneous closing brace ('}')");
 					break;
 				case ';' :
-								if (tkn.type == SEMICOLON)
+								if (tkn.type == Token::SEMICOLON)
 						throw std::runtime_error("Extraneous semicolon (';')");
-								tkn.type = SEMICOLON;
+								tkn.type = Token::SEMICOLON;
 								tkn.value = ';';
 								break;
 				default: throw std::runtime_error("Invalid delimiter"); break;
 			}
 		}
 		else {
-			tkn.type = WORD;
+			tkn.type = Token::WORD;
 			tkn.value = tk;
 		}
 		ret.push_back(tkn);
@@ -74,17 +66,17 @@ static std::vector<token> tokenizer(std::stringstream &config)
 	return ret;
 }
 
-void parse_directive(tokIter &cursor, tokIter &end, Directive &dir) {
+void parse_directive(tokIter &cursor, tokIter &end, ParseDirective &dir) {
 	std::vector<std::string> arguments;
 
 	dir.name = cursor->value;
 	cursor++;
-	while (cursor != end && cursor->type != parse_config::SEMICOLON)
+	while (cursor != end && cursor->type != Token::SEMICOLON)
 	{
 		arguments.push_back(cursor->value);
 		s_advance(cursor, end);
 	}
-	if (cursor->type != parse_config::SEMICOLON)
+	if (cursor->type != Token::SEMICOLON)
 		throw std::runtime_error("Unexpected token");
 	dir.args = arguments;
 }
@@ -105,7 +97,7 @@ void set_methods(std::vector<std::string> &methods, HTTP::Location &location) {
 	}
 }
 
-void set_location_directive(Directive &dir, HTTP::Location &location) {
+void set_location_directive(ParseDirective &dir, HTTP::Location &location) {
 	if (dir.name == "root") {
 		if (dir.args.size() != 1)
 			throw std::runtime_error("Invalid root");
@@ -144,23 +136,23 @@ void set_location_directive(Directive &dir, HTTP::Location &location) {
 
 void parse_location(tokIter &cursor, tokIter &end, HTTP::Location &loc) {
 	s_match(cursor, "location");
-	if (cursor->type != parse_config::WORD)
+	if (cursor->type != Token::WORD)
 		throw std::runtime_error("Expected location");
 	loc.path = cursor->value;
 	cursor++;
 	s_match(cursor, "{");
-	while (cursor != end && cursor->type != parse_config::CLOSE_BRACKET)
+	while (cursor != end && cursor->type != Token::CLOSE_BRACKET)
 	{
-		Directive dir;
+		ParseDirective dir;
 		parse_directive(cursor, end, dir);
 		set_location_directive(dir, loc);
 		cursor++;
 	}
-	if (cursor->type != parse_config::CLOSE_BRACKET)
+	if (cursor->type != Token::CLOSE_BRACKET)
 		throw std::runtime_error("Unexpected token");
 }
 
-void set_server_directive(Directive &dir, HTTP::ServerConfig &server) {
+void set_server_directive(ParseDirective &dir, HTTP::ServerConfig &server) {
 	if (dir.name == "listen") {
 		if (server.port != -1 || dir.args.size() != 1)
 			throw std::runtime_error("Invalid port definition");
@@ -211,30 +203,30 @@ void parse_server(tokIter cursor, tokIter end, HTTP::ServerConfig &server) {
 			server.locations.push_back(loc);
 		}
 		else {
-			Directive dir;
+			ParseDirective dir;
 			parse_directive(cursor, end, dir);
 			set_server_directive(dir, server);
 		}
 		s_advance(cursor, end);
 	}
-	if (end->type != parse_config::CLOSE_BRACKET)
+	if (end->type != Token::CLOSE_BRACKET)
 		throw std::runtime_error("Unexpected token");
 }
 
-size_t scope_end(tokIter &begin, tokIter &end) {
+usize scope_end(tokIter &begin, tokIter &end) {
 	tokIter it = begin;
 	bool startedCount = false;
 	int braces = 0;
-	size_t distance = 0;
+	usize distance = 0;
 
 	while (it != end)
 	{
-		if (it->type == parse_config::OPEN_BRACKET)
+		if (it->type == Token::OPEN_BRACKET)
 		{
 			startedCount = true;
 			braces++;
 		}
-		else if (it->type == parse_config::CLOSE_BRACKET)
+		else if (it->type == Token::CLOSE_BRACKET)
 		{
 			startedCount = true;
 			braces--;
@@ -247,7 +239,7 @@ size_t scope_end(tokIter &begin, tokIter &end) {
 	return distance;
 }
 
-std::vector<HTTP::ServerConfig> parse_config::parse_config(char *filePath) {
+std::vector<HTTP::ServerConfig> parse_config(char *filePath) {
 	std::vector<HTTP::ServerConfig> ret;
 	std::stringstream stream;
 	std::ifstream inputFile(filePath);
@@ -256,7 +248,7 @@ std::vector<HTTP::ServerConfig> parse_config::parse_config(char *filePath) {
 		stream << inputFile.rdbuf();
 	inputFile.close();
 
-	std::vector<token> tokens = tokenizer(stream);
+	std::vector<ParseToken> tokens = tokenizer(stream);
 	tokIter it = tokens.begin();
 	tokIter end = tokens.end();
 
@@ -265,7 +257,7 @@ std::vector<HTTP::ServerConfig> parse_config::parse_config(char *filePath) {
 	while (it != end) {
 		if (it->value == "server")
 		{
-			size_t distance = scope_end(it, end);
+			usize distance = scope_end(it, end);
 			HTTP::ServerConfig    serverConf;
 			parse_server(it, it + distance, serverConf);
 			ret.push_back(serverConf);
@@ -279,4 +271,5 @@ std::vector<HTTP::ServerConfig> parse_config::parse_config(char *filePath) {
 	//configDump(ret);
 
 	return ret;
+}
 }

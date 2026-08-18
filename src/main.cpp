@@ -2,15 +2,8 @@
 #include <cstdlib>
 #include <exception>
 
-#include "ServerManager.hpp"
+#include "Server.hpp"
 #include "parse_config.hpp"
-
-static inline
-ServerManager s_parse(char *str) {
-	std::vector<HTTP::ServerConfig> res = parse_config::parse_config(str);
-
-
-}
 
 int	main(int argc, char** argv)
 {
@@ -20,9 +13,9 @@ int	main(int argc, char** argv)
 	}
 
 	try {
-		ServerManager manager(parse_config::parse_config(argv[1]));
+		Server server (parse_config(argv[1]));
 
-		manager.run();
+		server.run();
 	}
 	catch (const std::exception& e) {
 		std::cerr << "Error: " << e.what() << "\n";

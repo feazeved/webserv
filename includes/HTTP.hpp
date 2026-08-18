@@ -10,6 +10,25 @@
 
 namespace HTTP {
 
+namespace Token {
+	enum tokenType {
+		OPEN_BRACKET,
+		CLOSE_BRACKET,
+		SEMICOLON,
+		WORD
+	};
+}
+
+struct ParseToken {
+	Token::tokenType type;
+	std::string value;
+};
+
+struct ParseDirective {
+	std::string name;
+	std::vector<std::string> args;
+};
+
 struct Location {
 	std::string					path;
 	std::string					root;

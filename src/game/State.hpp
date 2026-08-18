@@ -6,7 +6,7 @@
 
 #include "Player.hpp"
 
-class ServerManager;
+class Server;
 
 namespace Game {
 
@@ -26,7 +26,7 @@ public:
 	void removeSSEClient(void* conn);
 
 	std::string flushEvents();
-	void broadcastEvents(ServerManager& manager);
+	void broadcastEvents(Server& manager);
 
 	Player* getPlayer(i32 id);
 
