@@ -31,7 +31,7 @@ CONNECTION_INL
 	}
 	s_join_path(location->root, relative, dirPath);
 
-	DIR*	dir = opendir(dirPath.c_str());
+	DIR* dir = opendir(dirPath.c_str());
 	if (dir == NULL) {
 		request.status = Status::i403;
 		return -1;

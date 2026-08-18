@@ -23,5 +23,7 @@ namespace parseConfig {
 		std::vector<std::string> args;
 	};
 
-	std::vector<HTTP::ServerConfig>	parseConfig(char *filePath);
+	typedef std::vector<token>::const_iterator tokIter;
+
+	std::vector<HTTP::ServerConfig>	parse_config(char *filePath);
 }

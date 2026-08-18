@@ -13,7 +13,7 @@ namespace HTTP {
 struct Location {
 	std::string					path;
 	std::string					root;
-	std::string					index;
+	std::string					index;			// default index file
 	std::string					upload_store;
 	u8							methods;
 	bool						autoindex;
@@ -28,10 +28,9 @@ struct ServerConfig {
 	std::string					host;
 	long						port;
 	usize						maxBodySize;
-	bool						autoindex;
 	Game::State					*gameState;
 
-	ServerConfig() : host("localhost"), port(-1), maxBodySize(SIZE_MAX), autoindex(false) {}
+	ServerConfig() : host("localhost"), port(-1), maxBodySize(SIZE_MAX) {}
 };
 
 #define HTTP_BUFFERSIZE 16384

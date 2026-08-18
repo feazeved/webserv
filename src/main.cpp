@@ -13,7 +13,7 @@ int	main(int argc, char** argv)
 	}
 
 	try {
-		ServerManager	manager(parseConfig::parseConfig(argv[1]));
+		ServerManager manager(parseConfig::parse_config(argv[1]));
 
 		manager.run();
 

@@ -5,7 +5,6 @@
 #include <ctime>
 #include "HTTP.hpp"
 #include <fcntl.h>
-#include <vector>
 #include <cstring>
 #include <sys/stat.h>
 #include <string>
@@ -22,8 +21,9 @@ namespace HTTP {
 
 class Connection {
 public:
-	static const usize metadataSize = sizeof(ServerConfig*) + sizeof(Request) + sizeof(time_t) +
-		2 * sizeof(u8) + sizeof(pid_t) + 3 * sizeof(i32) + sizeof(std::string) + sizeof(bool);
+	static const usize metadataSize = sizeof(ServerConfig*) + sizeof(Request) 
+		+ sizeof(time_t) + 2 * sizeof(u8) + sizeof(pid_t) + 3 * sizeof(i32)
+		+ sizeof(std::string) + sizeof(bool);
 	static const usize metasizeAlign = ALIGN_UP(metadataSize / 2, 8ul);
 	static const usize bytesFree = 2 * metasizeAlign - metadataSize;	// Debug only
 	static const usize bufferSize = HTTP_BUFFERSIZE - metasizeAlign;
@@ -32,7 +32,6 @@ public:
 
 public:
 	ServerConfig* cfg;
-
 	HTTP_Buffer recvBuffer, sendBuffer;
 	Request request;
 

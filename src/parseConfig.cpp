@@ -13,7 +13,8 @@
 #include "HTTP.hpp"
 #include "Server.hpp"
 #include "Status.hpp"
-#include "core_builtins.ipp"
+
+#include "parseConfig_helpers.ipp"
 
 using namespace parseConfig;
 
@@ -24,20 +25,17 @@ static std::vector<token> tokenizer(std::stringstream &config)
 	token tkn;
 	int braces = 0;
 
-	if(config.peek() == EOF){
+	if (config.peek() == EOF) {
 		throw std::runtime_error("Empty file");
 	}
 
-	while (config >> tk)
-	{
+	while (config >> tk) {
 		size_t pos = tk.find_first_of("{};");
-		if(pos != std::string::npos)
-		{
+		if (pos != std::string::npos) {
 			char delimiter = tk[pos];
-			if(pos + 1 != tk.size()){
-				throw std::runtime_error("Sintax error");
-			}
-			if(pos != 0)
+			if (pos + 1 != tk.size())
+				throw std::runtime_error("Syntax error");
+			if (pos != 0)
 			{
 				tkn.type = WORD;
 				tkn.value = tk.substr(0, pos);
@@ -52,11 +50,11 @@ static std::vector<token> tokenizer(std::stringstream &config)
 				case '}' :
 					tkn.type = CLOSE_BRACKET;
 					tkn.value = '}';
-					if(--braces < 0)
+					if (--braces < 0)
 						throw std::runtime_error("Extraneous closing brace ('}')");
 					break;
 				case ';' :
-								if(tkn.type == SEMICOLON)
+								if (tkn.type == SEMICOLON)
 						throw std::runtime_error("Extraneous semicolon (';')");
 								tkn.type = SEMICOLON;
 								tkn.value = ';';
@@ -70,92 +68,66 @@ static std::vector<token> tokenizer(std::stringstream &config)
 		}
 		ret.push_back(tkn);
 	}
-	if(braces)
-		throw std::runtime_error("Expected '}' to math previous '{'");
+	if (braces)
+		throw std::runtime_error("Expected '}' to match previous '{'");
 
 	return ret;
 }
 
-void match(std::vector<token>::const_iterator &cursor, std::string value){
-	if(cursor->value != value)
-		throw std::runtime_error("Unexpected token");
-	cursor++;
-}
-
-void advance(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator &end)
-{
-	if(cursor == end)
-		throw std::runtime_error("Invalid read");
-	cursor++;
-}
-
-void parseDirective(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator &end, Directive &dir){
+void parse_directive(tokIter &cursor, tokIter &end, Directive &dir) {
 	std::vector<std::string> arguments;
 
 	dir.name = cursor->value;
 	cursor++;
-	while(cursor != end && cursor->type != parseConfig::SEMICOLON)
+	while (cursor != end && cursor->type != parseConfig::SEMICOLON)
 	{
 		arguments.push_back(cursor->value);
-		advance(cursor, end);
+		s_advance(cursor, end);
 	}
-	if(cursor->type != parseConfig::SEMICOLON)
+	if (cursor->type != parseConfig::SEMICOLON)
 		throw std::runtime_error("Unexpected token");
 	dir.args = arguments;
 }
 
-static long stt_strtol(std::string& str)
-{
-	const char *sptr = str.c_str();
-	char *eptr = NULL;
-
-	long ret = std::strtol(sptr, &eptr, 10);
-
-	if(*eptr || errno == ERANGE)
-		throw std::runtime_error("Invalid directive");
-
-	return (ret);
-}
-
-void setMethods(std::vector<std::string> &methods, HTTP::Location &location){
+void set_methods(std::vector<std::string> &methods, HTTP::Location &location) {
 	std::vector<std::string>::iterator it = methods.begin();
 
-	for(; it != methods.end(); it++)
+	for (; it != methods.end(); it++)
 	{
 		if (it->size() == 3 && MEMCMP(it->c_str(), "GET", 3) == 0)
 			location.methods |= HTTP::Mode::GET;
 		else if (it->size() == 4 && MEMCMP(it->c_str(), "POST", 4) == 0)
 			location.methods |= HTTP::Mode::POST;
-		else if(it->size() == 6 && MEMCMP(it->c_str(), "DELETE", 6) == 0)
+		else if (it->size() == 6 && MEMCMP(it->c_str(), "DELETE", 6) == 0)
 			location.methods |= HTTP::Mode::DELETE;
 		else
 			throw std::runtime_error("Invalid method");
 	}
 }
 
-void setLocationDirective(Directive &dir, HTTP::Location &location){
-	if(dir.name == "root"){
-		if(dir.args.size() != 1)
+void set_location_directive(Directive &dir, HTTP::Location &location) {
+	if (dir.name == "root") {
+		if (dir.args.size() != 1)
 			throw std::runtime_error("Invalid root");
 		location.root = dir.args.at(0);
 	}
-	else if(dir.name == "autoindex"){
-		if(dir.args.size() != 1 || (dir.args.at(0) != "on" && dir.args.at(0) != "off"))
+	else if (dir.name == "autoindex") {
+		if (dir.args.size() != 1 || (dir.args.at(0) != "on" && dir.args.at(0) != "off"))
 			throw std::runtime_error("Invalid autoindex");
 		location.autoindex = dir.args.at(0) == "on" ? true : false;
 	}
-	else if(dir.name == "allowed_methods"){
-		if(dir.args.size() == 0)
+	else if (dir.name == "allowed_methods") {
+		if (dir.args.size() == 0)
 			throw std::runtime_error("No allowed methods defined");
-		setMethods(dir.args, location);
+		set_methods(dir.args, location);
 	}
-	else if(dir.name == "index"){
-		if(dir.args.size() != 1)
+	else if (dir.name == "index") {
+		if (dir.args.size() != 1)
 			throw std::runtime_error("Invalid index");
 		location.index = dir.args.at(0);
 	}
-	else if(dir.name == "upload_store"){
-		if(dir.args.size() != 1)
+	else if (dir.name == "upload_store") {
+		if (dir.args.size() != 1)
 			throw std::runtime_error("Invalid upload store");
 		location.upload_store = dir.args.at(0);
 	}
@@ -170,60 +142,55 @@ void setLocationDirective(Directive &dir, HTTP::Location &location){
 		throw std::runtime_error("Invalid location directive");
 }
 
-void parseLocation(std::vector<token>::const_iterator &cursor, std::vector<token>::const_iterator &end, HTTP::Location &loc){
-	match(cursor, "location");
-	if(cursor->type != parseConfig::WORD)
+void parse_location(tokIter &cursor, tokIter &end, HTTP::Location &loc) {
+	s_match(cursor, "location");
+	if (cursor->type != parseConfig::WORD)
 		throw std::runtime_error("Expected location");
 	loc.path = cursor->value;
 	cursor++;
-	match(cursor, "{");
-	while(cursor != end && cursor->type != parseConfig::CLOSE_BRACKET)
+	s_match(cursor, "{");
+	while (cursor != end && cursor->type != parseConfig::CLOSE_BRACKET)
 	{
 		Directive dir;
-		parseDirective(cursor, end, dir);
-		setLocationDirective(dir, loc);
+		parse_directive(cursor, end, dir);
+		set_location_directive(dir, loc);
 		cursor++;
 	}
-	if(cursor->type != parseConfig::CLOSE_BRACKET)
+	if (cursor->type != parseConfig::CLOSE_BRACKET)
 		throw std::runtime_error("Unexpected token");
 }
 
-
-
-void setServerDirective(Directive &dir, HTTP::ServerConfig &server){
-	if(dir.name == "listen")
-	{
-		if(server.port != -1 || dir.args.size() != 1)
+void set_server_directive(Directive &dir, HTTP::ServerConfig &server) {
+	if (dir.name == "listen") {
+		if (server.port != -1 || dir.args.size() != 1)
 			throw std::runtime_error("Invalid port definition");
-		server.port = stt_strtol(dir.args.at(0));
-		if(server.port < 1 || server.port > 65535)
+		server.port = s_strtol(dir.args.at(0));
+		if (server.port < 1 || server.port > 65535)
 			throw std::runtime_error("Invalid port");
 	}
-	else if(dir.name == "host")
-	{
-		if(server.host != "localhost" || dir.args.size() != 1)
+	else if (dir.name == "host") {
+		if (server.host != "localhost" || dir.args.size() != 1)
 			throw std::runtime_error("Invalid host definition");
 		server.host = dir.args.at(0);
 	}
-	else if(dir.name == "client_max_body_size")
-	{
-		if(server.maxBodySize != SIZE_MAX || dir.args.size() != 1)
+	else if (dir.name == "client_max_body_size") {
+		if (server.maxBodySize != SIZE_MAX || dir.args.size() != 1)
 			throw std::runtime_error("Invalid max body size definition");
-		server.maxBodySize = stt_strtol(dir.args.at(0));
-		if(server.maxBodySize < 1 || server.maxBodySize > 20)
+		server.maxBodySize = s_strtol(dir.args.at(0));
+		if (server.maxBodySize < 1 || server.maxBodySize > 20)
 			throw std::runtime_error("Invalid max body size");
 	}
-	else if(dir.name == "autoindex"){
-		if(dir.args.size() != 1 || (dir.args.at(0) != "on" && dir.args.at(0) != "off"))
-			throw std::runtime_error("Invalid autoindex");
-		server.autoindex = dir.args.at(0) == "on" ? true : false;
-	}
-	else if (dir.name == "error_page")
-	{
-		if(dir.args.size() != 2)
+	// TODO: Auto index is only used in locations
+	// else if (dir.name == "autoindex") {
+	// 	if (dir.args.size() != 1 || (dir.args.at(0) != "on" && dir.args.at(0) != "off"))
+	// 		throw std::runtime_error("Invalid autoindex");
+	// 	server.autoindex = dir.args.at(0) == "on" ? true : false;
+	// }	// TODO: this will be different
+	else if (dir.name == "error_page") {
+		if (dir.args.size() != 2)
 			throw std::runtime_error("Invalid error page");
-		i64	error = stt_strtol(dir.args.at(0));
-		if(error < 400 || error > 599)
+		i64	error = s_strtol(dir.args.at(0));
+		if (error < 400 || error > 599)
 			throw std::runtime_error("Invalid error number");
 		server.errors[error] = dir.args.at(1);
 	}
@@ -231,96 +198,48 @@ void setServerDirective(Directive &dir, HTTP::ServerConfig &server){
 		throw std::runtime_error("Invalid server directive");
 }
 
-
-void parseServer(std::vector<token>::const_iterator cursor, std::vector<token>::const_iterator end, HTTP::ServerConfig &server){
-	match(cursor, "server");
-	match(cursor, "{");
+void parse_server(tokIter cursor, tokIter end, HTTP::ServerConfig &server) {
+	s_match(cursor, "server");
+	s_match(cursor, "{");
 	if (cursor == end || cursor->value == "}")
 		throw std::runtime_error("Empty server block");
 	while (cursor != end) {
-		if(cursor->value == "location")
+		if (cursor->value == "location")
 		{
 			HTTP::Location loc;
-			parseLocation(cursor, end, loc);
+			parse_location(cursor, end, loc);
 			server.locations.push_back(loc);
 		}
-		else
-		{
+		else {
 			Directive dir;
-			parseDirective(cursor, end, dir);
-			setServerDirective(dir, server);
+			parse_directive(cursor, end, dir);
+			set_server_directive(dir, server);
 		}
-		advance(cursor, end);
-		//cursor++;
+		s_advance(cursor, end);
 	}
-	if(end->type != parseConfig::CLOSE_BRACKET)
+	if (end->type != parseConfig::CLOSE_BRACKET)
 		throw std::runtime_error("Unexpected token");
 }
 
-void tokenizerDump(std::vector<token> &tokens){
-	std::vector<token>::iterator it =  tokens.begin();
-	std::cout << "---Print tokens---\n\n";
-	for(;it != tokens.end(); it++)
-	{
-		std::string tp;
-		switch (it->type) {
-			case OPEN_BRACKET: tp = "open bracket"; break;
-			case CLOSE_BRACKET: tp = "close bracket"; break;
-			case SEMICOLON: tp = "semicolon"; break;
-			case WORD: tp = "word"; break;
-		}
-		std::cout << tp ;
-		if(tp == "word")
-			std::cout << "(" << it->value << ")";
-		std::cout << "\n";
-	}
-}
-
-void configDump(std::vector<HTTP::ServerConfig> &config){
-	std::vector<HTTP::ServerConfig>::iterator it =  config.begin();
-	std::cout << "---Print Config---\n\n";
-	for(; it != config.end(); it++)
-	{
-		std::cout << "SERVER\n";
-		std::cout << "\tlisten: " << (*it).port << "\n";
-		std::cout << "\thost: " << (*it).host << "\n";
-		std::cout << "\tmax_body_size: " << (*it).maxBodySize << "\n";
-		std::cout << "\n";
-
-		std::vector<HTTP::Location>::iterator itl =  (*it).locations.begin();
-		for(; itl != (*it).locations.end(); itl++)
-		{
-			std::cout << "\tLOCATION " << (*itl).path << "\n";
-			std::cout << "\t\troot: " << (*itl).root << "\n";
-			std::cout << "\t\tindex: " << (*itl).index << "\n";
-			std::cout << "\t\tupload_store: " << (*itl).upload_store << "\n";
-			std::cout << "\t\tautoindex: " << ((*itl).autoindex ? "on " : "off ") << "\n";
-			std::cout << "\n";
-		}
-	}
-
-}
-
-size_t scopeEnd(std::vector<token>::iterator &begin, std::vector<token>::iterator &end)
-{
-	std::vector<token>::iterator it = begin;
+size_t scope_end(tokIter &begin, tokIter &end) {
+	tokIter it = begin;
 	bool startedCount = false;
 	int braces = 0;
 	size_t distance = 0;
 
-	while(it != end)
+	while (it != end)
 	{
-		if(it->type == parseConfig::OPEN_BRACKET)
+		if (it->type == parseConfig::OPEN_BRACKET)
 		{
 			startedCount = true;
 			braces++;
 		}
-		else if(it->type == parseConfig::CLOSE_BRACKET)
+		else if (it->type == parseConfig::CLOSE_BRACKET)
 		{
 			startedCount = true;
 			braces--;
 		}
-		if(!braces && startedCount)
+		if (!braces && startedCount)
 			break;
 		it++;
 		distance++;
@@ -328,28 +247,27 @@ size_t scopeEnd(std::vector<token>::iterator &begin, std::vector<token>::iterato
 	return distance;
 }
 
-std::vector<HTTP::ServerConfig> parseConfig::parseConfig(char *filePath){
+std::vector<HTTP::ServerConfig> parseConfig::parse_config(char *filePath) {
 	std::vector<HTTP::ServerConfig> ret;
-	std::stringstream   stream;
+	std::stringstream stream;
 	std::ifstream inputFile(filePath);
 
-	if(inputFile.is_open())
+	if (inputFile.is_open())
 		stream << inputFile.rdbuf();
 	inputFile.close();
 
 	std::vector<token> tokens = tokenizer(stream);
-	std::vector<token>::iterator it =  tokens.begin();
-	std::vector<token>::iterator end =  tokens.end();
+	tokIter it = tokens.begin();
+	tokIter end = tokens.end();
 
 	//tokenizerDump(tokens);
 
-	while(it != end)
-	{
-		if(it->value == "server")
+	while (it != end) {
+		if (it->value == "server")
 		{
-			size_t distance = scopeEnd(it, end);
+			size_t distance = scope_end(it, end);
 			HTTP::ServerConfig    serverConf;
-			parseServer(it, it + distance, serverConf);
+			parse_server(it, it + distance, serverConf);
 			ret.push_back(serverConf);
 			it = it + distance;
 		}
