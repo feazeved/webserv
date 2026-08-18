@@ -50,7 +50,6 @@ struct ServerConfig {
 #endif
 
 // Switch (no read, read, read chunked, can read)
-// 
 
 // These are exclusive states
 namespace Mode {

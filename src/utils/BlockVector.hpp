@@ -21,7 +21,6 @@ public:
 	BlockVector() : numBlocks(1), numElements(0)
 	{
 		blocks[0] = stack;
-
 		for (usize i = 1; i < maxGrowth; i++)
 			blocks[i] = NULL;
 	}
