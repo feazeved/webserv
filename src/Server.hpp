@@ -30,11 +30,11 @@ public:
 
 	BlockVector<VirtualServer, s_serverBlockSize, 16> servers;
 	BlockVector<HTTP::Connection, s_connectionBlockSize, 64> connections;
-	i32 epoll_fd;
+	i32 epollFd;
 	volatile bool running;
 
 	Server(const std::vector<HTTP::ServerConfig>& configs)
-		: epoll_fd(-1), running(false) {
+		: epollFd(-1), running(false) {
 
 		if (s_serverBlockSize == 0 || s_connectionBlockSize == 0)
 			throw std::runtime_error("invalid BlockVector size");
@@ -46,14 +46,14 @@ public:
 		}
 		for (usize i = 0; i < numServers; i++)
 			servers[i].init(configs[i]);
-		epoll_fd = epoll_create(1);
-		if (epoll_fd == -1)
+		epollFd = epoll_create(1);
+		if (epollFd == -1)
 			throw std::runtime_error(std::strerror(errno));
 	}
 
 	~Server() {
 		instance() = NULL;
-		close(epoll_fd);
+		close(epollFd);
 	}
 
 	void run() {
@@ -67,7 +67,7 @@ public:
 		running = true;
 
 		while (running) {
-			i32 event_count = epoll_wait(epoll_fd, events, s_maxEvents, -1);
+			i32 event_count = epoll_wait(epollFd, events, s_maxEvents, -1);
 
 			if (event_count == -1) {
 				if (errno == EINTR)

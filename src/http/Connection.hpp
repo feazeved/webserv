@@ -22,8 +22,7 @@ namespace HTTP {
 class Connection {
 public:
 	static const usize metadataSize = sizeof(ServerConfig*) + sizeof(Request) 
-		+ sizeof(time_t) + 2 * sizeof(u8) + sizeof(pid_t) + 3 * sizeof(i32)
-		+ sizeof(std::string) + sizeof(bool);
+		+ sizeof(time_t) + 2 * sizeof(u8) + sizeof(pid_t) + 3 * sizeof(i32);
 	static const usize metasizeAlign = ALIGN_UP(metadataSize / 2, 8ul);
 	static const usize bytesFree = 2 * metasizeAlign - metadataSize;	// Debug only
 	static const usize bufferSize = HTTP_BUFFERSIZE - metasizeAlign;
@@ -40,12 +39,11 @@ public:
 	u8 state;
 
 	pid_t processId;
+
+	// TODO: These FDs can be moved to the buffer
 	i32 clientFd;	// Duplex FD
 	i32 writeFd;	// CGI Input or POST
 	i32 readFd;		// CGI Output or GET/DEL
-
-	bool isSSE;				// TODO: these vars should be removed, is sse should belong in request.mode (it already has the enum)
-	std::string sse_buffer;	// This one too
 
 	isize dispatch(u32 events);
 
@@ -54,6 +52,16 @@ public:
 		(void)f;
 		cfg = c;
 		return 1;
+	}
+
+	bool check_timeout(time_t curTime, time_t maxTime) {
+		const time_t elapsed = curTime - startTime;
+
+		if (elapsed > maxTime + bonusTime) {
+			// TODO: Cull child here
+			return true;
+		}
+		return false;
 	}
 
 	void reset() {
@@ -68,7 +76,6 @@ public:
 		bonusTime = 0;
 		startTime = 0;
 		cfg = NULL;
-
 		request.reset();
 	}
 

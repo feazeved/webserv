@@ -10,33 +10,31 @@
 
 namespace HTTP {
 
-namespace Token {
-	enum tokenType {
-		OPEN_BRACKET,
-		CLOSE_BRACKET,
-		SEMICOLON,
-		WORD
+namespace Parse {
+	struct Token {
+		enum Type {
+			OPEN_BRACKET,
+			CLOSE_BRACKET,
+			SEMICOLON,
+			WORD
+		}	type;
+		std::string value;
+	};
+
+	struct Directive {
+		std::string name;
+		std::vector<std::string> args;
 	};
 }
 
-struct ParseToken {
-	Token::tokenType type;
-	std::string value;
-};
-
-struct ParseDirective {
-	std::string name;
-	std::vector<std::string> args;
-};
-
 struct Location {
-	std::string					path;
-	std::string					root;
-	std::string					index;			// default index file
-	std::string					upload_store;
-	u8							methods;
-	bool						autoindex;
-	Status						redirect;
+	std::string	path;
+	std::string	root;
+	std::string	index;			// default index file
+	std::string	upload_store;
+	u8			methods;
+	bool		autoindex;
+	Status		redirect;
 
 	Location() : autoindex(false) {}
 };

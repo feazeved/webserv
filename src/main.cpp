@@ -1,24 +1,19 @@
-#include <iostream>
-#include <cstdlib>
-#include <exception>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <new>
+#include "core.hpp"
+#include "HTTP.hpp"
 
-#include "Server.hpp"
-#include "parse_config.hpp"
+int g_epollFd = -1;
+
+char* init(const char *str);
 
 int	main(int argc, char** argv)
 {
-	if (argc != 2) {
-		std::cerr << "Error: Usage -> ./webserv <config_file>\n";
-		return EXIT_FAILURE;
-	}
+	if (argc != 2)
+		PERR_RETURN(1, "Error: Usage -> ./webserv <config_file>");
 
-	try {
-		Server server (parse_config(argv[1]));
+	init(argv[1]);
 
-		server.run();
-	}
-	catch (const std::exception& e) {
-		std::cerr << "Error: " << e.what() << "\n";
-		return EXIT_FAILURE;
-	}
 }

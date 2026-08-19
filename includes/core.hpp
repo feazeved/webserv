@@ -31,6 +31,10 @@ typedef unsigned long		ulong;
 #define WORD_SIZE	sizeof(size_t)
 #define WORD_BITS	(WORD_SIZE * CHAR_BIT)
 
+#define PERR_RETURN(value, str) return (write(2, str "\n", sizeof(str)), (value))
+#define PERR_EXIT(value, str) _exit((write(2, str "\n", sizeof(str)), (value)))
+
+
 enum e_ascii {
 	ASCII_DIGITS      = 9,   // value <= digits
 	ASCII_HEX         = 15,  // value <= hex

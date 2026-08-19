@@ -27,13 +27,13 @@ SERVER_INL
 	struct epoll_event ev;
 	ev.events = events;
 	ev.data.ptr = ptr;
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &ev) == -1)
+	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &ev) == -1)
 		throw std::runtime_error(std::strerror(errno));
 }
 
 SERVER_INL
 (void) remove_from_epoll(i32 fd) {
-	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+	epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
 }
 
 SERVER_INL
@@ -41,7 +41,7 @@ SERVER_INL
 	struct epoll_event ev;
 	ev.events = events;
 	ev.data.ptr = ptr;
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &ev) == -1)
+	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &ev) == -1)
 		std::cerr << "epoll_ctl MOD error: " << std::strerror(errno) << "\n";
 }
 
@@ -66,7 +66,7 @@ SERVER_INL
 	usize index = connections.find_free_slot();
 	if (index == SIZE_MAX) {
 		close(clientFd);
-		throw std::bad_alloc();
+		throw std::bad_alloc();	// TODO: Throw
 	}
 	connections[index].init(clientFd, &server->config);
 	add_to_epoll(clientFd, EPOLLIN | EPOLLOUT, &connections[index]);

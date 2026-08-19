@@ -9,8 +9,9 @@
 #include "HTTP.hpp"
 
 namespace HTTP {
+namespace Parse {
 // 
-typedef std::vector<ParseToken>::const_iterator tokIter;
+typedef std::vector<Token>::const_iterator tokIter;
 
 static inline
 void s_match(tokIter &cursor, const std::string &value) {
@@ -38,7 +39,48 @@ long s_strtol(std::string& str) {
 	return (ret);
 }
 
-void tokenizer_dump(std::vector<ParseToken> &tokens) {
+static inline
+void s_set_methods(std::vector<std::string> &methods, HTTP::Location &location) {
+	std::vector<std::string>::iterator it = methods.begin();
+
+	for (; it != methods.end(); it++)
+	{
+		if (it->size() == 3 && MEMCMP(it->c_str(), "GET", 3) == 0)
+			location.methods |= HTTP::Mode::GET;
+		else if (it->size() == 4 && MEMCMP(it->c_str(), "POST", 4) == 0)
+			location.methods |= HTTP::Mode::POST;
+		else if (it->size() == 6 && MEMCMP(it->c_str(), "DELETE", 6) == 0)
+			location.methods |= HTTP::Mode::DELETE;
+		else
+			throw std::runtime_error("Invalid method");
+	}
+}
+
+static inline
+usize s_find_scope_end(tokIter &begin, tokIter &end) {
+	tokIter it = begin;
+	bool startedCount = false;
+	int braces = 0;
+	usize distance = 0;
+
+	while (it != end) {
+		if (it->type == Token::OPEN_BRACKET) {
+			startedCount = true;
+			braces++;
+		}
+		else if (it->type == Token::CLOSE_BRACKET) {
+			startedCount = true;
+			braces--;
+		}
+		if (!braces && startedCount)
+			break;
+		it++;
+		distance++;
+	}
+	return distance;
+}
+
+void tokenizer_dump(std::vector<Token> &tokens) {
 	tokIter it =  tokens.begin();
 	std::cout << "---Print tokens---\n\n";
 	for (;it != tokens.end(); it++)
@@ -80,5 +122,6 @@ void config_dump(std::vector<HTTP::ServerConfig> &config) {
 			std::cout << "\n";
 		}
 	}
+}
 }
 }
