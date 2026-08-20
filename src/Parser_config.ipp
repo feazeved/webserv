@@ -33,7 +33,7 @@ PARSER_INL
 }
 
 PARSER_INL
-(void) match(tokIter &cursor, const std::string &value) {
+(void) match(tokIter &cursor, const char *value) {
 	if (cursor->value != value)
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
 	cursor++;
@@ -196,19 +196,19 @@ PARSER_INL
 }
 
 PARSER_INL
-(std::vector<ServerConfig>) parse_config(char *fileBuffer, usize totalBytes) {
-	std::vector<Token> tokVector = tokenizer(fileBuffer);
+(std::vector<ServerConfig>) parse_config() {
+	std::vector<Token> tokVector = tokenize();
 	tokIter it = tokVector.begin();
 	tokIter end = tokVector.end();
 
 	std::vector<ServerConfig> cfgVector;
-	usize serverCount = s_count_servers(fileBuffer, totalBytes);
+	usize serverCount = s_count_servers(fileBuffer, fileSize);
 	if (serverCount == SIZE_MAX)
 		PERR_EXIT(1, "Error: Invalid config");
 	cfgVector.reserve(serverCount);
 
 	while (it != end) {
-		if (it->value == "server") {
+		if (MEMCMP_INLINE(it->value, "server") == 0) {
 			usize distance = find_scope_end(it, end);
 			HTTP::ServerConfig serverConf;
 			parse_server(it, it + distance, serverConf);

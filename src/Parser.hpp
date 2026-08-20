@@ -24,12 +24,12 @@ public:
 			SEMICOLON,
 			WORD
 		}	type;
-		std::string value;
+		char *value;
 	};
 
 	struct Directive {
-		std::string name;
-		std::vector<std::string> args;
+		char* name;
+		std::vector<char*> args;
 	};
 
 	typedef std::vector<Token>::const_iterator tokIter;
@@ -43,9 +43,9 @@ public:
 		return 1;
 	}
 
-	usize get_word(char* &str, std::string &word);
-	void match_delimiter(std::string &word, usize &delimPos, isize &braces, Token &token);
-	std::vector<Token> tokenizer(char *fileBuffer);
+	usize get_next_word(char* &ostr);
+	Token match_delimiter(char *ptr, usize delimPos, isize &braces);
+	std::vector<Token> tokenize();
 
 	void match(tokIter &cursor, const std::string &value);
 	void advance(tokIter &cursor, tokIter &end);
