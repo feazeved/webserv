@@ -3,27 +3,41 @@
 
 #include "stdlib.h"
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 #include "HTTP.hpp"
 
 namespace HTTP {
 namespace Parse {
-// 
+
 typedef std::vector<Token>::const_iterator tokIter;
+
+// temporary solution
+static inline
+int s_cleanup(char *filePath) {
+	static char* ptr = NULL;
+
+	if (filePath == NULL) {
+		delete[] ptr;
+		return 1;
+	}
+	else {
+		ptr = filePath;
+		return 0;
+	}
+}
 
 static inline
 void s_match(tokIter &cursor, const std::string &value) {
 	if (cursor->value != value)
-		throw std::runtime_error("Unexpected token");
+		PERR_EXIT(s_cleanup(NULL), "Error: Unexpected token");
 	cursor++;
 }
 
 static inline
 void s_advance(tokIter &cursor, tokIter &end) {
 	if (cursor == end)
-		throw std::runtime_error("Invalid read");
+		PERR_EXIT(s_cleanup(NULL), "Error: Invalid read");
 	cursor++;
 }
 
@@ -35,8 +49,8 @@ long s_strtol(std::string& str) {
 	long ret = std::strtol(sptr, &eptr, 10);
 
 	if (*eptr || errno == ERANGE)
-		throw std::runtime_error("Invalid directive");
-	return (ret);
+		PERR_EXIT(s_cleanup(NULL), "Error: Invalid directive");
+	return ret;
 }
 
 static inline
@@ -45,15 +59,62 @@ void s_set_methods(std::vector<std::string> &methods, HTTP::Location &location) 
 
 	for (; it != methods.end(); it++)
 	{
-		if (it->size() == 3 && MEMCMP(it->c_str(), "GET", 3) == 0)
+		if (MEMCMP_INLINE(it->c_str(), "GET") == 0)
 			location.methods |= HTTP::Mode::GET;
-		else if (it->size() == 4 && MEMCMP(it->c_str(), "POST", 4) == 0)
+		else if (MEMCMP_INLINE(it->c_str(), "POST") == 0)
 			location.methods |= HTTP::Mode::POST;
-		else if (it->size() == 6 && MEMCMP(it->c_str(), "DELETE", 6) == 0)
+		else if (MEMCMP_INLINE(it->c_str(), "DELETE") == 0)
 			location.methods |= HTTP::Mode::DELETE;
 		else
-			throw std::runtime_error("Invalid method");
+			PERR_EXIT(s_cleanup(NULL), "Error: Invalid method");
 	}
+}
+
+static inline
+usize s_count_tokens(const char *str) {
+	usize tokenCount = 0;
+	while (true) {
+		while (IS_SPACE(*str))
+			str++;
+		if (*str == 0)
+			return tokenCount;
+		tokenCount++;
+		while (*str > 32)
+			str++;
+	}
+	return tokenCount;
+}
+
+static inline
+usize s_count_servers(const char *str, usize length) {
+	const char *end = str + length;
+	usize serverCount = 0;
+	isize pdepth = 0;
+
+	while (str < end) {
+		while (IS_SPACE(*str))
+			str++;
+		if (MEMCMP_INLINE(str, "server") != 0) {
+			if (*str == 0)
+				return serverCount;
+			PERR_EXIT(s_cleanup(NULL), "Error: Invalid config");
+		}
+		str += 6;
+		while (IS_SPACE(*str))
+			str++;
+		pdepth = (*str == '{') ? 1 : -1;
+		str++;
+		for (; str < end && pdepth > 0; str++) {
+			for (; *str != '}'; str++)
+				pdepth += *str == '{';
+			if (str < end)
+				pdepth--;
+		}
+		if (pdepth != 0)
+			PERR_EXIT(s_cleanup(NULL), "Error: Invalid config");
+		serverCount++;
+	}
+	return serverCount;
 }
 
 static inline
@@ -80,6 +141,7 @@ usize s_find_scope_end(tokIter &begin, tokIter &end) {
 	return distance;
 }
 
+// 
 void tokenizer_dump(std::vector<Token> &tokens) {
 	tokIter it =  tokens.begin();
 	std::cout << "---Print tokens---\n\n";
@@ -123,5 +185,6 @@ void config_dump(std::vector<HTTP::ServerConfig> &config) {
 		}
 	}
 }
+
 }
 }

@@ -5,6 +5,11 @@
 #include "core.hpp"
 #include "HTTP.hpp"
 
+#include "parse_config.ipp"
+
+namespace HTTP {
+//
+
 static inline
 char* s_read_whole_file(int fd, usize totalBytes) {
 	usize allocSize = ALIGN_UP(totalBytes + 63, (usize)64);	// Pads with at least 64 bytes
@@ -26,47 +31,16 @@ char* s_read_whole_file(int fd, usize totalBytes) {
 		}
 		curBytes += (usize) bytesRead;
 	}
+	close(fd);
 	fileBuffer[totalBytes] = 0;
+	fileBuffer[totalBytes + 1] = '{';
+	fileBuffer[totalBytes + 2] = '}';
+	fileBuffer[totalBytes + 3] = ';';
 	return fileBuffer;
 }
 
-static inline
-isize s_find_server(const char* &str, const char *end) {
-	while (IS_SPACE(*str))
-		str++;
-	if (MEMCMP_INLINE(str, "server") != 0)	// str is padded
-		return (*str == 0 ? 0 : -1);
-	str += 6;
-	while (str < end && *str != '{')
-		str++;
-	str++;
-	isize pdepth = 1;
-	while (str < end && pdepth > 0) {
-		pdepth += (*str == '{') - (*str == '}');
-		str++;
-	}
-	return pdepth == 0 ? 1 : -1;
-}
-
-static inline
-usize s_count_servers(const char *str, usize length) {
-	const char *end = str + length;
-	usize serverCount = 0;
-	isize rvalue = 0;
-
-	while (str < end) {
-		rvalue = s_find_server(str, end);
-		if (rvalue <= 0)
-			break;
-		serverCount++;
-	}
-	if (rvalue == -1)
-		return SIZE_MAX;
-	return serverCount;
-}
-
-void init(const char *str) {
-	int fd = open(str, O_RDONLY);
+std::vector<ServerConfig> parse_file(const char *filePath) {
+	int fd = open(filePath, O_RDONLY);
 	if (fd == -1)
 		PERR_EXIT(1, "Error: Failed to open file");
 
@@ -82,5 +56,7 @@ void init(const char *str) {
 	}
 	usize totalBytes = (usize) st.st_size;
 	char* fileBuffer = s_read_whole_file(fd, totalBytes);
-	// usize numTokens = s_count_tokens(fileBuffer);
+
+	return Parse::parse_config(fileBuffer, totalBytes);
+}
 }
