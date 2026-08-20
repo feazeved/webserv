@@ -10,23 +10,6 @@
 
 namespace HTTP {
 
-namespace Parse {
-	struct Token {
-		enum Type {
-			OPEN_BRACKET,
-			CLOSE_BRACKET,
-			SEMICOLON,
-			WORD
-		}	type;
-		std::string value;
-	};
-
-	struct Directive {
-		std::string name;
-		std::vector<std::string> args;
-	};
-}
-
 struct Location {
 	std::string	path;
 	std::string	root;
@@ -43,7 +26,7 @@ struct ServerConfig {
 	std::map<long, std::string>	errors;
 	std::vector<Location>		locations;
 	std::string					host;
-	long						port;
+	usize						port;
 	usize						maxBodySize;
 	Game::State					*gameState;
 

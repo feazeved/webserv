@@ -24,8 +24,8 @@ CONNECTION_INL
             "Cache-Control: no-cache\r\n"
             "Connection: keep-alive\r\n"
             "\r\n";
-        sse_buffer = headers;
-        isSSE = true;
+        // sse_buffer = headers;
+        // isSSE = true;
         cfg->gameState->addSSEClient(this);
         return 2;
     }
