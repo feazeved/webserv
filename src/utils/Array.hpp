@@ -3,12 +3,12 @@
 #include "Arena.hpp"
 
 template <typename Type>
-class Array {
+class Array32 {
 public:
 	u32 offset;
 	u32 count;
 
-	Array() : offset(0), count(0) {}
+	Array32() : offset(0), count(0) {}
 
 	bool alloc(u32 numElements) {
 		usize totalSize = numElements * sizeof(Type);

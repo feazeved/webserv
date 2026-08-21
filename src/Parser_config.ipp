@@ -7,7 +7,7 @@ namespace HTTP {
 //
 
 PARSER_INL
-(usize) find_scope_end(const Array<Token> &tokens, usize begin, usize end) {
+(usize) find_scope_end(const Array32<Token> &tokens, usize begin, usize end) {
 	usize it = begin;
 	bool startedCount = false;
 	int braces = 0;
@@ -31,7 +31,7 @@ PARSER_INL
 }
 
 PARSER_INL
-(usize) count_locations(const Array<Token> &tokens, usize cursor, usize end) {
+(usize) count_locations(const Array32<Token> &tokens, usize cursor, usize end) {
 	usize locationCount = 0;
 
 	while (cursor < end) {
@@ -53,7 +53,7 @@ PARSER_INL
 }
 
 PARSER_INL
-(isize) parse_directive(const Array<Token> &tokens, usize &cursor, usize end, Directive &dir) {
+(isize) parse_directive(const Array32<Token> &tokens, usize &cursor, usize end, Directive &dir) {
 	if (cursor == end || tokens[cursor].type != Token::WORD)
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
 	dir.name = tokens[cursor].value;
@@ -120,7 +120,7 @@ PARSER_INL
 }
 
 PARSER_INL
-(void) set_methods(Array<StringView> &methods, HTTP::Location &location) {
+(void) set_methods(Array32<StringView> &methods, HTTP::Location &location) {
 	for (u32 index = 0; index < methods.count; index++)
 	{
 		if (methods[index] == "GET")
@@ -135,7 +135,7 @@ PARSER_INL
 }
 
 PARSER_INL
-(isize) parse_location(const Array<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc) {
+(isize) parse_location(const Array32<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc) {
 	if (cursor == end || tokens[cursor].type != Token::WORD || !(tokens[cursor].value == "location"))
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
 	cursor++;
@@ -193,7 +193,7 @@ PARSER_INL
 }
 
 PARSER_INL
-(isize) parse_server(const Array<Token> &tokens, usize cursor, usize end, HTTP::ServerConfig &server) {
+(isize) parse_server(const Array32<Token> &tokens, usize cursor, usize end, HTTP::ServerConfig &server) {
 	if (cursor == end || tokens[cursor].type != Token::WORD || !(tokens[cursor].value == "server"))
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
 	cursor++;
@@ -231,7 +231,7 @@ PARSER_INL
 
 PARSER_INL
 (void) parse_config(ServerConfig (&servers)[MAX_VIRTUAL_SERVERS]) {
-	Array<Token> tokArray = tokenize();
+	Array32<Token> tokArray = tokenize();
 	usize cursor = 0;
 	usize end = tokArray.count;
 	usize serverIndex = 0;

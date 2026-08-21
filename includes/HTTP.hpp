@@ -31,7 +31,7 @@ struct ServerConfig {
 	// std::map<long, StringView>	errors;
 	StringView					clientErrors[32];
 	// StringView				serverErrors[12];
-	Array<Location>				locations;
+	Array32<Location>				locations;
 	StringView					host;
 	usize						port;
 	usize						maxBodySize;

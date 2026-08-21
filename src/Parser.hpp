@@ -29,7 +29,7 @@ public:
 
 	struct Directive {
 		StringView name;
-		Array<StringView> args;
+		Array32<StringView> args;
 	};
 
 public:
@@ -49,17 +49,17 @@ public:
 
 	usize get_next_word(char* &ostr);
 	Token match_delimiter(char *ptr, usize delimPos, isize &braces);
-	Array<Token> tokenize();
+	Array32<Token> tokenize();
 
-	usize find_scope_end(const Array<Token> &tokens, usize begin, usize end);
-	usize count_locations(const Array<Token> &tokens, usize cursor, usize end);
+	usize find_scope_end(const Array32<Token> &tokens, usize begin, usize end);
+	usize count_locations(const Array32<Token> &tokens, usize cursor, usize end);
 
-	void set_methods(Array<StringView> &methods, HTTP::Location &location);
+	void set_methods(Array32<StringView> &methods, HTTP::Location &location);
 	isize set_location_directive(Directive &dir, HTTP::Location &location);
 	isize set_server_directive(Directive &dir, HTTP::ServerConfig &server);
-	isize parse_directive(const Array<Token> &tokens, usize &cursor, usize end, Directive &dir);
-	isize parse_location(const Array<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc);
-	isize parse_server(const Array<Token> &tokens, usize cursor, usize end, HTTP::ServerConfig &server);
+	isize parse_directive(const Array32<Token> &tokens, usize &cursor, usize end, Directive &dir);
+	isize parse_location(const Array32<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc);
+	isize parse_server(const Array32<Token> &tokens, usize cursor, usize end, HTTP::ServerConfig &server);
 	void parse_config(ServerConfig (&servers)[MAX_VIRTUAL_SERVERS]);
 
 	Parser(const char *filePath) : fileOffset(0), fileSize(0), serverCount(0) {

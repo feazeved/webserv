@@ -50,8 +50,8 @@ PARSER_INL
 }
 
 PARSER_INL
-(Array<Parser::Token>) tokenize() {
-	Array<Token> tokArray;
+(Array32<Parser::Token>) tokenize() {
+	Array32<Token> tokArray;
 	Token token;
 	usize length;
 	isize braces = 0;
