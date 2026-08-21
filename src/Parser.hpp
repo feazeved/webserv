@@ -37,6 +37,10 @@ public:
 	usize fileSize;
 	usize serverCount;
 
+	char* getPtr() {
+		return fileOffset + (char*) Arena::data;
+	}
+
 	int cleanup() {
 		Arena::clear();
 		fileSize = 0;
@@ -78,7 +82,7 @@ public:
 			_exit(1);
 		}
 
-		char* ptr = fileOffset + (char*) Arena::data;
+		char* ptr = getPtr();
 		usize curBytes = 0;
 		while (curBytes < fileSize) {
 			usize bytesRemaining = fileSize - curBytes;
@@ -96,7 +100,6 @@ public:
 		ptr[fileSize + 2] = '}';
 		ptr[fileSize + 3] = ';';
 		MEMCPY_INLINE(ptr + fileSize + 4, "localhost", sizeof("localhost"));
-		fileOffset = (usize)((u8*)ptr - Arena::data);
 
 		serverCount = s_count_servers(ptr, fileSize);
 		if (serverCount > MAX_VIRTUAL_SERVERS)

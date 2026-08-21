@@ -27,7 +27,7 @@ PARSER_INL
 	Token token;
 	char delimiter = ptr[delimPos];
 
-	token.value = StringView(1, (u32)(delimPos - fileOffset));
+	token.value = StringView(1, (u32)(ptr + delimPos - (char*)Arena::data));
 	switch (delimiter) {
 		case '{' :
 			token.type = Token::OPEN_BRACKET;
@@ -56,11 +56,11 @@ PARSER_INL
 	usize length;
 	isize braces = 0;
 	usize tokenIndex = 0;
-	char *optr = fileOffset + (char*) Arena::data;
-	char *ptr = fileOffset + (char*) Arena::data;
 
-	if (tokArray.alloc((u32)s_count_tokens(optr)) == true)
+	if (tokArray.alloc((u32)s_count_tokens(getPtr())) == true)
 		_exit(1);
+	char *optr = getPtr();
+	char *ptr = optr;
 
 	while (true) {
 		while (IS_SPACE(*ptr))

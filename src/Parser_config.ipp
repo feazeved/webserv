@@ -225,13 +225,12 @@ PARSER_INL
 	if (tokens[end].type != Token::CLOSE_BRACKET)
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
 	if (server.host.length == 0)
-		server.host = StringView(sizeof("localhost") - 1, (u32)fileSize + 4);
+		server.host = StringView(sizeof("localhost") - 1, (u32)(fileOffset + fileSize + 4));
 	return 0;
 }
 
 PARSER_INL
 (void) parse_config(ServerConfig (&servers)[MAX_VIRTUAL_SERVERS]) {
-
 	Array<Token> tokArray = tokenize();
 	usize cursor = 0;
 	usize end = tokArray.count;
