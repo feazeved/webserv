@@ -67,8 +67,15 @@ usize s_count_tokens(const char *str) {
 		if (*str == 0)
 			return tokenCount;
 		tokenCount++;
-		while (*str > 32)
+		if (s_is_config_delimiter(*str))
 			str++;
+		else {
+			const char *word = str;
+			while (*str > 32 && !s_is_config_delimiter(*str))
+				str++;
+			if (str == word)
+				str++;
+		}
 	}
 	return tokenCount;
 }

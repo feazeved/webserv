@@ -57,6 +57,15 @@ public:
 		size += bytes;
 		return ptr;
 	}
+
+	static u32 alloc_index(usize bytes) {
+		bytes = ALIGN_UP(bytes, 64);
+		if (size + bytes >= capacity && realloc(bytes) == true)
+			return UINT32_MAX;
+		u32 index = size;
+		size += bytes;
+		return index;
+	}
 };
 
 u8* Arena::data = NULL;

@@ -10,8 +10,8 @@ public:
 	u32 offset;
 	u32 length;
 
-	StringView() : length(0), offset(0) {}
-	StringView(u32 length, u32 offset) : length(length), offset(offset) {}
+	StringView() : offset(0), length(0) {}
+	StringView(u32 length, u32 offset) : offset(offset), length(length) {}
 
 	const char *get() const {
 		return (const char*)Arena::data + offset;

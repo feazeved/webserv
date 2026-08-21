@@ -5,12 +5,13 @@
 #include <fcntl.h>
 #include "core.hpp"
 #include "HTTP.hpp"
-#include <vector>
 #include "Parser_helpers.ipp"
 #include "Arena.hpp"
 
 namespace HTTP {
-//
+
+// TODO: Find a way to free tokens and directives
+// TODO: Change count_locations to be static inside helpers
 
 #define PARSER_INL(ret_type) ret_type inline HTTP::Parser::
 
@@ -28,14 +29,13 @@ public:
 
 	struct Directive {
 		StringView name;
-		std::vector<StringView> args;
+		Array<StringView> args;
 	};
 
-	typedef std::vector<Token>::const_iterator tokIter;
-
 public:
-	char* fileBuffer;
+	usize fileOffset;
 	usize fileSize;
+	usize serverCount;
 
 	int cleanup() {
 		Arena::clear();
@@ -45,19 +45,20 @@ public:
 
 	usize get_next_word(char* &ostr);
 	Token match_delimiter(char *ptr, usize delimPos, isize &braces);
-	std::vector<Token> tokenize();
+	Array<Token> tokenize();
 
-	usize find_scope_end(tokIter &begin, tokIter &end);
+	usize find_scope_end(const Array<Token> &tokens, usize begin, usize end);
+	usize count_locations(const Array<Token> &tokens, usize cursor, usize end);
 
-	void set_methods(std::vector<StringView> &methods, HTTP::Location &location);
+	void set_methods(Array<StringView> &methods, HTTP::Location &location);
 	isize set_location_directive(Directive &dir, HTTP::Location &location);
 	isize set_server_directive(Directive &dir, HTTP::ServerConfig &server);
-	isize parse_directive(tokIter &cursor, tokIter &end, Directive &dir);
-	isize parse_location(tokIter &cursor, tokIter &end, HTTP::Location &loc);
-	isize parse_server(tokIter cursor, tokIter end, HTTP::ServerConfig &server);
-	std::vector<ServerConfig> parse_config();
+	isize parse_directive(const Array<Token> &tokens, usize &cursor, usize end, Directive &dir);
+	isize parse_location(const Array<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc);
+	isize parse_server(const Array<Token> &tokens, usize cursor, usize end, HTTP::ServerConfig &server);
+	void parse_config(ServerConfig (&servers)[MAX_VIRTUAL_SERVERS]);
 
-	Parser(const char *filePath) : fileBuffer(NULL), fileSize(0) {
+	Parser(const char *filePath) : fileOffset(0), fileSize(0), serverCount(0) {
 		int fd = open(filePath, O_RDONLY);
 		if (fd == -1)
 			PERR_EXIT(1, "Error: Failed to open file");
@@ -71,16 +72,17 @@ public:
 		fileSize = (usize) st.st_size;
 		usize allocSize = ALIGN_UP(fileSize + 63, (usize)64);	// Pads with at least 64 bytes
 
-		fileBuffer = (char*) Arena::alloc(allocSize);
-		if (fileBuffer == NULL) {
+		fileOffset = Arena::alloc_index(allocSize);
+		if (fileOffset == UINT32_MAX) {
 			close(fd);
 			_exit(1);
 		}
 
+		char* ptr = fileOffset + (char*) Arena::data;
 		usize curBytes = 0;
 		while (curBytes < fileSize) {
 			usize bytesRemaining = fileSize - curBytes;
-			isize bytesRead = read(fd, fileBuffer + curBytes, MIN(bytesRemaining, ATOMIC_IOSIZE));
+			isize bytesRead = read(fd, ptr + curBytes, MIN(bytesRemaining, ATOMIC_IOSIZE));
 			if (bytesRead <= 0) {
 				close(fd);
 				Arena::clear();
@@ -89,11 +91,16 @@ public:
 			curBytes += (usize) bytesRead;
 		}
 		close(fd);
-		fileBuffer[fileSize] = 0;
-		fileBuffer[fileSize + 1] = '{';
-		fileBuffer[fileSize + 2] = '}';
-		fileBuffer[fileSize + 3] = ';';
-		MEMCPY_INLINE(fileBuffer + fileSize + 4, "localhost", sizeof("localhost"));
+		ptr[fileSize] = 0;
+		ptr[fileSize + 1] = '{';
+		ptr[fileSize + 2] = '}';
+		ptr[fileSize + 3] = ';';
+		MEMCPY_INLINE(ptr + fileSize + 4, "localhost", sizeof("localhost"));
+		fileOffset = (usize)((u8*)ptr - Arena::data);
+
+		serverCount = s_count_servers(ptr, fileSize);
+		if (serverCount > MAX_VIRTUAL_SERVERS)
+			PERR_EXIT(cleanup(), "Error: Invalid config");
 	}
 };
 }

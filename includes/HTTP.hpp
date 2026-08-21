@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vector>
 #include <unistd.h>
 #include "core.hpp"
+#include "Array.hpp"
 #include "StringView.hpp"
 #include "Status.hpp"
 #include "State.hpp"
@@ -31,7 +31,7 @@ struct ServerConfig {
 	// std::map<long, StringView>	errors;
 	StringView					clientErrors[32];
 	// StringView				serverErrors[12];
-	std::vector<Location>		locations;
+	Array<Location>				locations;
 	StringView					host;
 	usize						port;
 	usize						maxBodySize;

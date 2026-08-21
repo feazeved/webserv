@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vector>
 #include "HTTP.hpp"
 #include "Parser.hpp"
 
@@ -28,7 +27,7 @@ PARSER_INL
 	Token token;
 	char delimiter = ptr[delimPos];
 
-	token.value = StringView(1, (u32)(ptr + delimPos - fileBuffer));
+	token.value = StringView(1, (u32)(delimPos - fileOffset));
 	switch (delimiter) {
 		case '{' :
 			token.type = Token::OPEN_BRACKET;
@@ -51,14 +50,17 @@ PARSER_INL
 }
 
 PARSER_INL
-(std::vector<Parser::Token>) tokenize() {
-	std::vector<Token> tokVector;
+(Array<Parser::Token>) tokenize() {
+	Array<Token> tokArray;
 	Token token;
 	usize length;
 	isize braces = 0;
-	char *ptr = fileBuffer;
+	usize tokenIndex = 0;
+	char *optr = fileOffset + (char*) Arena::data;
+	char *ptr = fileOffset + (char*) Arena::data;
 
-	tokVector.reserve(s_count_tokens(fileBuffer));
+	if (tokArray.alloc((u32)s_count_tokens(optr)) == true)
+		_exit(1);
 
 	while (true) {
 		while (IS_SPACE(*ptr))
@@ -72,14 +74,14 @@ PARSER_INL
 		else {
 			length = get_next_word(ptr);
 			token.type = Token::WORD;
-			token.value = StringView((u32)length, (u32)(ptr - fileBuffer));
+			token.value = StringView((u32)length, (u32)(ptr - optr));
 			ptr += length;
 		}
-		tokVector.push_back(token);
+		tokArray[tokenIndex++] = token;
 	}
 	if (braces != 0)
 		PERR_EXIT(cleanup(), "Error: Expected '}' to match previous '{'");
-	return tokVector;
+	return tokArray;
 }
 
 //
