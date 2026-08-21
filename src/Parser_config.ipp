@@ -1,5 +1,4 @@
 #pragma once
-#include <string>
 #include <vector>
 #include "core.hpp"
 #include "HTTP.hpp"
@@ -29,34 +28,22 @@ PARSER_INL
 		it++;
 		distance++;
 	}
-	return distance;
-}
-
-PARSER_INL
-(void) match(tokIter &cursor, const char *value) {
-	if (cursor->value != value)
-		PERR_EXIT(cleanup(), "Error: Unexpected token");
-	cursor++;
-}
-
-PARSER_INL
-(void) advance(tokIter &cursor, tokIter &end) {
-	if (cursor == end)
-		PERR_EXIT(cleanup(), "Error: Invalid read");
-	cursor++;
+	return it == end ? SIZE_MAX : distance;
 }
 
 PARSER_INL
 (isize) parse_directive(tokIter &cursor, tokIter &end, Directive &dir) {
-	std::vector<std::string> arguments;
+	std::vector<StringView> arguments;
 
+	if (cursor == end || cursor->type != Token::WORD)
+		PERR_EXIT(cleanup(), "Error: Unexpected token");
 	dir.name = cursor->value;
 	cursor++;
-	while (cursor != end && cursor->type != Token::SEMICOLON) {
+	while (cursor != end && cursor->type == Token::WORD) {
 		arguments.push_back(cursor->value);
-		advance(cursor, end);
+		cursor++;
 	}
-	if (cursor->type != Token::SEMICOLON)
+	if (cursor == end || cursor->type != Token::SEMICOLON)
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
 	dir.args = arguments;
 	return 0;
@@ -70,7 +57,7 @@ PARSER_INL
 		location.root = dir.args.at(0);
 	}
 	else if (dir.name == "autoindex") {
-		if (dir.args.size() != 1 || (dir.args.at(0) != "on" && dir.args.at(0) != "off"))
+		if (dir.args.size() != 1 || (!(dir.args.at(0) == "on") && !(dir.args.at(0) == "off")))
 			PERR_EXIT(cleanup(), "Error: Invalid autoindex");
 		location.autoindex = dir.args.at(0) == "on" ? true : false;
 	}
@@ -87,13 +74,24 @@ PARSER_INL
 	else if (dir.name == "upload_store") {
 		if (dir.args.size() != 1)
 			PERR_EXIT(cleanup(), "Error: Invalid upload store");
-		location.upload_store = dir.args.at(0);
+		location.uploadStore = dir.args.at(0);
+	}
+	else if (dir.name == "cgi") {
+		if (dir.args.size() != 2 || dir.args.at(0).length < 2
+			|| dir.args.at(0).get()[0] != '.' || location.cgiExtension.length != 0)
+			PERR_EXIT(cleanup(), "Error: Invalid CGI definition");
+		location.cgiExtension = dir.args.at(0);
+		location.cgiInterpreter = dir.args.at(1);
 	}
 	else if (dir.name == "return") {
 		if (dir.args.size() != 2)
 			PERR_EXIT(cleanup(), "Error: Invalid redirect");
-		HTTP_STATUS(300);
-		location.redirect = HTTP::Status::i300;
+		usize status = s_strtol10(dir.args.at(0).get(), 3);
+		location.redirectStatus = status;
+		if (dir.args.at(0).length != 3 || status < 300 || status > 399
+			|| !location.redirectStatus.is_valid())
+			PERR_EXIT(cleanup(), "Error: Invalid redirect status");
+		location.redirectTarget = dir.args.at(1);
 	}
 	else
 		PERR_EXIT(cleanup(), "Error: Invalid location directive");
@@ -101,16 +99,16 @@ PARSER_INL
 }
 
 PARSER_INL
-(void) set_methods(std::vector<std::string> &methods, HTTP::Location &location) {
-	std::vector<std::string>::iterator it = methods.begin();
+(void) set_methods(std::vector<StringView> &methods, HTTP::Location &location) {
+	std::vector<StringView>::iterator it = methods.begin();
 
 	for (; it != methods.end(); it++)
 	{
-		if (MEMCMP_INLINE(it->c_str(), "GET") == 0)
+		if (*it == "GET")
 			location.methods |= HTTP::Mode::GET;
-		else if (MEMCMP_INLINE(it->c_str(), "POST") == 0)
+		else if (*it == "POST")
 			location.methods |= HTTP::Mode::POST;
-		else if (MEMCMP_INLINE(it->c_str(), "DELETE") == 0)
+		else if (*it == "DELETE")
 			location.methods |= HTTP::Mode::DELETE;
 		else
 			PERR_EXIT(cleanup(), "Error: Invalid method");
@@ -119,19 +117,23 @@ PARSER_INL
 
 PARSER_INL
 (isize) parse_location(tokIter &cursor, tokIter &end, HTTP::Location &loc) {
-	match(cursor, "location");
-	if (cursor->type != Token::WORD)
+	if (cursor == end || cursor->type != Token::WORD || !(cursor->value == "location"))
+		PERR_EXIT(cleanup(), "Error: Unexpected token");
+	cursor++;
+	if (cursor == end || cursor->type != Token::WORD)
 		PERR_EXIT(cleanup(), "Error: Expected location");
 	loc.path = cursor->value;
 	cursor++;
-	match(cursor, "{");
+	if (cursor == end || cursor->type != Token::OPEN_BRACKET)
+		PERR_EXIT(cleanup(), "Error: Unexpected token");
+	cursor++;
 	while (cursor != end && cursor->type != Token::CLOSE_BRACKET) {
 		Directive dir;
 		parse_directive(cursor, end, dir);
 		set_location_directive(dir, loc);
 		cursor++;
 	}
-	if (cursor->type != Token::CLOSE_BRACKET)
+	if (cursor == end || cursor->type != Token::CLOSE_BRACKET)
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
 	return 0;
 }
@@ -141,19 +143,19 @@ PARSER_INL
 	if (dir.name == "listen") {
 		if (server.port != SIZE_MAX || dir.args.size() != 1)
 			PERR_EXIT(cleanup(), "Error: Invalid port definition");
-		server.port = s_strtol10(dir.args.at(0).c_str());
+		server.port = s_strtol10(dir.args.at(0).get(), dir.args.at(0).length);
 		if (server.port < 1 || server.port > 65535)
 			PERR_EXIT(cleanup(), "Error: Invalid port");
 	}
 	else if (dir.name == "host") {
-		if (server.host != "localhost" || dir.args.size() != 1)
+		if (server.host.length != 0 || dir.args.size() != 1)
 			PERR_EXIT(cleanup(), "Error: Invalid host definition");
 		server.host = dir.args.at(0);
 	}
 	else if (dir.name == "client_max_body_size") {
 		if (server.maxBodySize != SIZE_MAX || dir.args.size() != 1)
 			PERR_EXIT(cleanup(), "Error: Invalid max body size definition");
-		server.maxBodySize = s_strtol10(dir.args.at(0).c_str());
+		server.maxBodySize = s_strtol10(dir.args.at(0).get(), dir.args.at(0).length);
 		if (server.maxBodySize < 1 || server.maxBodySize > 20)
 			PERR_EXIT(cleanup(), "Error: Invalid max body size");
 		server.maxBodySize <<= 20;
@@ -161,10 +163,10 @@ PARSER_INL
 	else if (dir.name == "error_page") {
 		if (dir.args.size() != 2)
 			PERR_EXIT(cleanup(), "Error: Invalid error page");
-		usize error = s_strtol10(dir.args.at(0).c_str());
+		usize error = s_strtol10(dir.args.at(0).get(), dir.args.at(0).length);
 		if (error < 400 || error > 599)
 			PERR_EXIT(cleanup(), "Error: Invalid error number");
-		server.errors[error] = dir.args.at(1);
+		// server.errors[error] = dir.args.at(1);	// TODO
 	}
 	else
 		PERR_EXIT(cleanup(), "Error: Invalid server directive");
@@ -173,9 +175,13 @@ PARSER_INL
 
 PARSER_INL
 (isize) parse_server(tokIter cursor, tokIter end, HTTP::ServerConfig &server) {
-	match(cursor, "server");
-	match(cursor, "{");
-	if (cursor == end || cursor->value == "}")
+	if (cursor == end || cursor->type != Token::WORD || !(cursor->value == "server"))
+		PERR_EXIT(cleanup(), "Error: Unexpected token");
+	cursor++;
+	if (cursor == end || cursor->type != Token::OPEN_BRACKET)
+		PERR_EXIT(cleanup(), "Error: Unexpected token");
+	cursor++;
+	if (cursor == end || cursor->type == Token::CLOSE_BRACKET)
 		PERR_EXIT(cleanup(), "Error: Empty server block");
 	while (cursor != end) {
 		if (cursor->value == "location") {	// TODO: can they be case insenstive?
@@ -188,28 +194,33 @@ PARSER_INL
 			parse_directive(cursor, end, dir);
 			set_server_directive(dir, server);
 		}
-		advance(cursor, end);
+		cursor++;
 	}
 	if (end->type != Token::CLOSE_BRACKET)
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
+	if (server.host.length == 0)
+		server.host = StringView(sizeof("localhost") - 1, (u32)fileSize + 4);
 	return 0;
 }
 
 PARSER_INL
 (std::vector<ServerConfig>) parse_config() {
+	usize serverCount = s_count_servers(fileBuffer, fileSize);
+	if (serverCount > MAX_VIRTUAL_SERVERS)
+		PERR_EXIT(cleanup(), "Error: Invalid config");
+
 	std::vector<Token> tokVector = tokenize();
 	tokIter it = tokVector.begin();
 	tokIter end = tokVector.end();
 
 	std::vector<ServerConfig> cfgVector;
-	usize serverCount = s_count_servers(fileBuffer, fileSize);
-	if (serverCount == SIZE_MAX)
-		PERR_EXIT(1, "Error: Invalid config");
 	cfgVector.reserve(serverCount);
 
 	while (it != end) {
-		if (MEMCMP_INLINE(it->value, "server") == 0) {
+		if (it->value == "server") {
 			usize distance = find_scope_end(it, end);
+			if (distance == SIZE_MAX)
+				PERR_EXIT(cleanup(), "Error: Invalid server block");
 			HTTP::ServerConfig serverConf;
 			parse_server(it, it + distance, serverConf);
 			cfgVector.push_back(serverConf);

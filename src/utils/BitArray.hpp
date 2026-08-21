@@ -3,8 +3,7 @@
 #include "core.hpp"
 
 template <usize bitCount>
-class BitArray
-{
+class BitArray {
 private:	// Ghetto static asserts for C++ 98
 	typedef char bit_count_must_be_nonzero[(bitCount != 0) ? 1 : -1];
 

@@ -2,10 +2,11 @@
 #include "core.hpp"
 
 static inline
-usize s_strtol10(const char *str) {
+usize s_strtol10(const char *str, usize length) {
 	usize value = 0;
 	usize digit = 0;
-	const char *ostr = str;
+	const char *end = str + length;
+
 	while (true) {
 		digit = (usize) g_asciiLut[(u8)*str];
 		if (value >= ((SIZE_MAX - 9) / 10))
@@ -15,9 +16,14 @@ usize s_strtol10(const char *str) {
 		str++;
 		value = value * 10 + digit;
 	}
-	if (ostr == str)
+	if (str != end)
 		return SIZE_MAX;
 	return value;
+}
+
+static inline
+bool s_is_config_delimiter(char value) {
+	return value == '{' || value == '}' || value == ';';
 }
 
 static inline

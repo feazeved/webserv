@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string>
-#include <cstring>
 #include <vector>
 #include "HTTP.hpp"
 #include "Parser.hpp"
@@ -14,7 +12,7 @@ PARSER_INL
 	while (IS_SPACE(*ostr))
 		ostr++;
 	char *str = ostr;
-	while (*str > 32)
+	while (*str > 32 && !s_is_config_delimiter(*str))
 		str++;
 
 	usize length = (usize) (str - ostr);
@@ -30,7 +28,7 @@ PARSER_INL
 	Token token;
 	char delimiter = ptr[delimPos];
 
-	token.value = ptr + delimPos;
+	token.value = StringView(1, (u32)(ptr + delimPos - fileBuffer));
 	switch (delimiter) {
 		case '{' :
 			token.type = Token::OPEN_BRACKET;
@@ -43,8 +41,6 @@ PARSER_INL
 				PERR_EXIT(cleanup(), "Error: Extraneous closing brace ('}')");
 			break;
 		case ';' :
-			if (token.type == Token::SEMICOLON)
-				PERR_EXIT(cleanup(), "Error: Extraneous semicolon (';')");
 			token.type = Token::SEMICOLON;
 			break;
 		default:
@@ -64,24 +60,21 @@ PARSER_INL
 
 	tokVector.reserve(s_count_tokens(fileBuffer));
 
-	while ((length = get_next_word(ptr)) > 0) {
-		char* delimPtr = std::strpbrk(ptr, "{};");
-		usize delimPos = (delimPtr == NULL) ? SIZE_MAX : (usize)(delimPtr - ptr);
-		if (delimPos == SIZE_MAX) {
-			token.type = Token::WORD;
-			token.value = ptr;
+	while (true) {
+		while (IS_SPACE(*ptr))
+			ptr++;
+		if (*ptr == 0)
+			break;
+		if (s_is_config_delimiter(*ptr)) {
+			token = match_delimiter(ptr, 0, braces);
+			ptr++;
 		}
-		else if (delimPos + 1 != length)
-			PERR_EXIT(cleanup(), "Error: Syntax error");
 		else {
-			if (delimPos != 0) {
-				token.type = Token::WORD;
-				token.value = fileBuffer;
-				tokVector.push_back(token);
-			}
-			token = match_delimiter(ptr, delimPos, braces);
+			length = get_next_word(ptr);
+			token.type = Token::WORD;
+			token.value = StringView((u32)length, (u32)(ptr - fileBuffer));
+			ptr += length;
 		}
-		ptr += length;
 		tokVector.push_back(token);
 	}
 	if (braces != 0)

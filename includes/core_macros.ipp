@@ -59,6 +59,8 @@
 #define ALIGN_UP(x, a)		(((x) + ((a) - 1)) & ~((a) - 1))	// TODO: rename this
 #define ALIGN_DOWN(x, a)	((x) & ~((a) - 1))
 #define IS_POW2(x)			(((x) & ((x) - 1)) == 0)			// UB for x==0
+#define NEXT_POW2(x)		((__typeof__(x))((usize)1 << ((sizeof(x) * 8) - (usize)CLZ(x))))
+
 #define LOG2(x)				(63u - CLZ(x))	// TODO: maybe math helpers dont belong in this
 
 // === ASCII Helpers =======================================

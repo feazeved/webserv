@@ -1,36 +1,43 @@
 #pragma once
 
-#include <string>
 #include <vector>
-#include <map>
 #include <unistd.h>
 #include "core.hpp"
+#include "StringView.hpp"
 #include "Status.hpp"
 #include "State.hpp"
 
 namespace HTTP {
 
+#define MAX_VIRTUAL_SERVERS 64
+
 struct Location {
-	char* path;
-	char* root;
-	char* index;
-	char* upload_store;
+	StringView path;
+	StringView root;
+	StringView index;
+	StringView uploadStore;
+
+	StringView cgiExtension;
+	StringView cgiInterpreter;
+	StringView redirectTarget;
+	Status redirectStatus;
 	u8 methods;
 	bool autoindex;
-	Status redirect;
 
-	Location() : autoindex(false) {}
+	Location() : methods(0), autoindex(false) {}
 };
 
 struct ServerConfig {
-	std::map<long, std::string>	errors;
+	// std::map<long, StringView>	errors;
+	StringView					clientErrors[32];
+	// StringView				serverErrors[12];
 	std::vector<Location>		locations;
-	std::string					host;
+	StringView					host;
 	usize						port;
 	usize						maxBodySize;
 	Game::State					*gameState;
 
-	ServerConfig() : host("localhost"), port(SIZE_MAX), maxBodySize(SIZE_MAX) {}
+	ServerConfig() : port(SIZE_MAX), maxBodySize(SIZE_MAX), gameState(NULL) {}
 };
 
 #define HTTP_BUFFERSIZE 16384

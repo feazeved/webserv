@@ -3,12 +3,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <new>
 #include "core.hpp"
 #include "HTTP.hpp"
 #include <vector>
-#include <string>
 #include "Parser_helpers.ipp"
+#include "Arena.hpp"
 
 namespace HTTP {
 //
@@ -24,12 +23,12 @@ public:
 			SEMICOLON,
 			WORD
 		}	type;
-		char *value;
+		StringView value;
 	};
 
 	struct Directive {
-		char* name;
-		std::vector<char*> args;
+		StringView name;
+		std::vector<StringView> args;
 	};
 
 	typedef std::vector<Token>::const_iterator tokIter;
@@ -39,7 +38,8 @@ public:
 	usize fileSize;
 
 	int cleanup() {
-		delete[] fileBuffer;
+		Arena::clear();
+		fileSize = 0;
 		return 1;
 	}
 
@@ -47,25 +47,23 @@ public:
 	Token match_delimiter(char *ptr, usize delimPos, isize &braces);
 	std::vector<Token> tokenize();
 
-	void match(tokIter &cursor, const std::string &value);
-	void advance(tokIter &cursor, tokIter &end);
 	usize find_scope_end(tokIter &begin, tokIter &end);
 
-	void set_methods(std::vector<std::string> &methods, HTTP::Location &location);
+	void set_methods(std::vector<StringView> &methods, HTTP::Location &location);
 	isize set_location_directive(Directive &dir, HTTP::Location &location);
 	isize set_server_directive(Directive &dir, HTTP::ServerConfig &server);
 	isize parse_directive(tokIter &cursor, tokIter &end, Directive &dir);
 	isize parse_location(tokIter &cursor, tokIter &end, HTTP::Location &loc);
 	isize parse_server(tokIter cursor, tokIter end, HTTP::ServerConfig &server);
-	std::vector<ServerConfig> parse_config(char *fileBuffer, usize totalBytes);
+	std::vector<ServerConfig> parse_config();
 
-	Parser(const char *filePath) {
+	Parser(const char *filePath) : fileBuffer(NULL), fileSize(0) {
 		int fd = open(filePath, O_RDONLY);
 		if (fd == -1)
 			PERR_EXIT(1, "Error: Failed to open file");
 
 		struct stat st;
-		if (fstat(fd, &st) == -1 || st.st_size < 16) {	// TODO: might remove this failure path
+		if (fstat(fd, &st) == -1 || st.st_size < 16 || (u64)st.st_size > (u64)UINT32_MAX - 127) {
 			close(fd);
 			PERR_EXIT(1, "Error: Invalid file");
 		}
@@ -73,10 +71,10 @@ public:
 		fileSize = (usize) st.st_size;
 		usize allocSize = ALIGN_UP(fileSize + 63, (usize)64);	// Pads with at least 64 bytes
 
-		fileBuffer = new (std::nothrow) char[allocSize];
+		fileBuffer = (char*) Arena::alloc(allocSize);
 		if (fileBuffer == NULL) {
 			close(fd);
-			PERR_EXIT(1, "Error: Allocation failure");
+			_exit(1);
 		}
 
 		usize curBytes = 0;
@@ -85,7 +83,7 @@ public:
 			isize bytesRead = read(fd, fileBuffer + curBytes, MIN(bytesRemaining, ATOMIC_IOSIZE));
 			if (bytesRead <= 0) {
 				close(fd);
-				delete[] fileBuffer;
+				Arena::clear();
 				PERR_EXIT(1, "Error: Read failure");
 			}
 			curBytes += (usize) bytesRead;
@@ -94,7 +92,8 @@ public:
 		fileBuffer[fileSize] = 0;
 		fileBuffer[fileSize + 1] = '{';
 		fileBuffer[fileSize + 2] = '}';
-		fileBuffer[fileSize + 3] = ';';		
+		fileBuffer[fileSize + 3] = ';';
+		MEMCPY_INLINE(fileBuffer + fileSize + 4, "localhost", sizeof("localhost"));
 	}
 };
 }

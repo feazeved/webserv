@@ -25,7 +25,7 @@ CONNECTION_INL
 		return -1;
 	}
 
-	const std::string&	uploadDir = location->upload_store.empty() ? location->root : location->upload_store;
+	const std::string&	uploadDir = location->uploadStore.empty() ? location->root : location->uploadStore;
 	if (uploadDir.empty()) {
 		request.status = Status::i500;
 		return -1;
