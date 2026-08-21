@@ -7,8 +7,8 @@ namespace HTTP {
 
 class StringView {
 public:
-	u32 length;
 	u32 offset;
+	u32 length;
 
 	StringView() : length(0), offset(0) {}
 	StringView(u32 length, u32 offset) : length(length), offset(offset) {}
