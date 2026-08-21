@@ -1,8 +1,8 @@
 #pragma once
 
 #include "core.hpp"
-#include "stdlib.h"
-#include "unistd.h"
+#include <cstdlib>
+#include <unistd.h>
 
 class Arena {
 private:
@@ -22,9 +22,8 @@ public:
 	}
 
 	static bool error() {
-		static const char msg[] = "Error: Memory allocation failed\n";
+		PRINT_LN(2, "Error: Memory allocation failed");
 		clear();
-		write(2, msg, sizeof(msg));
 		return true;
 	}
 
@@ -68,6 +67,8 @@ public:
 	}
 };
 
-u8* Arena::data = NULL;
-usize Arena::size = 0;
-usize Arena::capacity = 0;
+#ifdef MAIN_FILE
+	u8* Arena::data = NULL;
+	usize Arena::size = 0;
+	usize Arena::capacity = 0;
+#endif

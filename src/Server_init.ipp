@@ -2,6 +2,7 @@
 
 #include "HTTP.hpp"
 #include "Server.hpp"
+#include <sys/stat.h>
 
 namespace HTTP {
 //
@@ -11,13 +12,11 @@ SERVER_INL
 	while (IS_SPACE(*ostr))
 		ostr++;
 	char *str = ostr;
-	while (*str > 32 && !s_is_config_delimiter(*str))
+	while ((u8)*str > 32 && !s_is_config_delimiter(*str))
 		str++;
 
 	usize length = (usize) (str - ostr);
-	if (length > 256)
-		PERR_EXIT(cleanup(), "Error: Field is too large");
-	else if (length == 0 && *str != 0)
+	if (length == 0 && *str != 0)
 		PERR_EXIT(cleanup(), "Error: Invalid character");
 	return length;
 }
@@ -59,8 +58,7 @@ SERVER_INL
 
 	if (tokArray.alloc((u32)s_count_tokens(getPtr())) == true)
 		_exit(1);
-	char *optr = getPtr();
-	char *ptr = optr;
+	char *ptr = getPtr();
 
 	while (true) {
 		while (IS_SPACE(*ptr))
@@ -74,7 +72,7 @@ SERVER_INL
 		else {
 			length = get_next_word(ptr);
 			token.type = Token::WORD;
-			token.value = StringView((u32)length, (u32)(ptr - optr));
+			token.value = StringView((u32)length, (u32)(ptr - (char*)Arena::data));
 			ptr += length;
 		}
 		tokArray[tokenIndex++] = token;
@@ -82,6 +80,19 @@ SERVER_INL
 	if (braces != 0)
 		PERR_EXIT(cleanup(), "Error: Expected '}' to match previous '{'");
 	return tokArray;
+}
+
+static inline
+void s_strip_comments(char *ptr, usize fileSize) {
+	static const char sentinels[] = "\0{};localhost";	// Also appends sentinels to the string
+
+	for (usize index = 0; index < fileSize; index++) {
+		if (ptr[index] == '#') {
+			while (index < fileSize && ptr[index] != '\n')
+				ptr[index++] = ' ';
+		}
+	}
+	MEMCPY_INLINE(ptr + fileSize, sentinels, sizeof(sentinels));
 }
 
 SERVER_INL
@@ -118,11 +129,7 @@ SERVER_INL
 		curBytes += (usize) bytesRead;
 	}
 	close(fd);
-	ptr[fileSize] = 0;
-	ptr[fileSize + 1] = '{';
-	ptr[fileSize + 2] = '}';
-	ptr[fileSize + 3] = ';';
-	MEMCPY_INLINE(ptr + fileSize + 4, "localhost", sizeof("localhost"));
+	s_strip_comments(ptr, fileSize);
 }
 
 //

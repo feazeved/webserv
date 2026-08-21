@@ -51,7 +51,8 @@ public:
 		return fileOffset + (char*) Arena::data;
 	}
 
-	Server(const char *filePath) {
+	Server(const char *filePath)
+		: fileOffset(0), fileSize(0), serverCount(0), epollFd(-1) {
 		read_whole_file(filePath);
 		serverCount = s_count_servers(getPtr(), fileSize);
 		if (serverCount == 0 || serverCount > MAX_VIRTUAL_SERVERS)
@@ -74,6 +75,10 @@ public:
 		if (epollFd != -1) {
 			close(epollFd);
 			epollFd = -1;
+		}
+		for (usize index = 0; index < connections.capacity(); index++) {
+			if (connections.metadata.bitread(index))
+				connections.clear(index);	// TODO: move this to block vector
 		}
 		for (usize index = 0; index < serverCount; index++)
 			servers[index].cleanup();

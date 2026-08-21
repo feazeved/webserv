@@ -27,13 +27,13 @@ typedef unsigned int		uint;
 typedef unsigned long		ulong;
 
 // Defines
-#define ALIGN_SIZE	alignof(std::max_align_t)
+#define ALIGN_SIZE	__alignof__(long double)
 #define WORD_SIZE	sizeof(size_t)
 #define WORD_BITS	(WORD_SIZE * CHAR_BIT)
 
-#define PERR_RETURN(value, str) return (write(2, str "\n", sizeof(str)), (value))
-#define PERR_EXIT(value, str) _exit((write(2, str "\n", sizeof(str)), (value)))
-
+#define PRINT_LN(fd, str)		((void)!write(fd, str "\n", sizeof(str)))
+#define PERR_RETURN(value, str)	return (PRINT_LN(2, str), (value))
+#define PERR_EXIT(value, str)	_exit((PRINT_LN(2, str), (value)))
 
 enum e_ascii {
 	ASCII_DIGITS      = 9,   // value <= digits

@@ -26,6 +26,7 @@ static inline
 usize s_strtol10(const char *str, usize length) {
 	usize value = 0;
 	usize digit = 0;
+	const char *ostr = str;
 	const char *end = str + length;
 
 	while (true) {
@@ -37,7 +38,7 @@ usize s_strtol10(const char *str, usize length) {
 		str++;
 		value = value * 10 + digit;
 	}
-	if (str != end)
+	if (str == ostr || str != end)
 		return SIZE_MAX;
 	return value;
 }
@@ -92,7 +93,7 @@ usize s_count_tokens(const char *str) {
 			str++;
 		else {
 			const char *word = str;
-			while (*str > 32 && !s_is_config_delimiter(*str))
+			while ((u8)*str > 32 && !s_is_config_delimiter(*str))
 				str++;
 			if (str == word)
 				str++;

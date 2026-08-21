@@ -8,26 +8,26 @@
 	const usize mf_dstSize = (usize)(dstSize); \
 	const usize mf_strSize = sizeof(str) - 1; \
 	usize mf_result = SIZE_MAX; \
-    for (usize mf_i = 0; mf_i <= mf_dstSize - mf_strSize; mf_i++) { \
-        if (MEMCMP(mf_dst + mf_i, (str), mf_strSize) == 0) { \
-            mf_result = mf_i; \
-            break; \
-        } \
+	for (usize mf_i = 0; mf_i <= mf_dstSize - mf_strSize; mf_i++) { \
+		if (MEMCMP(mf_dst + mf_i, (str), mf_strSize) == 0) { \
+			mf_result = mf_i; \
+			break; \
+		} \
 	}\
 	mf_result; \
 })
 
 #define MEMCHR_INDEX(src, val, n)\
 ({\
-	__auto_type _memchr_src = (const unsigned char *)(src);\
-	__auto_type _memchr_result = (const unsigned char *) MEMCHR(_memchr_src, val, n);\
+	const unsigned char* _memchr_src = (const unsigned char*)(src);\
+	const unsigned char* _memchr_result = (const unsigned char*) MEMCHR(_memchr_src, val, n);\
 	_memchr_result ? (size_t)(_memchr_result - _memchr_src) : SIZE_MAX;\
 })
 
 // === Bit Helpers =========================================
 #define BIT_READ(word, index)	(((word) >> (index)) & 1)
-#define BIT_SET(word, index)	((word) | ((__auto_type(word))1 << (index)))
-#define BIT_CLR(word, index)	((word) & ~((__auto_type(word))1 << (index)))
+#define BIT_SET(word, index)	((word) | ((__typeof__(word))1 << (index)))
+#define BIT_CLR(word, index)	((word) & ~((__typeof__(word))1 << (index)))
 
 // === MINMAX Helpers ========================================
 #define MIN(x, y)			((x) < (y) ? (x) : (y))
@@ -52,13 +52,13 @@
 // === Generic Helpers =====================================
 #define ARRAY_SIZE(arr)		(sizeof(arr) / sizeof((arr)[0]))
 #define ARRAY_END(arr)		(&(arr)[ARRAY_SIZE(arr)])
-#define SWAP(a, b) 			({__auto_type(a) _swap_tmp_ = (a); (a) = (b); (b) = _swap_tmp_; (void)0;})
+#define SWAP(a, b) 			({__typeof__(a) _swap_tmp_ = (a); (a) = (b); (b) = _swap_tmp_; (void)0;})
 
 #define STRINGIFY_(x)		#x
 #define STRINGIFY(x)		STRINGIFY_(x)
 #define ALIGN_UP(x, a)		(((x) + ((a) - 1)) & ~((a) - 1))	// TODO: rename this
 #define ALIGN_DOWN(x, a)	((x) & ~((a) - 1))
-#define IS_POW2(x)			(((x) & ((x) - 1)) == 0)			// UB for x==0
+#define IS_POW2(x)			((x) != 0 && ((x) & ((x) - 1)) == 0)
 #define NEXT_POW2(x)		((__typeof__(x))((usize)1 << ((sizeof(x) * 8) - (usize)CLZ(x))))
 
 #define LOG2(x)				(63u - CLZ(x))	// TODO: maybe math helpers dont belong in this

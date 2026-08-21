@@ -142,6 +142,8 @@ SERVER_INL
 	if (cursor == end || tokens[cursor].type != Token::WORD)
 		PERR_EXIT(cleanup(), "Error: Expected location");
 	loc.path = tokens[cursor].value;
+	if (loc.path.length == 0 || loc.path.get()[0] != '/')
+		PERR_EXIT(cleanup(), "Error: Invalid location path");
 	cursor++;
 	if (cursor == end || tokens[cursor].type != Token::OPEN_BRACKET)
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
@@ -162,7 +164,20 @@ SERVER_INL
 	if (dir.name == "listen") {
 		if (server.port != SIZE_MAX || dir.args.count != 1)
 			PERR_EXIT(cleanup(), "Error: Invalid port definition");
-		server.port = s_strtol10(dir.args[0].get(), dir.args[0].length);
+		const StringView &listen = dir.args[0];
+		const char *port = listen.get();
+		usize portLength = listen.length;
+		const char *separator = (const char*)MEMCHR(port, ':', portLength);
+		if (separator != NULL) {
+			usize hostLength = (usize)(separator - port);
+			if (hostLength == 0 || hostLength == listen.length - 1
+				|| server.host.length != 0)
+				PERR_EXIT(cleanup(), "Error: Invalid listen address");
+			server.host = StringView((u32)hostLength, listen.offset);
+			port = separator + 1;
+			portLength -= hostLength + 1;
+		}
+		server.port = s_strtol10(port, portLength);
 		if (server.port < 1 || server.port > 65535)
 			PERR_EXIT(cleanup(), "Error: Invalid port");
 	}
@@ -180,12 +195,19 @@ SERVER_INL
 		server.maxBodySize <<= 20;
 	}
 	else if (dir.name == "error_page") {
-		if (dir.args.count != 2)
+		if (dir.args.count < 2)
 			PERR_EXIT(cleanup(), "Error: Invalid error page");
-		usize error = s_strtol10(dir.args[0].get(), dir.args[0].length);
-		if (error < 400 || error > 599)
-			PERR_EXIT(cleanup(), "Error: Invalid error number");
-		// server.errors[error] = dir.args[1];	// TODO
+		StringView path = dir.args[dir.args.count - 1];
+		for (u32 index = 0; index + 1 < dir.args.count; index++) {
+			usize error = s_strtol10(dir.args[index].get(), dir.args[index].length);
+			const bool validError = (error >= 400 && error <= 431) || (error >= 500 && error <= 511);
+			if (dir.args[index].length != 3 || !validError)
+				PERR_EXIT(cleanup(), "Error: Invalid error number");
+			if (error < 500)
+				server.clientErrors[error - 400] = path;
+			else
+				server.serverErrors[error - 500] = path;
+		}
 	}
 	else
 		PERR_EXIT(cleanup(), "Error: Invalid server directive");
@@ -209,9 +231,14 @@ SERVER_INL
 
 	usize locationIndex = 0;
 	while (cursor != end) {
-		if (tokens[cursor].value == "location") {	// TODO: can they be case insenstive?
+		if (tokens[cursor].value == "location") {
 			HTTP::Location loc;
 			parse_location(tokens, cursor, end, loc);
+			for (usize index = 0; index < locationIndex; index++) {
+				const StringView &path = server.locations[index].path;
+				if (path.length == loc.path.length && MEMCMP(path.get(), loc.path.get(), path.length) == 0)
+					PERR_EXIT(cleanup(), "Error: Duplicate location");
+			}
 			server.locations[locationIndex] = loc;
 			locationIndex++;
 		}
@@ -224,6 +251,8 @@ SERVER_INL
 	}
 	if (tokens[end].type != Token::CLOSE_BRACKET)
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
+	if (server.port == SIZE_MAX)
+		PERR_EXIT(cleanup(), "Error: Missing listen directive");
 	if (server.host.length == 0)
 		server.host = StringView(sizeof("localhost") - 1, (u32)(fileOffset + fileSize + 4));
 	return 0;

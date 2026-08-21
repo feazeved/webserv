@@ -78,7 +78,7 @@ namespace HTTP {
 	If the index stored is 2, it means the status is invalid
 
 	Example Usage:
-		Get a compile-time string: 
+		Get a compile-time string:
 			Status::c_str(Status::i100)
 		Read a string/number/enum and store it as status:
 			Status status; status = (str/number/enum);
@@ -180,7 +180,7 @@ public:
 	}
 
 	Status& operator=(const char *str) {
-		if (str[0] >= '1' && str[0] <= '5' && 
+		if (str[0] >= '1' && str[0] <= '5' &&
 			str[1] >= '0' && str[1] <= '9' &&
 			str[2] >= '0' && str[2] <= '9') {
 			usize div = (usize)(str[0] - '1');
