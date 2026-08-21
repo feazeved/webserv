@@ -1,21 +1,12 @@
 #pragma once
 
-#include <stdexcept>
 #include <sys/socket.h>
-#include <vector>
-#include <cstring>
-#include <cerrno>
 #include <sys/epoll.h>
-#include <csignal>
-#include <iostream>
+#include <netinet/in.h>
+#include <cerrno>
+#include <unistd.h>
 
-#include "HTTP.hpp"
-#include "State.hpp"
-#include "Connection.hpp"
-#include "BlockVector.hpp"
-#include "core.hpp"
 #include "Server.hpp"
-#include "VirtualServer.hpp"
 
 SERVER_INL
 (void) mark_connection_writable(i32 fd, void* conn) {
@@ -24,73 +15,82 @@ SERVER_INL
 
 SERVER_INL
 (void) add_to_epoll(i32 fd, u32 events, void* ptr) {
-	struct epoll_event ev;
-	ev.events = events;
-	ev.data.ptr = ptr;
-	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &ev) == -1)
-		throw std::runtime_error(std::strerror(errno));
+	u64 key = 0;
+	bool found = false;
+	for (usize index = 0; index < serverCount; index++) {
+		if (ptr == &servers[index]) {
+			key = s_epoll_server_key(index);
+			found = true;
+			break;
+		}
+	}
+	if (!found) {
+		usize index = connections.index_of((HTTP::Connection*) ptr);
+		if (index == SIZE_MAX)
+			PERR_EXIT(cleanup(), "Error: Invalid epoll registration");
+		key = s_epoll_connection_key(index);
+	}
+
+	struct epoll_event event;
+	MEMSET_INLINE(&event, 0, sizeof(event));
+	event.events = events;
+	event.data.u64 = key;
+	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &event) == -1)
+		PERR_EXIT(cleanup(), "Error: Failed to add epoll event");
 }
 
 SERVER_INL
 (void) remove_from_epoll(i32 fd) {
-	epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
+	(void) epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
 }
 
 SERVER_INL
 (void) modify_epoll_event(i32 fd, u32 events, void* ptr) {
-	struct epoll_event ev;
-	ev.events = events;
-	ev.data.ptr = ptr;
-	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &ev) == -1)
-		std::cerr << "epoll_ctl MOD error: " << std::strerror(errno) << "\n";
+	usize index = connections.index_of((HTTP::Connection*) ptr);
+	if (index == SIZE_MAX)
+		return;
+
+	struct epoll_event event;
+	MEMSET_INLINE(&event, 0, sizeof(event));
+	event.events = events;
+	event.data.u64 = s_epoll_connection_key(index);
+	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &event) == -1)
+		PERR_EXIT(cleanup(), "Error: Failed to modify epoll event");
 }
 
 SERVER_INL
 (void) add_connection(VirtualServer* server) {
-	sockaddr_in clientAddr;
-	socklen_t clientLen = sizeof(clientAddr);
-
-	i32 clientFd = accept(server->listenFd, (sockaddr*)&clientAddr, &clientLen);
+	sockaddr_in clientAddress;
+	socklen_t clientLength = sizeof(clientAddress);
+	i32 clientFd = accept(server->listenFd, (sockaddr*) &clientAddress,
+		&clientLength);
 	if (clientFd == -1) {
-		if (errno != EAGAIN && errno != EWOULDBLOCK)
-			std::cerr << "accept error: " << std::strerror(errno) << "\n";
-		return;
+		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
+			return;
+		PERR_RETURN((void)0, "Error: Failed to accept connection");
 	}
-
-	if (fcntl(clientFd, F_SETFL, O_NONBLOCK) == -1) {
-		std::cerr << "fcntl error: " << std::strerror(errno) << "\n";
+	if (VirtualServer::s_set_socket_nonblocking(clientFd)) {
 		close(clientFd);
-		return;
+		PERR_RETURN((void)0, "Error: Failed to make client socket non-blocking");
 	}
 
-	usize index = connections.find_free_slot();
+	usize index = connections.acquire_slot();
 	if (index == SIZE_MAX) {
 		close(clientFd);
-		throw std::bad_alloc();	// TODO: Throw
+		if (connections.capacity() < connections.maxElements)
+			PERR_EXIT(cleanup(), "Error: Failed to grow connection storage");
+		PERR_RETURN((void)0, "Error: Connection capacity reached");
 	}
-	connections[index].init(clientFd, &server->config);
-	add_to_epoll(clientFd, EPOLLIN | EPOLLOUT, &connections[index]);
+	connections[index].init(clientFd, &server->cfg);
+	add_to_epoll(clientFd, EPOLLIN, connections.get(index));
 }
 
 SERVER_INL
-(void) close_connection(HTTP::Connection* conn) {
-	// if (conn->gameState)
-	// 	conn->gameState->removeSSEClient(conn);
-	remove_from_epoll(conn->clientFd);
+(void) close_connection(HTTP::Connection* connection) {
+	usize index = connections.index_of(connection);
+	if (index == SIZE_MAX)
+		return;
+	remove_from_epoll(connection->clientFd);
+	connections.clear(index);
 }
 
-SERVER_INL
-(void) broadcast_all_server_events() {
-	for (usize i = 0; i < servers.size(); i++) {
-		servers[i].gameState.broadcastEvents(*this);
-	}
-}
-
-SERVER_INL
-(bool) is_listening_socket(void* ptr) {
-	for (usize i = 0; i < servers.size(); i++) {
-		if (ptr == &servers[i])
-			return true;
-	}
-	return false;
-}

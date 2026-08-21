@@ -1,80 +1,99 @@
 #pragma once
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <stdexcept>
-#include <cstring>
-#include <cerrno>
 #include <unistd.h>
-#include <netdb.h>
-
 #include "HTTP.hpp"
 #include "State.hpp"
 #include "core.hpp"
-
-static inline
-sockaddr_in s_resolve_host_and_port(const std::string& host, i64 port) {
-	std::string	hostToResolve = host.empty() ? "0.0.0.0" : host;
-
-	addrinfo hints;
-	MEMSET_INLINE(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-
-	addrinfo*	result = NULL;
-	int			status;
-
-	status = getaddrinfo(hostToResolve.c_str(), NULL, &hints, &result);
-	if (status != 0) {
-		throw std::runtime_error("resolveHost '" + hostToResolve + "': " + gai_strerror(status));
-	}
-
-	sockaddr_in	addr;
-	MEMSET_INLINE(&addr, 0, sizeof(addr));
-	MEMCPY_INLINE(&addr, result->ai_addr, sizeof(sockaddr_in));
-
-	addr.sin_port = htons(port);
-	freeaddrinfo(result);
-
-	return (addr);
-}
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <fcntl.h>
+#include <netdb.h>
 
 class VirtualServer {
 public:
-	VirtualServer(const HTTP::ServerConfig& c) : listenFd(-1) {
-		init(c);
-	}
+	HTTP::ServerConfig cfg;
+	i32 listenFd;
+	Game::State gameState;
 
-	VirtualServer() : listenFd(-1) {}
+	VirtualServer() : cfg(), listenFd(-1), gameState() {}
 
 	~VirtualServer() {
-		if (listenFd != -1)
-			close(listenFd);
+		cleanup();
 	}
 
-	void init(const HTTP::ServerConfig& c) {
-		config = c;
+	int cleanup() {
+		if (listenFd != -1) {
+			close(listenFd);
+			listenFd = -1;
+		}
+		cfg.gameState = NULL;
+		return 1;
+	}
+
+	static bool s_set_socket_nonblocking(i32 fd) {
+		i32 flags = fcntl(fd, F_GETFL, 0);
+		return flags == -1 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1;
+	}
+
+	void init(const HTTP::ServerConfig& serverConfig) {
+		if (listenFd != -1)
+			cleanup();
+		cfg = serverConfig;
+		cfg.gameState = &gameState;
+
+		if (cfg.port < 1 || cfg.port > 65535)
+			PERR_EXIT(cleanup(), "Error: Invalid virtual server port");
+
 		listenFd = socket(AF_INET, SOCK_STREAM, 0);
 		if (listenFd == -1)
-			throw std::runtime_error(std::strerror(errno));
+			PERR_EXIT(cleanup(), "Error: Failed to create listening socket");
 
-		i32	opt = 1;
-		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
-			throw std::runtime_error(std::string("setsockopt: ") + std::strerror(errno));
+		i32 reuseAddress = 1;
+		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR,
+			&reuseAddress, sizeof(reuseAddress)) == -1)
+			PERR_EXIT(cleanup(), "Error: Failed to configure listening socket");
 
-		sockaddr_in	addr = s_resolve_host_and_port(config.host, config.port);
-
-		if (bind(listenFd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1)
-			throw std::runtime_error(std::string("bind: ") + std::strerror(errno));
+		sockaddr_in address;
+		if (resolve_host_and_port(cfg.host, cfg.port, address))
+			PERR_EXIT(cleanup(), "Error: Failed to resolve virtual server host");
+		if (bind(listenFd, (sockaddr*) &address, sizeof(address)) == -1)
+			PERR_EXIT(cleanup(), "Error: Failed to bind listening socket");
 		if (listen(listenFd, SOMAXCONN) == -1)
-			throw std::runtime_error(std::string("listen: ") + std::strerror(errno));
-		if (fcntl(listenFd, F_SETFL, O_NONBLOCK) == -1)
-			throw std::runtime_error(std::string("fcntl: ") + std::strerror(errno));
+			PERR_EXIT(cleanup(), "Error: Failed to listen on socket");
+		if (s_set_socket_nonblocking(listenFd))
+			PERR_EXIT(cleanup(), "Error: Failed to make listening socket non-blocking");
 	}
 
-	HTTP::ServerConfig	config;
-	i32					listenFd;
-	Game::State			gameState;
+	bool resolve_host_and_port(const HTTP::StringView& host, usize port, sockaddr_in& address) {
+		char hostBuffer[257];
+		const char* hostPtr = "0.0.0.0";
+
+		if (host.length != 0) {
+			if (host.length > sizeof(hostBuffer) - 1)
+				return true;
+			MEMCPY(hostBuffer, host.get(), host.length);
+			hostBuffer[host.length] = 0;
+			hostPtr = hostBuffer;
+		}
+
+		addrinfo hints;
+		MEMSET_INLINE(&hints, 0, sizeof(hints));
+		hints.ai_family = AF_INET;
+		hints.ai_socktype = SOCK_STREAM;
+		hints.ai_flags = 0;
+
+		addrinfo* result = NULL;
+		i32 status = getaddrinfo(hostPtr, NULL, &hints, &result);
+		if (status != 0 || result == NULL)
+			return true;
+
+		bool invalid = result->ai_addrlen < sizeof(sockaddr_in);
+		if (!invalid) {
+			MEMSET_INLINE(&address, 0, sizeof(address));
+			MEMCPY_INLINE(&address, result->ai_addr, sizeof(address));
+			address.sin_port = htons((u16) port);
+		}
+		freeaddrinfo(result);
+		return invalid;
+	}
 };
