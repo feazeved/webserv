@@ -7,6 +7,7 @@
 #include "HTTP.hpp"
 #include "Parser_helpers.ipp"
 #include "Arena.hpp"
+#include "VirtualServer.hpp"
 
 namespace HTTP {
 
@@ -35,7 +36,19 @@ public:
 public:
 	usize fileOffset;
 	usize fileSize;
-	usize serverCount;
+
+	usize get_next_word(char* &ostr);
+	Token match_delimiter(char *ptr, usize delimPos, isize &braces);
+	Array32<Token> tokenize();
+	usize find_scope_end(const Array32<Token> &tokens, usize begin, usize end);
+	usize count_locations(const Array32<Token> &tokens, usize cursor, usize end);
+	void set_methods(Array32<StringView> &methods, HTTP::Location &location);
+	isize set_location_directive(Directive &dir, HTTP::Location &location);
+	isize set_server_directive(Directive &dir, HTTP::ServerConfig &server);
+	isize parse_directive(const Array32<Token> &tokens, usize &cursor, usize end, Directive &dir);
+	isize parse_location(const Array32<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc);
+	isize parse_server(const Array32<Token> &tokens, usize cursor, usize end, HTTP::ServerConfig &server);
+	void parse_config(VirtualServer (&servers)[MAX_VIRTUAL_SERVERS]);
 
 	char* getPtr() {
 		return fileOffset + (char*) Arena::data;
@@ -47,22 +60,7 @@ public:
 		return 1;
 	}
 
-	usize get_next_word(char* &ostr);
-	Token match_delimiter(char *ptr, usize delimPos, isize &braces);
-	Array32<Token> tokenize();
-
-	usize find_scope_end(const Array32<Token> &tokens, usize begin, usize end);
-	usize count_locations(const Array32<Token> &tokens, usize cursor, usize end);
-
-	void set_methods(Array32<StringView> &methods, HTTP::Location &location);
-	isize set_location_directive(Directive &dir, HTTP::Location &location);
-	isize set_server_directive(Directive &dir, HTTP::ServerConfig &server);
-	isize parse_directive(const Array32<Token> &tokens, usize &cursor, usize end, Directive &dir);
-	isize parse_location(const Array32<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc);
-	isize parse_server(const Array32<Token> &tokens, usize cursor, usize end, HTTP::ServerConfig &server);
-	void parse_config(ServerConfig (&servers)[MAX_VIRTUAL_SERVERS]);
-
-	Parser(const char *filePath) : fileOffset(0), fileSize(0), serverCount(0) {
+	Parser(const char *filePath, usize &serverCount) : fileOffset(0), fileSize(0) {
 		int fd = open(filePath, O_RDONLY);
 		if (fd == -1)
 			PERR_EXIT(1, "Error: Failed to open file");
@@ -102,7 +100,7 @@ public:
 		MEMCPY_INLINE(ptr + fileSize + 4, "localhost", sizeof("localhost"));
 
 		serverCount = s_count_servers(ptr, fileSize);
-		if (serverCount > MAX_VIRTUAL_SERVERS)
+		if (serverCount == 0 || serverCount > MAX_VIRTUAL_SERVERS)
 			PERR_EXIT(cleanup(), "Error: Invalid config");
 	}
 };

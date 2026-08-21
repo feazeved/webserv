@@ -230,7 +230,7 @@ PARSER_INL
 }
 
 PARSER_INL
-(void) parse_config(ServerConfig (&servers)[MAX_VIRTUAL_SERVERS]) {
+(void) parse_config(VirtualServer (&servers)[MAX_VIRTUAL_SERVERS]) {
 	Array32<Token> tokArray = tokenize();
 	usize cursor = 0;
 	usize end = tokArray.count;
@@ -243,7 +243,7 @@ PARSER_INL
 				PERR_EXIT(cleanup(), "Error: Invalid server block");
 			HTTP::ServerConfig serverConf;
 			parse_server(tokArray, cursor, cursor + distance, serverConf);
-			servers[serverIndex] = serverConf;
+			servers[serverIndex].cfg = serverConf;
 			serverIndex++;
 			cursor += distance;
 		}

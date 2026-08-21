@@ -11,33 +11,37 @@
 #include "core.hpp"
 #include "Server_helpers.ipp"
 
+#include "Parser.hpp"
 #include "VirtualServer.hpp"
 
-#define SERVER_INL(ret_type) ret_type inline Server::
+#define SERVER_INL(ret_type) ret_type inline HTTP::Server::
+
+namespace HTTP {
 
 class Server {
 public:
-	static const usize s_maxEvents = 16;
 	static const usize s_connectionBlockSize = 32;
 	static const usize s_connectionMaxGrowth = 64;
+	static const usize s_maxEvents = 16;
+	typedef BlockVector<HTTP::Connection, s_connectionBlockSize, s_connectionMaxGrowth> connectionPool;
 
+public:
+	Parser file;
 	VirtualServer servers[MAX_VIRTUAL_SERVERS];
-	BlockVector<HTTP::Connection, s_connectionBlockSize, s_connectionMaxGrowth> connections;
 	usize serverCount;
+	connectionPool connections;
 	i32 epollFd;
 
-	Server(HTTP::ServerConfig (&configs)[MAX_VIRTUAL_SERVERS], usize numServers)
-		: connections(), serverCount(0), epollFd(-1) {
-		if (numServers == 0 || numServers > MAX_VIRTUAL_SERVERS)
-			PERR_EXIT(cleanup(), "Error: Invalid virtual server count");
+	Server(const char *filePath)
+		: file(filePath, serverCount), serverCount(0), connections(), epollFd(-1) {
 
+		file.parse_config(servers);
 		epollFd = epoll_create(1);
 		if (epollFd == -1)
 			PERR_EXIT(cleanup(), "Error: Failed to create epoll instance");
 
-		serverCount = numServers;
 		for (usize index = 0; index < serverCount; index++)
-			servers[index].init(configs[index]);
+			servers[index].init();
 	}
 
 	~Server() {
@@ -69,3 +73,4 @@ public:
 
 #include "Server_epoll.ipp"
 #include "Server_dispatch.ipp"
+}

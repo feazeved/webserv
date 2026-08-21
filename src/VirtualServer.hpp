@@ -9,6 +9,8 @@
 #include <fcntl.h>
 #include <netdb.h>
 
+namespace HTTP {
+
 class VirtualServer {
 public:
 	HTTP::ServerConfig cfg;
@@ -35,10 +37,9 @@ public:
 		return flags == -1 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1;
 	}
 
-	void init(const HTTP::ServerConfig& serverConfig) {
+	void init() {
 		if (listenFd != -1)
 			cleanup();
-		cfg = serverConfig;
 		cfg.gameState = &gameState;
 
 		if (cfg.port < 1 || cfg.port > 65535)
@@ -97,3 +98,5 @@ public:
 		return invalid;
 	}
 };
+
+}
