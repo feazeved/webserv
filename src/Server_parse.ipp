@@ -1,12 +1,12 @@
 #pragma once
 #include "core.hpp"
 #include "HTTP.hpp"
-#include "Parser.hpp"
+#include "Server.hpp"
 
 namespace HTTP {
 //
 
-PARSER_INL
+SERVER_INL
 (usize) find_scope_end(const Array32<Token> &tokens, usize begin, usize end) {
 	usize it = begin;
 	bool startedCount = false;
@@ -30,7 +30,7 @@ PARSER_INL
 	return it == end ? SIZE_MAX : distance;
 }
 
-PARSER_INL
+SERVER_INL
 (usize) count_locations(const Array32<Token> &tokens, usize cursor, usize end) {
 	usize locationCount = 0;
 
@@ -52,7 +52,7 @@ PARSER_INL
 	return locationCount;
 }
 
-PARSER_INL
+SERVER_INL
 (isize) parse_directive(const Array32<Token> &tokens, usize &cursor, usize end, Directive &dir) {
 	if (cursor == end || tokens[cursor].type != Token::WORD)
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
@@ -70,7 +70,7 @@ PARSER_INL
 	return 0;
 }
 
-PARSER_INL
+SERVER_INL
 (isize) set_location_directive(Directive &dir, HTTP::Location &location) {
 	if (dir.name == "root") {
 		if (dir.args.count != 1)
@@ -119,7 +119,7 @@ PARSER_INL
 	return 0;
 }
 
-PARSER_INL
+SERVER_INL
 (void) set_methods(Array32<StringView> &methods, HTTP::Location &location) {
 	for (u32 index = 0; index < methods.count; index++)
 	{
@@ -134,7 +134,7 @@ PARSER_INL
 	}
 }
 
-PARSER_INL
+SERVER_INL
 (isize) parse_location(const Array32<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc) {
 	if (cursor == end || tokens[cursor].type != Token::WORD || !(tokens[cursor].value == "location"))
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
@@ -157,7 +157,7 @@ PARSER_INL
 	return 0;
 }
 
-PARSER_INL
+SERVER_INL
 (isize) set_server_directive(Directive &dir, HTTP::ServerConfig &server) {
 	if (dir.name == "listen") {
 		if (server.port != SIZE_MAX || dir.args.count != 1)
@@ -192,7 +192,7 @@ PARSER_INL
 	return 0;
 }
 
-PARSER_INL
+SERVER_INL
 (isize) parse_server(const Array32<Token> &tokens, usize cursor, usize end, HTTP::ServerConfig &server) {
 	if (cursor == end || tokens[cursor].type != Token::WORD || !(tokens[cursor].value == "server"))
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
@@ -229,7 +229,7 @@ PARSER_INL
 	return 0;
 }
 
-PARSER_INL
+SERVER_INL
 (void) parse_config(VirtualServer (&servers)[MAX_VIRTUAL_SERVERS]) {
 	Array32<Token> tokArray = tokenize();
 	usize cursor = 0;

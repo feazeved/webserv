@@ -1,12 +1,12 @@
 #pragma once
 
 #include "HTTP.hpp"
-#include "Parser.hpp"
+#include "Server.hpp"
 
 namespace HTTP {
 //
 
-PARSER_INL
+SERVER_INL
 (usize) get_next_word(char* &ostr) {
 	while (IS_SPACE(*ostr))
 		ostr++;
@@ -22,8 +22,8 @@ PARSER_INL
 	return length;
 }
 
-PARSER_INL
-(Parser::Token) match_delimiter(char *ptr, usize delimPos, isize &braces) {
+SERVER_INL
+(Server::Token) match_delimiter(char *ptr, usize delimPos, isize &braces) {
 	Token token;
 	char delimiter = ptr[delimPos];
 
@@ -49,8 +49,8 @@ PARSER_INL
 	return token;
 }
 
-PARSER_INL
-(Array32<Parser::Token>) tokenize() {
+SERVER_INL
+(Array32<Server::Token>) tokenize() {
 	Array32<Token> tokArray;
 	Token token;
 	usize length;
@@ -82,6 +82,47 @@ PARSER_INL
 	if (braces != 0)
 		PERR_EXIT(cleanup(), "Error: Expected '}' to match previous '{'");
 	return tokArray;
+}
+
+SERVER_INL
+(void) read_whole_file(const char* filePath) {
+	int fd = open(filePath, O_RDONLY);
+	if (fd == -1)
+		PERR_EXIT(1, "Error: Failed to open file");
+
+	struct stat st;
+	if (fstat(fd, &st) == -1 || st.st_size < 16 || (u64)st.st_size > (u64)UINT32_MAX - 127) {
+		close(fd);
+		PERR_EXIT(1, "Error: Invalid file");
+	}
+
+	fileSize = (usize) st.st_size;
+	usize allocSize = ALIGN_UP(fileSize + 63, (usize)64);	// Pads with at least 64 bytes
+
+	fileOffset = Arena::alloc_index(allocSize);
+	if (fileOffset == UINT32_MAX) {
+		close(fd);
+		_exit(1);
+	}
+
+	char* ptr = getPtr();
+	usize curBytes = 0;
+	while (curBytes < fileSize) {
+		usize bytesRemaining = fileSize - curBytes;
+		isize bytesRead = read(fd, ptr + curBytes, MIN(bytesRemaining, ATOMIC_IOSIZE));
+		if (bytesRead <= 0) {
+			close(fd);
+			Arena::clear();
+			PERR_EXIT(1, "Error: Read failure");
+		}
+		curBytes += (usize) bytesRead;
+	}
+	close(fd);
+	ptr[fileSize] = 0;
+	ptr[fileSize + 1] = '{';
+	ptr[fileSize + 2] = '}';
+	ptr[fileSize + 3] = ';';
+	MEMCPY_INLINE(ptr + fileSize + 4, "localhost", sizeof("localhost"));
 }
 
 //
