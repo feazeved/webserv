@@ -9,28 +9,12 @@
 #include "Server.hpp"
 
 SERVER_INL
-(void) mark_connection_writable(i32 fd, void* conn) {
-	modify_epoll_event(fd, EPOLLOUT, conn);
+(void) mark_connection_writable(usize connectionIndex) {
+	modify_epoll_event(connectionIndex, EPOLLOUT);
 }
 
 SERVER_INL
-(void) add_to_epoll(i32 fd, u32 events, void* ptr) {
-	u64 key = 0;
-	bool found = false;
-	for (usize index = 0; index < serverCount; index++) {
-		if (ptr == &servers[index]) {
-			key = s_epoll_server_key(index);
-			found = true;
-			break;
-		}
-	}
-	if (!found) {
-		usize index = connections.index_of((HTTP::Connection*) ptr);
-		if (index == SIZE_MAX)
-			PERR_EXIT(cleanup(), "Error: Invalid epoll registration");
-		key = s_epoll_connection_key(index);
-	}
-
+(void) add_to_epoll(i32 fd, u32 events, u64 key) {
 	struct epoll_event event;
 	MEMSET_INLINE(&event, 0, sizeof(event));
 	event.events = events;
@@ -45,16 +29,13 @@ SERVER_INL
 }
 
 SERVER_INL
-(void) modify_epoll_event(i32 fd, u32 events, void* ptr) {
-	usize index = connections.index_of((HTTP::Connection*) ptr);
-	if (index == SIZE_MAX)
-		return;
-
+(void) modify_epoll_event(usize connectionIndex, u32 events) {
 	struct epoll_event event;
 	MEMSET_INLINE(&event, 0, sizeof(event));
 	event.events = events;
-	event.data.u64 = s_epoll_connection_key(index);
-	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, fd, &event) == -1)
+	event.data.u64 = s_epoll_connection_key(connectionIndex);
+	if (epoll_ctl(epollFd, EPOLL_CTL_MOD,
+		connections[connectionIndex].clientFd, &event) == -1)
 		PERR_EXIT(cleanup(), "Error: Failed to modify epoll event");
 }
 
@@ -82,15 +63,11 @@ SERVER_INL
 		PERR_RETURN((void)0, "Error: Connection capacity reached");
 	}
 	connections[index].init(clientFd, &server->cfg);
-	add_to_epoll(clientFd, EPOLLIN, connections.get(index));
+	add_to_epoll(clientFd, EPOLLIN, s_epoll_connection_key(index));
 }
 
 SERVER_INL
-(void) close_connection(HTTP::Connection* connection) {
-	usize index = connections.index_of(connection);
-	if (index == SIZE_MAX)
-		return;
-	remove_from_epoll(connection->clientFd);
-	connections.clear(index);
+(void) close_connection(usize connectionIndex) {
+	remove_from_epoll(connections[connectionIndex].clientFd);
+	connections.clear(connectionIndex);
 }
-

@@ -54,7 +54,7 @@ public:
 			PERR_EXIT(cleanup(), "Error: Failed to configure listening socket");
 
 		sockaddr_in address;
-		if (resolve_host_and_port(cfg.host, cfg.port, address))
+		if (s_resolve_host_and_port(cfg.host, cfg.port, address))
 			PERR_EXIT(cleanup(), "Error: Failed to resolve virtual server host");
 		if (bind(listenFd, (sockaddr*) &address, sizeof(address)) == -1)
 			PERR_EXIT(cleanup(), "Error: Failed to bind listening socket");
@@ -64,7 +64,7 @@ public:
 			PERR_EXIT(cleanup(), "Error: Failed to make listening socket non-blocking");
 	}
 
-	bool resolve_host_and_port(const HTTP::StringView& host, usize port, sockaddr_in& address) {
+	static bool s_resolve_host_and_port(const HTTP::StringView& host, usize port, sockaddr_in& address) {
 		char hostBuffer[257];
 		const char* hostPtr = "0.0.0.0";
 

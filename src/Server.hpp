@@ -16,10 +16,6 @@
 #define SERVER_INL(ret_type) ret_type inline Server::
 
 class Server {
-private:
-	void dispatch_epoll_event(const struct epoll_event& event);
-	void dispatch_connection_event(usize index, u32 events);
-
 public:
 	static const usize s_maxEvents = 16;
 	static const usize s_connectionBlockSize = 32;
@@ -61,13 +57,14 @@ public:
 
 	void run();
 
-	void mark_connection_writable(i32 fd, void* conn);
-	void add_to_epoll(i32 fd, u32 events, void* ptr);
+	void mark_connection_writable(usize connectionIndex);
+	void add_to_epoll(i32 fd, u32 events, u64 key);
 	void remove_from_epoll(i32 fd);
-	void modify_epoll_event(i32 fd, u32 events, void* ptr);
-
+	void modify_epoll_event(usize connectionIndex, u32 events);
+	void dispatch_epoll_event(const struct epoll_event& event);
+	void dispatch_connection_event(usize index, u32 events);
 	void add_connection(VirtualServer* server);
-	void close_connection(HTTP::Connection* conn);
+	void close_connection(usize connectionIndex);
 };
 
 #include "Server_epoll.ipp"

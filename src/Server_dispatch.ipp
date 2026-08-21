@@ -11,7 +11,7 @@
 SERVER_INL
 (void) run() {
 	for (usize index = 0; index < serverCount; index++)
-		add_to_epoll(servers[index].listenFd, EPOLLIN, &servers[index]);
+		add_to_epoll(servers[index].listenFd, EPOLLIN, s_epoll_server_key(index));
 
 	struct epoll_event events[s_maxEvents];
 	while (true) {
@@ -46,10 +46,9 @@ SERVER_INL
 (void) dispatch_connection_event(usize index, u32 events) {
 	if (index >= connections.capacity())
 		PERR_EXIT(cleanup(), "Error: Invalid connection event");
-	HTTP::Connection* connection = connections.get(index);
-	isize result = connection->dispatch(events);
+	isize result = connections[index].dispatch(events);
 	if (result == 0)
-		close_connection(connection);
+		close_connection(index);
 	else if (result == 2)
-		modify_epoll_event(connection->clientFd, EPOLLOUT, connection);
+		modify_epoll_event(index, EPOLLOUT);
 }

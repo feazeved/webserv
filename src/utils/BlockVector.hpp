@@ -3,6 +3,7 @@
 #include "BitArray.hpp"
 #include "Arena.hpp"
 #include "core.hpp"
+#include <unistd.h>
 
 template <typename Type, usize blockSize, usize maxGrowth>
 class BlockVector {
@@ -20,22 +21,6 @@ public:
 			blocks[index] = UINT32_MAX;
 		if (!grow())
 			_exit(1);
-	}
-
-	Type* get_block(usize index) {
-		return (Type*)(Arena::data + blocks[index]);
-	}
-
-	const Type* get_block(usize index) const {
-		return (const Type*)(Arena::data + blocks[index]);
-	}
-
-	Type* get(usize index) {
-		return get_block(index / blockSize) + index % blockSize;
-	}
-
-	const Type* get(usize index) const {
-		return get_block(index / blockSize) + index % blockSize;
 	}
 
 	usize find_free_slot() {
@@ -57,13 +42,13 @@ public:
 	}
 
 	void init(usize index) {
-		get(index)->init();
+		(*this)[index].init();
 		metadata.bitset(index);
 		numElements++;
 	}
 
 	void clear(usize index) {
-		get(index)->clear();
+		(*this)[index].clear();
 		numElements--;
 		metadata.bitclr(index);
 	}
@@ -97,23 +82,13 @@ public:
 		return numElements;
 	}
 
-	usize index_of(const Type* element) const {
-		uptr address = (uptr) element;
-		for (usize block = 0; block < numBlocks; block++) {
-			uptr begin = (uptr) get_block(block);
-			uptr end = begin + sizeof(Type) * blockSize;
-			if (address >= begin && address < end
-				&& (address - begin) % sizeof(Type) == 0)
-				return block * blockSize + (address - begin) / sizeof(Type);
-		}
-		return SIZE_MAX;
-	}
-
 	Type& operator[](usize index) {
-		return *get(index);
+		u32 blockOffset = blocks[index / blockSize];
+		return ((Type*)(Arena::data + blockOffset))[index % blockSize];
 	}
 
 	const Type& operator[](usize index) const {
-		return *get(index);
+		u32 blockOffset = blocks[index / blockSize];
+		return ((const Type*)(Arena::data + blockOffset))[index % blockSize];
 	}
 };
