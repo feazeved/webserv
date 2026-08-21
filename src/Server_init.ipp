@@ -79,6 +79,12 @@ SERVER_INL
 	}
 	if (braces != 0)
 		PERR_EXIT(cleanup(), "Error: Expected '}' to match previous '{'");
+	for (u32 index = 0; index < tokArray.count; index++) {
+		if (tokArray[index].type == Token::WORD) {
+			StringView &word = tokArray[index].value;
+			((char*)Arena::data + word.offset)[word.length] = '\0';
+		}
+	}
 	return tokArray;
 }
 

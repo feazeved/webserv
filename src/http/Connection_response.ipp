@@ -5,10 +5,7 @@ namespace HTTP {
 
 static inline
 void s_append_mime(Cursor &dst, u8 mimeIndex) {
-	static const u8 mimeStrings[][32] = {"\x18" "application/octet-stream", "\x09" "text/html", "\x09" "text/html", 
-	"\x08" "text/css", "\x10" "application/json", "\x16" "application/javascript",
-	"\x09" "image/png", "\x0A" "image/jpeg", "\x0A" "image/jpeg", 
-	"\x09" "image/gif", "\x0A" "text/plain"};
+	static const u8 mimeStrings[][32] = MIME_STRINGS;
 
 	const u8 *str = mimeStrings[mimeIndex];
 	dst.append_inline<24>(str + 1, *str);

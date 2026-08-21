@@ -11,6 +11,8 @@
 
 namespace HTTP {
 
+#define VIRTUALSERVER_INL(ret_type) ret_type inline HTTP::VirtualServer::
+
 class VirtualServer {
 public:
 	HTTP::ServerConfig cfg;
@@ -65,18 +67,9 @@ public:
 			PERR_EXIT(cleanup(), "Error: Failed to make listening socket non-blocking");
 	}
 
+	bool cache_error_pages();
+
 	static bool s_resolve_host_and_port(const HTTP::StringView& host, usize port, sockaddr_in& address) {
-		char hostBuffer[257];
-		const char* hostPtr = "0.0.0.0";
-
-		if (host.length != 0) {
-			if (host.length > sizeof(hostBuffer) - 1)
-				return true;
-			MEMCPY(hostBuffer, host.get(), host.length);
-			hostBuffer[host.length] = 0;
-			hostPtr = hostBuffer;
-		}
-
 		addrinfo hints;
 		MEMSET_INLINE(&hints, 0, sizeof(hints));
 		hints.ai_family = AF_INET;
@@ -84,7 +77,7 @@ public:
 		hints.ai_flags = 0;
 
 		addrinfo* result = NULL;
-		i32 status = getaddrinfo(hostPtr, NULL, &hints, &result);
+		i32 status = getaddrinfo(host.get(), NULL, &hints, &result);
 		if (status != 0 || result == NULL)
 			return true;
 
