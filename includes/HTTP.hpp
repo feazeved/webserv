@@ -22,7 +22,7 @@ struct Location {
 	StringView root;
 	StringView index;			// If this is specified, its a file
 	StringView uploadStore;		// Validation: needs to check access
-	StringView cgiBlock;		// Normalized non-empty block, including braces
+	StringView cgiBlock;		// Non-empty block range, including braces
 	StringView redirectTarget;
 	Status redirectStatus;
 	u8 methods;

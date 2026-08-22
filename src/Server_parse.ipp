@@ -5,6 +5,7 @@
 
 namespace HTTP {
 //
+
 SERVER_INL
 (usize) find_scope_end(const Array32<Token> &tokens, usize begin, usize end) {
 	usize it = begin;
@@ -124,6 +125,7 @@ SERVER_INL
 	if (cursor == end || tokens[cursor].type != Token::OPEN_BRACKET)
 		PERR_EXIT(cleanup(), "Error: Invalid CGI block");
 
+	const u32 blockOffset = tokens[cursor].value.offset;
 	cursor++;
 	const usize definitionStart = cursor;
 	while (cursor != end && tokens[cursor].type != Token::CLOSE_BRACKET) {
@@ -152,32 +154,8 @@ SERVER_INL
 	}
 	if (cursor == end || tokens[cursor].type != Token::CLOSE_BRACKET)
 		PERR_EXIT(cleanup(), "Error: Invalid CGI block");
-	if (cursor != definitionStart) {
-		usize blockLength = 2;
-		for (usize index = definitionStart; index < cursor; index += 4)
-			blockLength += tokens[index].value.length
-				+ tokens[index + 2].value.length + 4;
-		u32 blockOffset = Arena::alloc_index(blockLength + 1);
-		if (blockOffset == UINT32_MAX)
-			_exit(1);
-
-		char *writePtr = (char*)Arena::data + blockOffset;
-		*writePtr++ = '{';
-		for (usize index = definitionStart; index < cursor; index += 4) {
-			const StringView extension = tokens[index].value;
-			const StringView interpreter = tokens[index + 2].value;
-			MEMCPY(writePtr, extension.get(), extension.length);
-			writePtr += extension.length;
-			MEMCPY_INLINE(writePtr, " = ", 3);
-			writePtr += 3;
-			MEMCPY(writePtr, interpreter.get(), interpreter.length);
-			writePtr += interpreter.length;
-			*writePtr++ = ';';
-		}
-		*writePtr++ = '}';
-		*writePtr = '\0';
-		loc.cgiBlock = StringView((u32)blockLength, blockOffset);
-	}
+	if (cursor != definitionStart)
+		loc.cgiBlock = StringView(tokens[cursor].value.offset - blockOffset + 1, blockOffset);
 	return 0;
 }
 
