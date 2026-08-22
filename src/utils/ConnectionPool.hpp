@@ -27,16 +27,18 @@ public:
 		usize elementIndex;
 		Connection *base = connections + blockIndex * 64;
 
-		while ((elementIndex = block.find_first_set()) != 0) {
+		while ((elementIndex = block.find_first_set()) != SIZE_MAX) {
 			base[elementIndex].clear();
+			block.bitclr(elementIndex);
 		}
 	}
 
 	void clear() {
 		usize blockIndex;
 
-		while ((blockIndex = blockBitmap.find_first_set()) != 0) {
+		while ((blockIndex = blockBitmap.find_first_set()) != SIZE_MAX) {
 			clear_block(blockIndex);
+			blockBitmap.bitclr(blockIndex);
 		}
 	}
 
@@ -65,4 +67,10 @@ public:
 		return connections[index];
 	}
 };
+
+#ifdef MAIN_FILE
+	Connection ConnectionPool::connections[ConnectionPool::capacity] ALIGNED(4096);
+	Bitmap ConnectionPool::blockBitmap;
+	Bitmap ConnectionPool::elementBitmap[ConnectionPool::blockCount];
+#endif
 }

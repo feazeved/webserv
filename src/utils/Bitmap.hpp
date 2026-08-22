@@ -21,22 +21,22 @@ public:
 	}
 
 	ALWAYS_INLINE
-	void bitset(u8 index) {
+	void bitset(usize index) {
 		bitmap |= (usize)1 << index;
 	}
 
 	ALWAYS_INLINE
-	void bitclr(u8 index) {
+	void bitclr(usize index) {
 		bitmap &= ~((usize)1 << index);
 	}
 
 	ALWAYS_INLINE
-	void bitflip(u8 index) {
+	void bitflip(usize index) {
 		bitmap ^= (usize)1 << index;
 	}
 
 	ALWAYS_INLINE	// Inclusive start, Exclusive end
-	void bitwrite(u8 bitStart, u8 bitEnd, bool bit) {
+	void bitwrite(usize bitStart, usize bitEnd, bool bit) {
 		const usize mask = mask_range(bitStart, bitEnd);
 		const usize bitMask = (usize)-bit;
 
@@ -51,13 +51,13 @@ public:
 	ALWAYS_INLINE
 	usize find_first_clear() const {
 		usize bit = (usize) FFS(~bitmap);
-		return bit ? bit - 1 : WORD_BITS;
+		return bit ? bit - 1 : SIZE_MAX;
 	}
 
 	ALWAYS_INLINE
 	usize find_first_set() const {
 		usize bit = (usize) FFS(bitmap);
-		return bit ? bit - 1 : WORD_BITS;
+		return bit ? bit - 1 : SIZE_MAX;
 	}
 
 	ALWAYS_INLINE

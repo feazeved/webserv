@@ -76,6 +76,7 @@ public:
 		for (usize index = 0; index < serverCount; index++)
 			servers[index].cleanup();
 		serverCount = 0;
+		Arena::clear();
 		return 1;
 	}
 

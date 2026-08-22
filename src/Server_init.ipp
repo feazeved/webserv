@@ -108,14 +108,14 @@ SERVER_INL
 		PERR_EXIT(1, "Error: Failed to open file");
 
 	struct stat st;
-	fileSize = (usize) st.st_size;
-	usize allocSize = ALIGN_UP(fileSize + 63, (usize)64);	// Pads with at least 64 bytes
 
-	if (fstat(fd, &st) == -1 || st.st_size < 16 || allocSize > MAX_FILE_SIZE) {
+	if (fstat(fd, &st) == -1 || st.st_size < 16 || (usize)st.st_size > MAX_FILE_SIZE - 127) {
 		close(fd);
 		PERR_EXIT(1, "Error: Invalid file");
 	}
 
+	fileSize = (usize) st.st_size;
+	usize allocSize = ALIGN_UP(fileSize + 63, (usize)64);	// Pads with at least 64 bytes
 	fileOffset = Arena::alloc_index(allocSize);
 
 	char* ptr = get_ptr();
