@@ -11,14 +11,17 @@ namespace HTTP {
 
 #define MAX_VIRTUAL_SERVERS 64
 
-struct Location {
-	StringView path;
-	StringView root;
-	StringView index;
-	StringView uploadStore;
+// cgi {
+//     .py = /usr/bin/python3;
+//     .pl = /usr/bin/perl;	
+// }
 
-	StringView cgiExtension;
-	StringView cgiInterpreter;
+struct Location {
+	StringView url;
+	StringView root;
+	StringView index;			// If this is specified, its a file
+	StringView uploadStore;		// Validation: needs to check access
+	StringView cgiBlock;
 	StringView redirectTarget;
 	Status redirectStatus;
 	u8 methods;

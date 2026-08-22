@@ -97,12 +97,11 @@ SERVER_INL
 			PERR_EXIT(cleanup(), "Error: Invalid upload store");
 		location.uploadStore = dir.args[0];
 	}
-	else if (dir.name == "cgi") {
-		if (dir.args.count != 2 || dir.args[0].length < 2
-			|| dir.args[0].get()[0] != '.' || location.cgiExtension.length != 0)
+	else if (dir.name == "cgi") {	// TODO: Make this parse cgi {}
+		if (dir.args.count != 2)
 			PERR_EXIT(cleanup(), "Error: Invalid CGI definition");
-		location.cgiExtension = dir.args[0];
-		location.cgiInterpreter = dir.args[1];
+		// location.cgiExtension = dir.args[0];
+		// location.cgiInterpreter = dir.args[1];
 	}
 	else if (dir.name == "return") {
 		if (dir.args.count != 2)
@@ -141,8 +140,8 @@ SERVER_INL
 	cursor++;
 	if (cursor == end || tokens[cursor].type != Token::WORD)
 		PERR_EXIT(cleanup(), "Error: Expected location");
-	loc.path = tokens[cursor].value;
-	if (loc.path.length == 0 || loc.path.get()[0] != '/')
+	loc.url = tokens[cursor].value;
+	if (loc.url.length == 0 || loc.url.get()[0] != '/')
 		PERR_EXIT(cleanup(), "Error: Invalid location path");
 	cursor++;
 	if (cursor == end || tokens[cursor].type != Token::OPEN_BRACKET)
@@ -192,7 +191,7 @@ SERVER_INL
 		server.maxBodySize = s_strtol10(dir.args[0].get(), dir.args[0].length);
 		if (server.maxBodySize < 1 || server.maxBodySize > 20)
 			PERR_EXIT(cleanup(), "Error: Invalid max body size");
-		server.maxBodySize <<= 20;
+		server.maxBodySize <<= 20;	// TODO: add M check for size
 	}
 	else if (dir.name == "error_page") {
 		if (dir.args.count < 2)
@@ -235,8 +234,8 @@ SERVER_INL
 			HTTP::Location loc;
 			parse_location(tokens, cursor, end, loc);
 			for (usize index = 0; index < locationIndex; index++) {
-				const StringView &path = server.locations[index].path;
-				if (path.length == loc.path.length && MEMCMP(path.get(), loc.path.get(), path.length) == 0)
+				const StringView &path = server.locations[index].url;
+				if (path.length == loc.url.length && MEMCMP(path.get(), loc.url.get(), path.length) == 0)
 					PERR_EXIT(cleanup(), "Error: Duplicate location");
 			}
 			server.locations[locationIndex] = loc;

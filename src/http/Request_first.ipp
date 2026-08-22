@@ -13,7 +13,7 @@ REQUEST_INL
 
 	for(; it != cfg->locations.end(); it++)
 	{
-		if (MEMCMP(pathPtr, it->path.c_str(), it->path.size()) == 0 && pathLength == it->path.size())
+		if (MEMCMP(pathPtr, it->url.c_str(), it->url.size()) == 0 && pathLength == it->url.size())
 		{
 			found = true;
 			break ;

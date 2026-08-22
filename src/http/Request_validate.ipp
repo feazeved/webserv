@@ -8,8 +8,8 @@ static inline
 bool s_resolve_location(ServerConfig* cfg, const char* reqPath, usize reqPathLen, Location** outLocation, std::string& outRelative) {
 	std::vector<Location>::iterator	it = cfg->locations.begin();
 	for (; it != cfg->locations.end(); it++) {
-		usize locLen = it->path.size();
-		if (reqPathLen >= locLen && MEMCMP(reqPath, it->path.c_str(), locLen) == 0) {
+		usize locLen = it->url.size();
+		if (reqPathLen >= locLen && MEMCMP(reqPath, it->url.c_str(), locLen) == 0) {
 			*outLocation = &(*it);
 			outRelative.assign(reqPath + locLen, reqPathLen - locLen);
 			return true;

@@ -17,6 +17,14 @@
 
 #define CONNECTION_INL(ret_type) ret_type inline HTTP::Connection::
 
+// For epoll conformity, cgi should be an object of Connection, 
+// and it gets added and removed to epoll
+/*
+	Transaction Context: bonusTime, time, cfg, state
+
+	Execution Context: clientFd, writeFd, readFd, processId
+*/
+
 namespace HTTP {
 
 class Connection {
