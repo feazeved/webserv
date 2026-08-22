@@ -31,7 +31,7 @@ usize s_strtol10(const char *str, usize length) {
 
 	while (true) {
 		digit = (usize) g_asciiLut[(u8)*str];
-		if (value >= ((SIZE_MAX - 9) / 10))
+		if (value >= ((SIZE_MAX - 9) / 10))	// 9 being fixed reduces branching
 			return SIZE_MAX;
 		if (digit > 9)
 			break;

@@ -109,6 +109,7 @@ public:
 	isize set_location_directive(Directive &dir, HTTP::Location &location);
 	isize set_server_directive(Directive &dir, HTTP::ServerConfig &server);
 	isize parse_directive(const Array32<Token> &tokens, usize &cursor, usize end, Directive &dir);
+	isize parse_cgi(const Array32<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc);
 	isize parse_location(const Array32<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc);
 	isize parse_server(const Array32<Token> &tokens, usize cursor, usize end, HTTP::ServerConfig &server);
 	void parse_config(VirtualServer (&servers)[MAX_VIRTUAL_SERVERS]);

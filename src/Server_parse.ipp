@@ -5,7 +5,6 @@
 
 namespace HTTP {
 //
-
 SERVER_INL
 (usize) find_scope_end(const Array32<Token> &tokens, usize begin, usize end) {
 	usize it = begin;
@@ -27,18 +26,22 @@ SERVER_INL
 		it++;
 		distance++;
 	}
-	return it == end ? SIZE_MAX : distance;
+	if (it == end)
+		PERR_EXIT(cleanup(), "Error: Invalid block");
+	return distance;
 }
 
 SERVER_INL
 (usize) count_locations(const Array32<Token> &tokens, usize cursor, usize end) {
 	usize locationCount = 0;
+	usize locationSize;
 
 	while (cursor < end) {
 		if (tokens[cursor].value == "location") {
 			usize distance = find_scope_end(tokens, cursor, end);
-			if (distance == SIZE_MAX)
-				PERR_EXIT(cleanup(), "Error: Invalid location block");
+			locationSize = tokens[cursor + distance].value.offset - tokens[cursor].value.offset + 1;
+			if (locationSize > MAX_LOCATION_BLOCK_SIZE)
+				PERR_EXIT(cleanup(), "Error: Location block exceeds 64 KiB");
 			locationCount++;
 			cursor += distance + 1;
 		}
@@ -97,12 +100,6 @@ SERVER_INL
 			PERR_EXIT(cleanup(), "Error: Invalid upload store");
 		location.uploadStore = dir.args[0];
 	}
-	else if (dir.name == "cgi") {	// TODO: Make this parse cgi {}
-		if (dir.args.count != 2)
-			PERR_EXIT(cleanup(), "Error: Invalid CGI definition");
-		// location.cgiExtension = dir.args[0];
-		// location.cgiInterpreter = dir.args[1];
-	}
 	else if (dir.name == "return") {
 		if (dir.args.count != 2)
 			PERR_EXIT(cleanup(), "Error: Invalid redirect");
@@ -115,6 +112,72 @@ SERVER_INL
 	}
 	else
 		PERR_EXIT(cleanup(), "Error: Invalid location directive");
+	return 0;
+}
+
+SERVER_INL
+(isize) parse_cgi(const Array32<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc) {
+	if (cursor == end || tokens[cursor].type != Token::WORD
+		|| !(tokens[cursor].value == "cgi"))
+		PERR_EXIT(cleanup(), "Error: Unexpected token");
+	cursor++;
+	if (cursor == end || tokens[cursor].type != Token::OPEN_BRACKET)
+		PERR_EXIT(cleanup(), "Error: Invalid CGI block");
+
+	cursor++;
+	const usize definitionStart = cursor;
+	while (cursor != end && tokens[cursor].type != Token::CLOSE_BRACKET) {
+		const usize extensionIndex = cursor;
+		const StringView &extension = tokens[cursor].value;
+		if (tokens[cursor].type != Token::WORD || extension.length < 2
+			|| extension.get()[0] != '.')
+			PERR_EXIT(cleanup(), "Error: Invalid CGI extension");
+		for (usize index = definitionStart; index < extensionIndex; index += 4) {
+			const StringView &previous = tokens[index].value;
+			if (previous.length == extension.length
+				&& MEMCMP(previous.get(), extension.get(), extension.length) == 0)
+				PERR_EXIT(cleanup(), "Error: Duplicate CGI extension");
+		}
+		cursor++;
+		if (cursor == end || tokens[cursor].type != Token::WORD
+			|| !(tokens[cursor].value == "="))
+			PERR_EXIT(cleanup(), "Error: Expected '=' in CGI definition");
+		cursor++;
+		if (cursor == end || tokens[cursor].type != Token::WORD)
+			PERR_EXIT(cleanup(), "Error: Invalid CGI interpreter");
+		cursor++;
+		if (cursor == end || tokens[cursor].type != Token::SEMICOLON)
+			PERR_EXIT(cleanup(), "Error: Expected ';' after CGI definition");
+		cursor++;
+	}
+	if (cursor == end || tokens[cursor].type != Token::CLOSE_BRACKET)
+		PERR_EXIT(cleanup(), "Error: Invalid CGI block");
+	if (cursor != definitionStart) {
+		usize blockLength = 2;
+		for (usize index = definitionStart; index < cursor; index += 4)
+			blockLength += tokens[index].value.length
+				+ tokens[index + 2].value.length + 4;
+		u32 blockOffset = Arena::alloc_index(blockLength + 1);
+		if (blockOffset == UINT32_MAX)
+			_exit(1);
+
+		char *writePtr = (char*)Arena::data + blockOffset;
+		*writePtr++ = '{';
+		for (usize index = definitionStart; index < cursor; index += 4) {
+			const StringView extension = tokens[index].value;
+			const StringView interpreter = tokens[index + 2].value;
+			MEMCPY(writePtr, extension.get(), extension.length);
+			writePtr += extension.length;
+			MEMCPY_INLINE(writePtr, " = ", 3);
+			writePtr += 3;
+			MEMCPY(writePtr, interpreter.get(), interpreter.length);
+			writePtr += interpreter.length;
+			*writePtr++ = ';';
+		}
+		*writePtr++ = '}';
+		*writePtr = '\0';
+		loc.cgiBlock = StringView((u32)blockLength, blockOffset);
+	}
 	return 0;
 }
 
@@ -146,14 +209,24 @@ SERVER_INL
 	cursor++;
 	if (cursor == end || tokens[cursor].type != Token::OPEN_BRACKET)
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
+	const usize locationEnd = find_scope_end(tokens, cursor, end) + cursor;
 	cursor++;
-	while (cursor != end && tokens[cursor].type != Token::CLOSE_BRACKET) {
-		Directive dir;
-		parse_directive(tokens, cursor, end, dir);
-		set_location_directive(dir, loc);
+	bool cgiDefined = false;
+	while (cursor != locationEnd) {
+		if (tokens[cursor].type == Token::WORD && tokens[cursor].value == "cgi") {
+			if (cgiDefined)
+				PERR_EXIT(cleanup(), "Error: Duplicate CGI block");
+			cgiDefined = true;
+			parse_cgi(tokens, cursor, locationEnd, loc);
+		}
+		else {
+			Directive dir;
+			parse_directive(tokens, cursor, locationEnd, dir);
+			set_location_directive(dir, loc);
+		}
 		cursor++;
 	}
-	if (cursor == end || tokens[cursor].type != Token::CLOSE_BRACKET)
+	if (tokens[cursor].type != Token::CLOSE_BRACKET)
 		PERR_EXIT(cleanup(), "Error: Unexpected token");
 	return 0;
 }
@@ -166,13 +239,14 @@ SERVER_INL
 		const StringView &listen = dir.args[0];
 		const char *port = listen.get();
 		usize portLength = listen.length;
-		const char *separator = (const char*)MEMCHR(port, ':', portLength);
+		char *separator = (char*)MEMCHR(port, ':', portLength);
 		if (separator != NULL) {
 			usize hostLength = (usize)(separator - port);
 			if (hostLength == 0 || hostLength == listen.length - 1
 				|| server.host.length != 0)
 				PERR_EXIT(cleanup(), "Error: Invalid listen address");
 			server.host = StringView((u32)hostLength, listen.offset);
+			*separator = '\0';
 			port = separator + 1;
 			portLength -= hostLength + 1;
 		}
@@ -267,8 +341,6 @@ SERVER_INL
 	while (cursor != end) {
 		if (tokArray[cursor].value == "server") {
 			usize distance = find_scope_end(tokArray, cursor, end);
-			if (distance == SIZE_MAX)
-				PERR_EXIT(cleanup(), "Error: Invalid server block");
 			HTTP::ServerConfig serverConf;
 			parse_server(tokArray, cursor, cursor + distance, serverConf);
 			servers[serverIndex].cfg = serverConf;

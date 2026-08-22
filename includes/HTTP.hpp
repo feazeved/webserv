@@ -10,6 +10,7 @@
 namespace HTTP {
 
 #define MAX_VIRTUAL_SERVERS 64
+#define MAX_LOCATION_BLOCK_SIZE (64ul * 1024ul)
 
 // cgi {
 //     .py = /usr/bin/python3;
@@ -21,7 +22,7 @@ struct Location {
 	StringView root;
 	StringView index;			// If this is specified, its a file
 	StringView uploadStore;		// Validation: needs to check access
-	StringView cgiBlock;
+	StringView cgiBlock;		// Normalized non-empty block, including braces
 	StringView redirectTarget;
 	Status redirectStatus;
 	u8 methods;

@@ -21,7 +21,7 @@ public:
 	// Inclusive start, Exclusive end
 	void bitwrite(u8 bitStart, u8 bitEnd, bool bit) {
 		const usize startMask = SIZE_MAX << bitStart;
-		const usize endMask = ((usize)1 << bitEnd) - 1;
+		const usize endMask = SIZE_MAX >> (WORD_BITS - bitEnd);
 		const usize mask = startMask & endMask;
 		const usize bitMask = (usize)-bit;
 
