@@ -4,7 +4,7 @@
 namespace HTTP {
 
 REQUEST_INL
-(isize) check_location(Cursor &src, ServerConfig* cfg) {
+(isize) check_location(Cursor &src, VirtualServer* cfg) {
 	bool found = false;
 	std::vector<Location>::iterator it = cfg->locations.begin();
 
@@ -26,7 +26,7 @@ REQUEST_INL
 }
 
 REQUEST_INL
-(isize) parse_target(Cursor &src, ServerConfig* cfg) {
+(isize) parse_target(Cursor &src, VirtualServer* cfg) {
 
 	u8 *const lineStart = src.readPtr;
 	u8* &ptr = src.readPtr;
@@ -62,7 +62,7 @@ REQUEST_INL
 
 // Returning 
 REQUEST_INL
-(isize) parse_first_line(Cursor &src, ServerConfig* cfg) {
+(isize) parse_first_line(Cursor &src, VirtualServer* cfg) {
 	const usize lineLength = (usize)(src.lineEnd - src.readPtr);
 	if (lineLength < 14 || lineLength >= 8192)
 		return -1;	// ERROR: Bad request "GET / HTTP/1.1" shortest possible

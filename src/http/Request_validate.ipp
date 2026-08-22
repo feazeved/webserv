@@ -5,7 +5,7 @@ namespace HTTP {
 //
 
 static inline
-bool s_resolve_location(ServerConfig* cfg, const char* reqPath, usize reqPathLen, Location** outLocation, std::string& outRelative) {
+bool s_resolve_location(VirtualServer* cfg, const char* reqPath, usize reqPathLen, Location** outLocation, std::string& outRelative) {
 	std::vector<Location>::iterator	it = cfg->locations.begin();
 	for (; it != cfg->locations.end(); it++) {
 		usize locLen = it->url.size();
@@ -27,7 +27,7 @@ void s_join_path(const std::string& base, const std::string& relative, std::stri
 }
 
 REQUEST_INL
-(isize) validate_header(Cursor &src, ServerConfig* cfg) {
+(isize) validate_header(Cursor &src, VirtualServer* cfg) {
 	const bool isBodyMethod = mode & (Mode::POST | Mode::CGI);
 	const bool encodingSet = !(options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH));
 

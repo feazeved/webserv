@@ -5,7 +5,7 @@ namespace HTTP {
 
 // TODO: Add a check for line length here if it makes sense
 REQUEST_INL
-(isize) parse_header(Cursor &src, ServerConfig* cfg) {
+(isize) parse_header(Cursor &src, VirtualServer* cfg) {
 	isize rvalue;
 	while ((rvalue = src.find_line_end()) != 0) {
 		if (parse_line(src, cfg) < 0)
@@ -17,7 +17,7 @@ REQUEST_INL
 }
 
 REQUEST_INL
-(isize) parse_line(Cursor &src, ServerConfig* cfg) {
+(isize) parse_line(Cursor &src, VirtualServer* cfg) {
 	const usize lineLength = (usize)(src.lineEnd - src.readPtr);
 	if (lineLength < 2 || lineLength >= 8192) {	// TODO: Fix magic numbers
 		status = Status::i401;

@@ -12,6 +12,8 @@
 #include "HTTP.hpp"
 #include "core.hpp"
 #include "Buffer.hpp"
+#include "VirtualServer.hpp"
+
 #include "Request.hpp"
 #include "State.hpp"
 
@@ -29,7 +31,7 @@ namespace HTTP {
 
 class Connection {
 public:
-	static const usize metadataSize = sizeof(ServerConfig*) + sizeof(Request) 
+	static const usize metadataSize = sizeof(VirtualServer*) + sizeof(Request) 
 		+ sizeof(time_t) + 2 * sizeof(u8) + sizeof(pid_t) + 3 * sizeof(i32);
 	static const usize metasizeAlign = ALIGN_UP(metadataSize / 2, 8ul);
 	static const usize bytesFree = 2 * metasizeAlign - metadataSize;	// Debug only
@@ -40,7 +42,7 @@ public:
 	// u8 rawData[32768];
 
 public:
-	ServerConfig* cfg;
+	VirtualServer* cfg;
 	HTTP_Buffer recvBuffer, sendBuffer;
 	Request request;
 
@@ -58,7 +60,7 @@ public:
 	isize dispatch(u32 events);
 
 	// TODO
-	isize init(i32 f, ServerConfig* c) {
+	isize init(i32 f, VirtualServer* c) {
 		(void)f;
 		cfg = c;
 		return 1;

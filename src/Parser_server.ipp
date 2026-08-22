@@ -26,7 +26,7 @@ PARSER_INL
 }
 
 PARSER_INL
-(isize) set_server_directive(Directive &dir, HTTP::ServerConfig &server) {
+(isize) set_server_directive(Directive &dir, VirtualServer &server) {
 	if (dir.name == "listen") {
 		if (server.port != SIZE_MAX || dir.args.count != 1)
 			PERR_EXIT(1, "Error: Invalid port definition");
@@ -82,7 +82,7 @@ PARSER_INL
 }
 
 PARSER_INL
-(isize) parse_server(const Array32<Token> &tokens, usize cursor, usize end, HTTP::ServerConfig &server) {
+(isize) parse_server(const Array32<Token> &tokens, usize cursor, usize end, VirtualServer &server) {
 	if (cursor == end || tokens[cursor].type != Token::WORD || !(tokens[cursor].value == "server"))
 		PERR_EXIT(1, "Error: Unexpected token");
 	cursor++;
@@ -135,9 +135,7 @@ PARSER_INL
 	while (cursor != end) {
 		if (tokArray[cursor].value == "server") {
 			usize distance = s_find_scope_end(tokArray, cursor, end);
-			ServerConfig serverConf;
-			parse_server(tokArray, cursor, cursor + distance, serverConf);
-			servers[serverIndex].cfg = serverConf;
+			parse_server(tokArray, cursor, cursor + distance, servers[serverIndex]);
 			serverIndex++;
 			cursor += distance;
 		}

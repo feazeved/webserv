@@ -15,10 +15,16 @@ namespace HTTP {
 
 class VirtualServer {
 public:
-	HTTP::ServerConfig cfg;
-	i32 listenFd;
+	StringView			clientErrors[32];
+	StringView			serverErrors[12];
+	StringView			host;
+	Array32<Location>	locations;
+	usize				port;
+	usize				maxBodySize;
+	Game::State			*gameState;
+	i32 				listenFd;
 
-	VirtualServer() : cfg(), listenFd(-1) {}
+	VirtualServer();
 
 	~VirtualServer() {
 		clear();
@@ -29,7 +35,7 @@ public:
 			close(listenFd);
 			listenFd = -1;
 		}
-		cfg.gameState = NULL;
+		gameState = NULL;
 		return 1;
 	}
 
@@ -42,7 +48,7 @@ public:
 		if (listenFd != -1)
 			clear();
 
-		if (cfg.port < 1 || cfg.port > 65535)
+		if (port < 1 || port > 65535)
 			PERR_EXIT(clear(), "Error: Invalid virtual server port");
 
 		listenFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -55,7 +61,7 @@ public:
 			PERR_EXIT(clear(), "Error: Failed to configure listening socket");
 
 		sockaddr_in address;
-		if (s_resolve_host_and_port(cfg.host, cfg.port, address))
+		if (s_resolve_host_and_port(host, port, address))
 			PERR_EXIT(clear(), "Error: Failed to resolve virtual server host");
 		if (bind(listenFd, (sockaddr*) &address, sizeof(address)) == -1)
 			PERR_EXIT(clear(), "Error: Failed to bind listening socket");

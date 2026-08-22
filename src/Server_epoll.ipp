@@ -5,7 +5,6 @@
 #include <netinet/in.h>
 #include <cerrno>
 #include <unistd.h>
-
 #include "Server.hpp"
 
 SERVER_INL
@@ -60,7 +59,7 @@ SERVER_INL
 		close(clientFd);
 		PERR_RETURN((void)0, "Error: Connection capacity reached");	// TODO: Check what we do here
 	}
-	connections[index].init(clientFd, &server->cfg);		// TODO: see if its not better to have pool initialize
+	connections[index].init(clientFd, server);		// TODO: see if its not better to have pool initialize
 	add_to_epoll(clientFd, EPOLLIN, s_epoll_connection_key(index));
 }
 

@@ -9,6 +9,7 @@
 #include "Status.hpp"
 #include "Buffer.hpp"
 #include "HTTP.hpp"
+#include "VirtualServer.hpp"
 
 namespace HTTP {
 
@@ -37,13 +38,13 @@ public:
 	}
 
 	// Parsing
-	isize check_location(Cursor &src, ServerConfig* cfg);
-	isize parse_target(Cursor &src, ServerConfig* cfg);
-	isize parse_first_line(Cursor &src, ServerConfig* cfg);
-	isize parse_header(Cursor &src, ServerConfig* cfg);
-	isize parse_line(Cursor &src, ServerConfig* cfg);
+	isize check_location(Cursor &src, VirtualServer* cfg);
+	isize parse_target(Cursor &src, VirtualServer* cfg);
+	isize parse_first_line(Cursor &src, VirtualServer* cfg);
+	isize parse_header(Cursor &src, VirtualServer* cfg);
+	isize parse_line(Cursor &src, VirtualServer* cfg);
 	isize parse_cgi_line(Cursor &src, Cursor &dst);
-	isize validate_header(Cursor &src, ServerConfig* cfg);
+	isize validate_header(Cursor &src, VirtualServer* cfg);
 
 };
 }

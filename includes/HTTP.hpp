@@ -43,18 +43,6 @@ struct Location {
 	Location() : methods(0), autoindex(false) {}
 };
 
-struct ServerConfig {
-	StringView					clientErrors[32];
-	StringView					serverErrors[12];
-	Array32<Location>			locations;
-	StringView					host;
-	usize						port;
-	usize						maxBodySize;
-	Game::State					*gameState;
-
-	ServerConfig() : port(SIZE_MAX), maxBodySize(SIZE_MAX), gameState(NULL) {}
-};
-
 // Switch (no read, read, read chunked, can read)
 
 // These are exclusive states
