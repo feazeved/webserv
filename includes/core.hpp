@@ -35,6 +35,14 @@ typedef unsigned long		ulong;
 #define PERR_RETURN(value, str)	return (PRINT_LN(2, str), (value))
 #define PERR_EXIT(value, str)	_exit((PRINT_LN(2, str), (value)))
 
+#ifndef NDEBUG
+	#define ON_DEBUG(x) (x)
+	#define ASSERT(x, str) ((x) != 0 ? (void)0 : PRINT_LN(2, str))
+#else
+	#define ON_DEBUG(x) ((void)0)
+	#define ASSERT(x, str) ((void)0)
+#endif
+
 enum e_ascii {
 	ASCII_DIGITS      = 9,   // value <= digits
 	ASCII_HEX         = 15,  // value <= hex
