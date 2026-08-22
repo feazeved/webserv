@@ -7,10 +7,9 @@
 #include "HTTP.hpp"
 #include "State.hpp"
 #include "Connection.hpp"
-#include "BlockVector.hpp"
 #include "core.hpp"
 #include "Server_helpers.ipp"
-
+#include "ConnectionPool.hpp"
 #include "VirtualServer.hpp"
 
 #define SERVER_INL(ret_type) ret_type inline HTTP::Server::
@@ -19,10 +18,7 @@ namespace HTTP {
 
 class Server {
 public:
-	static const usize s_connectionBlockSize = 32;
-	static const usize s_connectionMaxGrowth = 64;
 	static const usize s_maxEvents = 16;
-	typedef BlockVector<HTTP::Connection, s_connectionBlockSize, s_connectionMaxGrowth> connectionPool;
 
 	struct Token {
 		enum Type {
@@ -44,17 +40,17 @@ public:
 	usize fileSize;
 	usize serverCount;
 	VirtualServer servers[MAX_VIRTUAL_SERVERS];
-	connectionPool connections;
+	ConnectionPool connections;
 	i32 epollFd;
 
-	char* getPtr() {
+	char* get_ptr() {
 		return fileOffset + (char*) Arena::data;
 	}
 
 	Server(const char *filePath)
 		: fileOffset(0), fileSize(0), serverCount(0), epollFd(-1) {
 		read_whole_file(filePath);
-		serverCount = s_count_servers(getPtr(), fileSize);
+		serverCount = s_count_servers(get_ptr(), fileSize);
 		if (serverCount == 0 || serverCount > MAX_VIRTUAL_SERVERS)
 			PERR_EXIT(cleanup(), "Error: Invalid config");
 
@@ -76,14 +72,10 @@ public:
 			close(epollFd);
 			epollFd = -1;
 		}
-		for (usize index = 0; index < connections.capacity(); index++) {
-			if (connections.metadata.bitread(index))
-				connections.clear(index);	// TODO: move this to block vector
-		}
+		connections.clear();
 		for (usize index = 0; index < serverCount; index++)
 			servers[index].cleanup();
 		serverCount = 0;
-		Arena::clear();
 		return 1;
 	}
 

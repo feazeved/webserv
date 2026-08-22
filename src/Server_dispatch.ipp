@@ -44,8 +44,6 @@ SERVER_INL
 
 SERVER_INL
 (void) dispatch_connection_event(usize index, u32 events) {
-	if (index >= connections.capacity())
-		PERR_EXIT(cleanup(), "Error: Invalid connection event");
 	isize result = connections[index].dispatch(events);
 	if (result == 0)
 		close_connection(index);

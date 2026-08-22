@@ -56,9 +56,9 @@ SERVER_INL
 	isize braces = 0;
 	usize tokenIndex = 0;
 
-	if (tokArray.alloc((u32)s_count_tokens(getPtr())) == true)
+	if (tokArray.alloc((u32)s_count_tokens(get_ptr())) == true)
 		_exit(1);
-	char *ptr = getPtr();
+	char *ptr = get_ptr();
 
 	while (true) {
 		while (IS_SPACE(*ptr))
@@ -108,28 +108,23 @@ SERVER_INL
 		PERR_EXIT(1, "Error: Failed to open file");
 
 	struct stat st;
-	if (fstat(fd, &st) == -1 || st.st_size < 16 || (u64)st.st_size > (u64)UINT32_MAX - 127) {
+	fileSize = (usize) st.st_size;
+	usize allocSize = ALIGN_UP(fileSize + 63, (usize)64);	// Pads with at least 64 bytes
+
+	if (fstat(fd, &st) == -1 || st.st_size < 16 || allocSize > MAX_FILE_SIZE) {
 		close(fd);
 		PERR_EXIT(1, "Error: Invalid file");
 	}
 
-	fileSize = (usize) st.st_size;
-	usize allocSize = ALIGN_UP(fileSize + 63, (usize)64);	// Pads with at least 64 bytes
-
 	fileOffset = Arena::alloc_index(allocSize);
-	if (fileOffset == UINT32_MAX) {
-		close(fd);
-		_exit(1);
-	}
 
-	char* ptr = getPtr();
+	char* ptr = get_ptr();
 	usize curBytes = 0;
 	while (curBytes < fileSize) {
 		usize bytesRemaining = fileSize - curBytes;
 		isize bytesRead = read(fd, ptr + curBytes, MIN(bytesRemaining, ATOMIC_IOSIZE));
 		if (bytesRead <= 0) {
 			close(fd);
-			Arena::clear();
 			PERR_EXIT(1, "Error: Read failure");
 		}
 		curBytes += (usize) bytesRead;

@@ -37,7 +37,7 @@ public:
 
 	typedef Buffer<bufferSize> HTTP_Buffer;
 	// Actually the buffer should be here like
-	u8 rawData[32768];
+	// u8 rawData[32768];
 
 public:
 	ServerConfig* cfg;

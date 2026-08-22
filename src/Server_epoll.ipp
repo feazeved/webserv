@@ -58,16 +58,14 @@ SERVER_INL
 	usize index = connections.acquire_slot();
 	if (index == SIZE_MAX) {
 		close(clientFd);
-		if (connections.capacity() < connections.maxElements)
-			PERR_EXIT(cleanup(), "Error: Failed to grow connection storage");
-		PERR_RETURN((void)0, "Error: Connection capacity reached");
+		PERR_RETURN((void)0, "Error: Connection capacity reached");	// TODO: Check what we do here
 	}
-	connections[index].init(clientFd, &server->cfg);
+	connections[index].init(clientFd, &server->cfg);		// TODO: see if its not better to have pool initialize
 	add_to_epoll(clientFd, EPOLLIN, s_epoll_connection_key(index));
 }
 
 SERVER_INL
 (void) close_connection(usize connectionIndex) {
 	remove_from_epoll(connections[connectionIndex].clientFd);
-	connections.clear(connectionIndex);
+	connections.free_slot(connectionIndex);
 }
