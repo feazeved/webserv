@@ -49,7 +49,7 @@ SERVER_INL
 			return;
 		PERR_RETURN((void)0, "Error: Failed to accept connection");
 	}
-	if (VirtualServer::s_set_socket_nonblocking(clientFd)) {
+	if (s_set_socket_nonblocking(clientFd)) {
 		close(clientFd);
 		PERR_RETURN((void)0, "Error: Failed to make client socket non-blocking");
 	}

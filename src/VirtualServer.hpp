@@ -17,6 +17,7 @@ namespace HTTP {
 
 class VirtualServer {
 public:
+	StringView			serverRoot;
 	StringView			clientErrors[32];
 	StringView			serverErrors[12];
 	StringView			host;
@@ -26,7 +27,9 @@ public:
 	Game::State			*gameState;
 	i32 				listenFd;
 
-	VirtualServer();
+	VirtualServer() {
+		MEMSET_INLINE(this, 0, sizeof(VirtualServer));
+	}
 
 	~VirtualServer() {
 		clear();

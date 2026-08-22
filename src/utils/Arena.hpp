@@ -4,6 +4,12 @@
 #include <unistd.h>
 #include "config.hpp"
 
+/*
+	Arena will have 64MB + Parsing Capacity. Ideally, anything that is supposed
+	to be temporary is allocated within the ConnectionPool reserved space
+	That way, the memory is essentially freed when the application starts running
+*/
+
 class Arena {
 private:
 	Arena();

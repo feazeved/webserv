@@ -5,16 +5,17 @@
 
 namespace HTTP {
 
+
 class ConnectionPool {
 public:
 	static const usize blockSize = sizeof(Connection) * 64;
 
 public:
-	Connection ALIGNED(4096) connections[4096];		// 64 MB, gets lazily paged
+	Connection *const connections;
 	Bitmap blockBitmap;
 	Bitmap elementBitmap[64];		// Metadata for each 64 Connection Block
 
-	ConnectionPool() {
+	ConnectionPool() : connections((Connection*) Arena::data) {
 	}
 
 	~ConnectionPool() {
