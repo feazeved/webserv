@@ -20,7 +20,7 @@ SERVER_INL
 	event.events = events;
 	event.data.u64 = key;
 	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &event) == -1)
-		PERR_EXIT(cleanup(), "Error: Failed to add epoll event");
+		PERR_EXIT(clear(), "Error: Failed to add epoll event");
 }
 
 SERVER_INL
@@ -36,7 +36,7 @@ SERVER_INL
 	event.data.u64 = s_epoll_connection_key(connectionIndex);
 	if (epoll_ctl(epollFd, EPOLL_CTL_MOD,
 		connections[connectionIndex].clientFd, &event) == -1)
-		PERR_EXIT(cleanup(), "Error: Failed to modify epoll event");
+		PERR_EXIT(clear(), "Error: Failed to modify epoll event");
 }
 
 SERVER_INL

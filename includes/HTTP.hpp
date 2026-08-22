@@ -14,6 +14,21 @@ namespace HTTP {
 //     .pl = /usr/bin/perl;	
 // }
 
+struct Token {
+	enum Type {
+		OPEN_BRACKET,
+		CLOSE_BRACKET,
+		SEMICOLON,
+		WORD
+	}	type;
+	StringView value;
+};
+
+struct Directive {
+	StringView name;
+	Array32<StringView> args;
+};
+
 struct Location {
 	StringView url;
 	StringView root;

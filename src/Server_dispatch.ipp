@@ -10,7 +10,7 @@
 
 SERVER_INL
 (void) run() {
-	for (usize index = 0; index < serverCount; index++)
+	for (usize index = 0; index < parser.serverCount; index++)	// TODO
 		add_to_epoll(servers[index].listenFd, EPOLLIN, s_epoll_server_key(index));
 
 	struct epoll_event events[s_maxEvents];
@@ -19,7 +19,7 @@ SERVER_INL
 		if (eventCount == -1) {
 			if (errno == EINTR)
 				continue;
-			PERR_EXIT(cleanup(), "Error: epoll_wait failed");
+			PERR_EXIT(clear(), "Error: epoll_wait failed");
 		}
 		for (i32 index = 0; index < eventCount; index++)
 			dispatch_epoll_event(events[index]);
@@ -34,10 +34,10 @@ SERVER_INL
 		dispatch_connection_event(index, event.events);
 		return;
 	}
-	if (index >= serverCount)
-		PERR_EXIT(cleanup(), "Error: Invalid listening socket event");
+	if (index >= parser.serverCount)
+		PERR_EXIT(clear(), "Error: Invalid listening socket event");
 	if (event.events & (EPOLLERR | EPOLLHUP))
-		PERR_EXIT(cleanup(), "Error: Listening socket failed");
+		PERR_EXIT(clear(), "Error: Listening socket failed");
 	if (event.events & EPOLLIN)
 		add_connection(&servers[index]);
 }

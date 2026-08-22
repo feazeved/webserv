@@ -1,6 +1,5 @@
 #pragma once
 #include "core.hpp"
-#include "unistd.h"
 #include "Bitmap.hpp"
 #include "Connection.hpp"
 
@@ -11,18 +10,22 @@ public:
 	static const usize blockSize = sizeof(Connection) * 64;
 
 public:
-	static Connection ALIGNED(4096) connections[4096];		// 64 MB, gets lazily paged
-	static Bitmap blockBitmap;
-	static Bitmap elementBitmap[64];		// Metadata for each 64 Connection Block
+	Connection ALIGNED(4096) connections[4096];		// 64 MB, gets lazily paged
+	Bitmap blockBitmap;
+	Bitmap elementBitmap[64];		// Metadata for each 64 Connection Block
 
 	ConnectionPool() {
+	}
+
+	~ConnectionPool() {
+		clear();
 	}
 
 	Connection* get_ptr(usize linearIndex) {
 		return connections + linearIndex;
 	}
 
-	static void clear_block(usize blockIndex) {
+	void clear_block(usize blockIndex) {
 		Bitmap &block = elementBitmap[blockIndex];
 		usize elementIndex;
 		Connection *base = connections + blockIndex * 64;
@@ -68,9 +71,4 @@ public:
 	}
 };
 
-#ifdef MAIN_FILE
-	Connection ConnectionPool::connections[ConnectionPool::capacity] ALIGNED(4096);
-	Bitmap ConnectionPool::blockBitmap;
-	Bitmap ConnectionPool::elementBitmap[ConnectionPool::blockCount];
-#endif
 }

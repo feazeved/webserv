@@ -17,15 +17,14 @@ class VirtualServer {
 public:
 	HTTP::ServerConfig cfg;
 	i32 listenFd;
-	Game::State gameState;
 
-	VirtualServer() : cfg(), listenFd(-1), gameState() {}
+	VirtualServer() : cfg(), listenFd(-1) {}
 
 	~VirtualServer() {
-		cleanup();
+		clear();
 	}
 
-	int cleanup() {
+	int clear() {
 		if (listenFd != -1) {
 			close(listenFd);
 			listenFd = -1;
@@ -41,30 +40,29 @@ public:
 
 	void init() {
 		if (listenFd != -1)
-			cleanup();
-		cfg.gameState = &gameState;
+			clear();
 
 		if (cfg.port < 1 || cfg.port > 65535)
-			PERR_EXIT(cleanup(), "Error: Invalid virtual server port");
+			PERR_EXIT(clear(), "Error: Invalid virtual server port");
 
 		listenFd = socket(AF_INET, SOCK_STREAM, 0);
 		if (listenFd == -1)
-			PERR_EXIT(cleanup(), "Error: Failed to create listening socket");
+			PERR_EXIT(clear(), "Error: Failed to create listening socket");
 
 		i32 reuseAddress = 1;
 		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR,
 			&reuseAddress, sizeof(reuseAddress)) == -1)
-			PERR_EXIT(cleanup(), "Error: Failed to configure listening socket");
+			PERR_EXIT(clear(), "Error: Failed to configure listening socket");
 
 		sockaddr_in address;
 		if (s_resolve_host_and_port(cfg.host, cfg.port, address))
-			PERR_EXIT(cleanup(), "Error: Failed to resolve virtual server host");
+			PERR_EXIT(clear(), "Error: Failed to resolve virtual server host");
 		if (bind(listenFd, (sockaddr*) &address, sizeof(address)) == -1)
-			PERR_EXIT(cleanup(), "Error: Failed to bind listening socket");
+			PERR_EXIT(clear(), "Error: Failed to bind listening socket");
 		if (listen(listenFd, SOMAXCONN) == -1)
-			PERR_EXIT(cleanup(), "Error: Failed to listen on socket");
+			PERR_EXIT(clear(), "Error: Failed to listen on socket");
 		if (s_set_socket_nonblocking(listenFd))
-			PERR_EXIT(cleanup(), "Error: Failed to make listening socket non-blocking");
+			PERR_EXIT(clear(), "Error: Failed to make listening socket non-blocking");
 	}
 
 	bool cache_error_pages();
