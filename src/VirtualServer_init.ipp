@@ -13,4 +13,9 @@ VIRTUALSERVER_INL
 (bool) cache_error_pages() {
 
 }
+
+VIRTUALSERVER_INL
+(bool) process_cgi_block() {
+	
+}
 }

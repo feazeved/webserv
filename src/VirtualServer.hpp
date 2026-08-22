@@ -9,6 +9,8 @@
 #include <fcntl.h>
 #include <netdb.h>
 
+#include "VirtualServer_helpers.ipp"
+
 namespace HTTP {
 
 #define VIRTUALSERVER_INL(ret_type) ret_type inline HTTP::VirtualServer::
@@ -39,11 +41,6 @@ public:
 		return 1;
 	}
 
-	static bool s_set_socket_nonblocking(i32 fd) {
-		i32 flags = fcntl(fd, F_GETFL, 0);
-		return flags == -1 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1;
-	}
-
 	void init() {
 		if (listenFd != -1)
 			clear();
@@ -72,28 +69,8 @@ public:
 	}
 
 	bool cache_error_pages();
+	bool process_cgi_block();
 
-	static bool s_resolve_host_and_port(const HTTP::StringView& host, usize port, sockaddr_in& address) {
-		addrinfo hints;
-		MEMSET_INLINE(&hints, 0, sizeof(hints));
-		hints.ai_family = AF_INET;
-		hints.ai_socktype = SOCK_STREAM;
-		hints.ai_flags = 0;
-
-		addrinfo* result = NULL;
-		i32 status = getaddrinfo(host.get(), NULL, &hints, &result);
-		if (status != 0 || result == NULL)
-			return true;
-
-		bool invalid = result->ai_addrlen < sizeof(sockaddr_in);
-		if (!invalid) {
-			MEMSET_INLINE(&address, 0, sizeof(address));
-			MEMCPY_INLINE(&address, result->ai_addr, sizeof(address));
-			address.sin_port = htons((u16) port);
-		}
-		freeaddrinfo(result);
-		return invalid;
-	}
 };
 
 }

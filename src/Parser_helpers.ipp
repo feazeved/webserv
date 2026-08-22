@@ -120,5 +120,4 @@ usize s_count_servers(const char *str, usize length) {
 	}
 	return serverCount;
 }
-
 }
