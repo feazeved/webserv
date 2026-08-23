@@ -1,5 +1,7 @@
 #pragma once
+#include <fcntl.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "core.hpp"
 #include "HTTP.hpp"
@@ -16,45 +18,36 @@ public:
 	usize fileSize;
 	usize serverCount;
 
-	char* get_ptr() {
-		return fileOffset + (char*) Arena::data;
-	}
+	Parser(const char *filePath, VirtualServer (&servers)[MAX_VIRTUAL_SERVERS]) {
+		if (s_read_whole_file(filePath, fileSize, fileOffset, 63))
+			_exit(1);
+		Array32<Token> tokArray = tokenize();
+		usize cursor = 0;
+		usize end = tokArray.count;
+		usize serverIndex = 0;
 
-	Parser(const char *filePath) {
-		int fd = open(filePath, O_RDONLY);
-		if (fd == -1)
-			PERR_EXIT(1, "Error: Failed to open file");
-
-		struct stat st;
-		if (fstat(fd, &st) == -1 || st.st_size < 16 || (usize)st.st_size > MAX_FILE_SIZE - 127) {
-			close(fd);
-			PERR_EXIT(1, "Error: Invalid file");
-		}
-
-		fileSize = (usize) st.st_size;
-		usize allocSize = ALIGN_UP(fileSize + 63, (usize)64);	// Pads with at least 64 bytes
-		fileOffset = Arena::alloc_index(allocSize);
-
-		char* ptr = get_ptr();
-		usize curBytes = 0;
-		while (curBytes < fileSize) {
-			usize bytesRemaining = fileSize - curBytes;
-			isize bytesRead = read(fd, ptr + curBytes, MIN(bytesRemaining, ATOMIC_IOSIZE));
-			if (bytesRead <= 0) {
-				close(fd);
-				PERR_EXIT(1, "Error: Read failure");
+		while (cursor != end) {
+			if (tokArray[cursor].value == "server") {
+				usize distance = s_find_scope_end(tokArray, cursor, end);
+				parse_server(tokArray, cursor, cursor + distance, servers[serverIndex]);
+				serverIndex++;
+				cursor += distance;
 			}
-			curBytes += (usize) bytesRead;
+			else
+				PERR_EXIT(1, "Error: Unexpected token");
+			cursor++;
 		}
-		close(fd);
+
+		for (usize index = 0; index < serverCount; index++) {
+			process_cgi_block(servers[index]);
+			cache_error_pages(servers[index]);
+		}
 	}
 
 	Array32<Token> tokenize();
-	void parse_file(VirtualServer (&servers)[MAX_VIRTUAL_SERVERS]);
-	isize set_location_directive(Directive &dir, HTTP::Location &location);
-	isize set_server_directive(Directive &dir, VirtualServer &server);
-	isize parse_directive(const Array32<Token> &tokens, usize &cursor, usize end, Directive &dir);
-	isize parse_cgi(const Array32<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc);
+	void cache_error_pages(VirtualServer &server);
+	bool cache_default_error_pages();
+	void process_cgi_block(VirtualServer &server);
 	isize parse_location(const Array32<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc);
 	isize parse_server(const Array32<Token> &tokens, usize cursor, usize end, VirtualServer &server);
 };

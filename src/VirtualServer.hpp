@@ -27,9 +27,9 @@ public:
 	Game::State			*gameState;
 	i32 				listenFd;
 
-	VirtualServer() {
-		MEMSET_INLINE(this, 0, sizeof(VirtualServer));
-	}
+	VirtualServer()
+		: serverRoot(), host(), locations(), port(SIZE_MAX),
+		  maxBodySize(SIZE_MAX), gameState(NULL), listenFd(-1) {}
 
 	~VirtualServer() {
 		clear();
@@ -70,10 +70,6 @@ public:
 		if (s_set_socket_nonblocking(listenFd))
 			PERR_EXIT(clear(), "Error: Failed to make listening socket non-blocking");
 	}
-
-	bool cache_error_pages();
-	bool process_cgi_block();
-
 };
 
 }

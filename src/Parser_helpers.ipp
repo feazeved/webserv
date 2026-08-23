@@ -1,9 +1,67 @@
 #pragma once
+#include <fcntl.h>
+#include <sys/stat.h>
+
 #include "core.hpp"
 #include "HTTP.hpp"
 #include "StringView.hpp"
 
 namespace HTTP {
+
+static inline
+bool s_read_whole_file(const char *filePath, usize &fileSize, usize &fileOffset, usize padSize) {
+	int fd = open(filePath, O_RDONLY);
+	if (fd == -1)
+		PERR_RETURN(1, "Error: Failed to open file");
+
+	struct stat st;
+	if (fstat(fd, &st) == -1 || st.st_size < 16 || (usize)st.st_size > MAX_FILE_SIZE - 127) {
+		close(fd);
+		PERR_RETURN(1, "Error: Invalid file");
+	}
+
+	fileSize = (usize) st.st_size;
+	fileOffset = Arena::alloc_index(fileSize + 1 + padSize);
+
+	u8* ptr = Arena::data + fileOffset;
+	usize curBytes = 0;
+	while (curBytes < fileSize) {
+		usize bytesRemaining = fileSize - curBytes;
+		isize bytesRead = read(fd, ptr + curBytes, MIN(bytesRemaining, ATOMIC_IOSIZE));
+		if (bytesRead <= 0) {
+			close(fd);
+			PERR_RETURN(1, "Error: Read failure");
+		}
+		curBytes += (usize) bytesRead;
+	}
+	close(fd);
+	ptr[fileSize] = '\0';
+	return 0;
+}
+
+static inline
+bool s_is_config_delimiter(char value) {
+	return value == '{' || value == '}' || value == ';';
+}
+
+static inline
+Directive s_build_directive(const Array32<Token> &tokens, usize &cursor, usize end) {
+	Directive dir;
+	if (cursor == end || tokens[cursor].type != Token::WORD)
+		PERR_EXIT(1, "Error: Unexpected token");
+	dir.name = tokens[cursor].value;
+	cursor++;
+	usize argumentStart = cursor;
+	while (cursor != end && tokens[cursor].type == Token::WORD)
+		cursor++;
+	if (cursor == end || tokens[cursor].type != Token::SEMICOLON)
+		PERR_EXIT(1, "Error: Unexpected token");
+	if (dir.args.alloc((u32)(cursor - argumentStart)) == true)
+		_exit(1);
+	for (u32 index = 0; index < dir.args.count; index++)
+		dir.args[index] = tokens[argumentStart + index].value;
+	return dir;
+}
 
 static inline
 void s_strip_comments(char *ptr, usize fileSize) {
@@ -75,7 +133,7 @@ usize s_count_locations(const Array32<Token> &tokens, usize cursor, usize end) {
 			usize distance = s_find_scope_end(tokens, cursor, end);
 			locationSize = tokens[cursor + distance].value.offset - tokens[cursor].value.offset + 1;
 			if (locationSize > MAX_LOCATION_BLOCK_SIZE)
-				PERR_EXIT(1, "Error: Location block exceeds 64 KiB");
+				PERR_EXIT(1, "Error: Location block exceeds maximum size");
 			locationCount++;
 			cursor += distance + 1;
 		}
@@ -120,4 +178,10 @@ usize s_count_servers(const char *str, usize length) {
 	}
 	return serverCount;
 }
+
+static inline
+bool s_length_check(u32 length) {
+	return length == 0 || length >= MAX_PATH_SIZE;
+}
+
 }

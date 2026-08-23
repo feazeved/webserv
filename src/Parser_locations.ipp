@@ -1,4 +1,7 @@
 #pragma once
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include "core.hpp"
 #include "HTTP.hpp"
 #include "Parser.hpp"
@@ -22,12 +25,16 @@ void s_set_methods(Array32<StringView> &methods, Location &location) {
 	}
 }
 
-PARSER_INL
-(isize) set_location_directive(Directive &dir, Location &location) {
+static inline 
+void s_parse_location_directive(Location &location, const Array32<Token> &tokens, usize cursor, usize end) {
+	Directive dir = s_build_directive(tokens, cursor, end);
+	u32 length = 1;
+
 	if (dir.name == "root") {
 		if (dir.args.count != 1)
 			PERR_EXIT(1, "Error: Invalid root");
 		location.root = dir.args[0];
+		length = dir.args[0].length;
 	}
 	else if (dir.name == "autoindex") {
 		if (dir.args.count != 1 || (!(dir.args[0] == "on") && !(dir.args[0] == "off")))
@@ -43,11 +50,15 @@ PARSER_INL
 		if (dir.args.count != 1)
 			PERR_EXIT(1, "Error: Invalid index");
 		location.index = dir.args[0];
+		length = dir.args[0].length;
 	}
 	else if (dir.name == "upload_store") {
-		if (dir.args.count != 1)
+		struct stat st;
+		if (dir.args.count != 1 || stat(dir.args[0].get(), &st) == -1
+			|| !S_ISDIR(st.st_mode) || access(dir.args[0].get(), W_OK | X_OK) == -1)
 			PERR_EXIT(1, "Error: Invalid upload store");
 		location.uploadStore = dir.args[0];
+		length = dir.args[0].length;
 	}
 	else if (dir.name == "return") {
 		if (dir.args.count != 2)
@@ -58,14 +69,16 @@ PARSER_INL
 			|| !location.redirectStatus.is_valid())
 			PERR_EXIT(1, "Error: Invalid redirect status");
 		location.redirectTarget = dir.args[1];
+		length = dir.args[1].length;
 	}
 	else
 		PERR_EXIT(1, "Error: Invalid location directive");
-	return 0;
+	if (s_length_check(length))
+		PERR_EXIT(1, "Error: Path size is too large");
 }
 
-PARSER_INL
-(isize) parse_cgi(const Array32<Token> &tokens, usize &cursor, usize end, Location &loc) {
+static inline 
+void s_parse_cgi(const Array32<Token> &tokens, usize &cursor, usize end, Location &loc) {
 	if (cursor == end || tokens[cursor].type != Token::WORD
 		|| !(tokens[cursor].value == "cgi"))
 		PERR_EXIT(1, "Error: Unexpected token");
@@ -104,7 +117,6 @@ PARSER_INL
 		PERR_EXIT(1, "Error: Invalid CGI block");
 	if (cursor != definitionStart)
 		loc.cgiBlock = StringView(tokens[cursor].value.offset - blockOffset + 1, blockOffset);
-	return 0;
 }
 
 PARSER_INL
@@ -128,13 +140,10 @@ PARSER_INL
 			if (cgiDefined)
 				PERR_EXIT(1, "Error: Duplicate CGI block");
 			cgiDefined = true;
-			parse_cgi(tokens, cursor, locationEnd, loc);
+			s_parse_cgi(tokens, cursor, locationEnd, loc);
 		}
-		else {
-			Directive dir;
-			parse_directive(tokens, cursor, locationEnd, dir);
-			set_location_directive(dir, loc);
-		}
+		else
+			s_parse_location_directive(loc, tokens, cursor, end);
 		cursor++;
 	}
 	if (tokens[cursor].type != Token::CLOSE_BRACKET)

@@ -1,14 +1,20 @@
 #pragma once
+#include <unistd.h>
+
 #include "core.hpp"
+#include "Arena.hpp"
 #include "Bitmap.hpp"
 #include "Connection.hpp"
 
 namespace HTTP {
 
+class VirtualServer;
+
 
 class ConnectionPool {
 public:
 	static const usize blockSize = sizeof(Connection) * 64;
+	static const usize blockCount = 64;
 
 public:
 	Connection *const connections;
@@ -46,7 +52,7 @@ public:
 		}
 	}
 
-	usize acquire_slot() {
+	usize get_slot() {
 		usize blockIndex = blockBitmap.find_first_clear();
 		if (blockIndex >= 64)
 			return SIZE_MAX;
@@ -59,10 +65,18 @@ public:
 		return blockIndex * 64 + elementIndex;
 	}
 
+	usize acquire_slot(i32 clientFd, VirtualServer *server) {
+		const usize index = get_slot();
+		if (index != SIZE_MAX)
+			connections[index].init(clientFd, server);
+		return index;
+	}
+
 	void free_slot(usize linearIndex) {
 		usize elementIndex = linearIndex % 64;
 		usize blockIndex = linearIndex / 64;
 
+		connections[linearIndex].clear();
 		blockBitmap.bitclr(blockIndex);
 		elementBitmap[blockIndex].bitclr(elementIndex);
 	}
@@ -71,5 +85,4 @@ public:
 		return connections[index];
 	}
 };
-
 }

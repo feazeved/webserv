@@ -47,5 +47,5 @@ public:
 
 #ifdef MAIN_FILE
 	u8 Arena::data[ARENA_SIZE] ALIGNED(4096);
-	usize Arena::size = 0;
+	usize Arena::size = CONNECTION_POOL_SIZE;
 #endif

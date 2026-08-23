@@ -31,9 +31,8 @@ public:
 	}
 
 	Server(const char *filePath)
-		: parser(filePath), epollFd(-1) {
+		: parser(filePath, servers), epollFd(-1) {
 
-		parser.parse_file(servers);
 		epollFd = epoll_create(1);
 		if (epollFd == -1)
 			PERR_EXIT(clear(), "Error: Failed to create epoll instance");

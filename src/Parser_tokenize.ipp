@@ -8,11 +8,6 @@ namespace HTTP {
 //
 
 static inline
-bool s_is_config_delimiter(char value) {
-	return value == '{' || value == '}' || value == ';';
-}
-
-static inline
 usize s_count_tokens(const char *str) {
 	usize tokenCount = 0;
 	while (true) {
@@ -82,7 +77,7 @@ PARSER_INL
 	usize length;
 	isize braces = 0;
 	usize tokenIndex = 0;
-	char *ptr = get_ptr();
+	char *ptr = (char*) Arena::data + fileOffset;
 
 	s_strip_comments(ptr, fileSize);
 	serverCount = s_count_servers(ptr, fileSize);

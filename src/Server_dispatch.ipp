@@ -10,7 +10,7 @@
 
 SERVER_INL
 (void) run() {
-	for (usize index = 0; index < parser.serverCount; index++)	// TODO
+	for (usize index = 0; index < parser.serverCount; index++)
 		add_to_epoll(servers[index].listenFd, EPOLLIN, s_epoll_server_key(index));
 
 	struct epoll_event events[s_maxEvents];
