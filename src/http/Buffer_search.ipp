@@ -2,9 +2,9 @@
 #include "Buffer.hpp"
 #include "HTTP.hpp"
 
-CURSOR_INL
+BUFFER_INL
 (usize) find_line_end() {
-	const u8 *const searchEnd = writePtr - memStart >= 3 ? writePtr - 3 : memStart;
+	const u8 *const searchEnd = writePtr - data >= 3 ? writePtr - 3 : data;
 
 	while (scanPtr < searchEnd) {
 		if (MEMCMP(scanPtr, "\r\n", 2) == 0) {
@@ -18,9 +18,9 @@ CURSOR_INL
 	return SIZE_MAX;
 }
 
-CURSOR_INL
+BUFFER_INL
 (usize) find_header_end() {
-	const u8 *const searchEnd = writePtr - memStart >= 3 ? writePtr - 3 : memStart;
+	const u8 *const searchEnd = writePtr - data >= 3 ? writePtr - 3 : data;
 
 	while (scanPtr < searchEnd) {
 		if (MEMCMP(scanPtr, "\r\n\r\n", 4) == 0) {
@@ -62,13 +62,13 @@ isize s_match(const u8 *ptr, usize length, const u8 (&ltable)[count][size]) {
 	return 0;
 }
 
-CURSOR_INL
+BUFFER_INL
 (isize) match_field() {
 	static const u8 ltable[][32] = FIELD_TABLE;
 
 	u8 *optr = readPtr;
 
-	while (readPtr < lineEnd && *readPtr != ':')
+	while (readPtr < scanPtr && *readPtr != ':')
 		readPtr++;
 	usize length = (usize)(readPtr - optr);
 	if (length >= sizeof(*ltable) || *readPtr != ':')
@@ -77,11 +77,11 @@ CURSOR_INL
 	return s_match(optr, length, ltable);
 }
 
-CURSOR_INL
+BUFFER_INL
 (isize) match_mime() {
 	static const u8 ltable[][8] = MIME_TABLE;
 
-	const usize minLength = (usize) MAX(0, lineEnd - readPtr - 3);
+	const usize minLength = (usize) MAX(0, scanPtr - readPtr - 3);
 	const u8 *searchLength = readPtr + MIN(minLength, 252);
 
 	while (readPtr < searchLength && *readPtr != '.')

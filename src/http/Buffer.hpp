@@ -2,29 +2,34 @@
 #include <unistd.h>
 #include "core.hpp"
 
-#define CURSOR_INL(ret_type) ret_type inline Cursor::
+#define BUFFER_INL(ret_type) template <usize bufferSize> ret_type inline HTTP::Buffer<bufferSize>::
 
-// Start, readPtr, scanPtr, writePtr
-struct Cursor {
-	static const usize bytesPadding = (sizeof(u8*) * 8) / 2;
+namespace HTTP {
+
+template <usize bufferSize>
+class Buffer {
 	static const usize minReadSize = 4;
 
-	u8 *reserved[2];		// TODO: Need to figure out how to split the metadata so that:
-	u8 *const memStart;		// [pad32 data pad32] instead of [data pad64]
-	u8 *const memEnd;
-	u8 *readPtr, *scanPtr, *writePtr, *lineEnd;
+public:
+	u8 data[bufferSize - 24];	// Last cache line is reserved for unbounded memory loads
+	u8 *readPtr, *scanPtr, *writePtr;
+
+	ALWAYS_INLINE
+	u8* get_end() const {
+		return data + sizeof(data);
+	}
 
 	usize compact() {
 		const usize bytesUsed = (usize)(writePtr - readPtr);
 
-		MEMMOVE(memStart, readPtr, bytesUsed);
-		readPtr = memStart;
-		writePtr = memStart + bytesUsed;
-		return (usize)(memEnd - writePtr);
+		MEMMOVE(data, readPtr, bytesUsed);
+		readPtr = data;
+		writePtr = data + bytesUsed;
+		return (usize)(get_end() - writePtr);
 	}
 
 	isize read(i32 fd, usize bytes) {
-		usize bytesFree = (usize)(memEnd - writePtr);
+		usize bytesFree = (usize)(get_end() - writePtr);
 
 		if (bytesFree < bytes) {
 			bytesFree = compact();
@@ -49,14 +54,13 @@ struct Cursor {
 	}
 
 	void reset() {
-		readPtr = memStart;
-		writePtr = memStart;
-		scanPtr = memStart;
-		lineEnd = NULL;
+		readPtr = data;
+		writePtr = data;
+		scanPtr = data;
 	}
 
 	bool is_full() {
-		return writePtr >= memEnd;
+		return writePtr >= get_end();
 	}
 
 	// Search
@@ -89,27 +93,14 @@ struct Cursor {
 	template <usize N>
 	void append_inline(const u8 *ptr, usize length);
 
-	usize append(Cursor &src, usize length);
+	usize append(Buffer &src, usize length);
 	void append_digit10(usize number);
 
-	void copy(const Cursor& other);
+	void copy(const Buffer& other);
 	bool insert(const u8 *ptr, usize length, usize insertIndex);
 
-	Cursor(u8* start, usize totalSize) :
-		reserved(), memStart(start), memEnd(start + totalSize - sizeof(Cursor)),
-		readPtr(start), writePtr(start) {
-		}
 };
-
-template <usize bufferSize>
-class Buffer {
-public:
-	u8 data[bufferSize - sizeof(Cursor)];	// Last cache line is reserved for unbounded memory loads
-	Cursor cursor;
-
-	// Constructors
-	Buffer() : cursor (data, bufferSize) {}
-};
+}
 
 #include "Buffer_add.ipp"
 #include "Buffer_search.ipp"
