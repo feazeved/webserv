@@ -26,7 +26,7 @@ void s_set_methods(Array32<StringView32> &methods, Location &location) {
 }
 
 static inline 
-void s_parse_location_directive(Location &location, const Array32<Token> &tokens, usize cursor, usize end) {
+void s_parse_location_directive(Location &location, const Array32<Token> &tokens, usize &cursor, usize end) {
 	Directive dir = s_build_directive(tokens, cursor, end);
 	u32 length = 1;
 
@@ -76,11 +76,6 @@ void s_parse_location_directive(Location &location, const Array32<Token> &tokens
 	if (s_length_check(length))
 		PERR_EXIT(1, "Error: Path size is too large");
 }
-
-// cgi {
-//	.py = /usr/bin/python3;
-//	.pl = /usr/bin/perl;	
-// }
 
 static inline 
 void s_parse_cgi(const Array32<Token> &tokens, usize &cursor, usize end, Location &loc) {
@@ -134,6 +129,8 @@ PARSER_INL
 	loc.url = tokens[cursor].value;
 	if (loc.url.length == 0 || loc.url.c_str()[0] != '/')
 		PERR_EXIT(1, "Error: Invalid location path");
+	if (s_length_check(loc.url.length))
+		PERR_EXIT(1, "Error: Path size is too large");
 	cursor++;
 	if (cursor == end || tokens[cursor].type != Token::OPEN_BRACKET)
 		PERR_EXIT(1, "Error: Unexpected token");
@@ -148,7 +145,7 @@ PARSER_INL
 			s_parse_cgi(tokens, cursor, locationEnd, loc);
 		}
 		else
-			s_parse_location_directive(loc, tokens, cursor, end);
+			s_parse_location_directive(loc, tokens, cursor, locationEnd);
 		cursor++;
 	}
 	if (tokens[cursor].type != Token::CLOSE_BRACKET)

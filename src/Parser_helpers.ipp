@@ -22,8 +22,10 @@ bool s_read_whole_file(const char *filePath, usize &fileSize, usize &fileOffset,
 
 	fileSize = (usize) st.st_size;
 	fileOffset = Arena::alloc_b(fileSize + 1 + padSize);
-	if (fileOffset == UINT32_MAX)
+	if (fileOffset == UINT32_MAX) {
+		close(fd);
 		PERR_RETURN(1, "Error: Out of memory");
+	}
 
 	u8* ptr = Arena::get_ptr(fileOffset);
 	usize curBytes = 0;

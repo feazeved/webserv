@@ -50,33 +50,48 @@ void s_directive_listen(Directive &dir, VirtualServer &server) {
 }
 
 static inline
-void s_parse_server_directive(VirtualServer &server, const Array32<Token> &tokens, usize cursor, usize end) {
+void s_directive_body_size(const StringView32 &value, usize &bodySize, VirtualServer &server) {
+	if (server.maxBodySize != SIZE_MAX || value.length == 0)
+		PERR_EXIT(1, "Error: Invalid max body size");
+
+	u8 factor = 0;
+	const char *str = value.c_str();
+	usize digitLength = value.length;
+	if (str[digitLength - 1] == 'G') {
+		factor = 30;
+		digitLength--;
+	}
+	else if (str[digitLength - 1] == 'M') {
+		factor = 20;
+		digitLength--;
+	}
+	else if (str[digitLength - 1] == 'K') {
+		factor = 10;
+		digitLength--;
+	}
+
+	const usize bytes = s_strtol10(str, digitLength);
+	if (bytes >= (1ul << (63 - factor)))	// TODO: Check carefully
+		PERR_EXIT(1, "Error: Invalid max body size");
+	bodySize = bytes << factor;
+}
+
+static inline
+void s_parse_server_directive(VirtualServer &server, const Array32<Token> &tokens, usize &cursor, usize end) {
 	Directive dir = s_build_directive(tokens, cursor, end);
 
 	if (dir.name == "error_page")
 		return s_directive_error_page(dir, server);
-	if (s_length_check(dir.args[0].length))
-		PERR_EXIT(1, "Error: Path size is too large");
+	if (dir.args.count != 1 || s_length_check(dir.args[0].length))
+		PERR_EXIT(1, "Error: Invalid server directive");
 	if (dir.name == "listen")
 		return s_directive_listen(dir, server);
-	if (dir.name == "host") {
-		if (dir.args.count != 1)
-			PERR_EXIT(1, "Error: Invalid host definition");
+	if (dir.name == "host")
 		server.host = dir.args[0];
-	}
-	else if (dir.name == "client_max_body_size") {
-		if (server.maxBodySize != SIZE_MAX || dir.args.count != 1)
-			PERR_EXIT(1, "Error: Invalid max body size definition");
-		server.maxBodySize = s_strtol10(dir.args[0].c_str(), dir.args[0].length);
-		if (server.maxBodySize < 1 || server.maxBodySize > 20)
-			PERR_EXIT(1, "Error: Invalid max body size");
-		server.maxBodySize <<= 20;	// TODO: add M check for size
-	}
-	else if (dir.name == "root") {
-		if (dir.args.count != 1)
-			PERR_EXIT(1, "Error: Invalid server root");
+	else if (dir.name == "client_max_body_size")
+		s_directive_body_size(dir.args[0], server.maxBodySize, server);
+	else if (dir.name == "root")
 		server.serverRoot = dir.args[0];
-	}
 	else
 		PERR_EXIT(1, "Error: Invalid server directive");
 }
