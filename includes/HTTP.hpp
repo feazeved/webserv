@@ -21,21 +21,21 @@ struct Token {
 		SEMICOLON,
 		WORD
 	}	type;
-	StringView value;
+	StringView32 value;
 };
 
 struct Directive {
-	StringView name;
-	Array32<StringView> args;
+	StringView32 name;
+	Array32<StringView32> args;
 };
 
 struct Location {
-	StringView url;
-	StringView root;
-	StringView index;			// If this is specified, its a file
-	StringView uploadStore;
-	StringView cgiBlock;		// Non-empty block range, including braces
-	StringView redirectTarget;
+	StringView32 url;
+	StringView32 root;
+	StringView32 index;			// If this is specified, its a file
+	StringView32 uploadStore;
+	StringView32 cgiBlock;		// Non-empty block range, including braces
+	StringView32 redirectTarget;
 	Status redirectStatus;
 	u8 methods;
 	bool autoindex;

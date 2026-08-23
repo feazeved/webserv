@@ -5,13 +5,13 @@
 
 namespace HTTP {
 
-class StringView {
+class StringView32 {
 public:
 	u32 offset;
 	u32 length;
 
-	StringView() : offset(0), length(0) {}
-	StringView(u32 length, u32 offset) : offset(offset), length(length) {}
+	StringView32() : offset(0), length(0) {}
+	StringView32(u32 length, u32 offset) : offset(offset), length(length) {}
 
 	const char *get() const {
 		return (const char*)Arena::get_ptr(offset);
@@ -20,6 +20,20 @@ public:
 	template <usize size>
 	bool operator==(const char (&literal)[size]) const {
 		return length == size - 1 && MEMCMP_INLINE(get(), literal) == 0;
+	}
+};
+
+class StringView {
+public:
+	u8 *ptr;
+	usize length;
+
+	StringView() : ptr(0), length(0) {}
+	StringView(u8 *newPtr, u32 length) : ptr(newPtr), length(length) {}
+
+	template <usize size>
+	bool operator==(const char (&literal)[size]) const {
+		return length == size - 1 && MEMCMP_INLINE(ptr, literal) == 0;
 	}
 };
 

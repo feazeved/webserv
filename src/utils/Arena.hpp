@@ -52,7 +52,7 @@ public:
 
 };
 
-typedef char t_assertions_must_fit[(sizeof(HTTP_DEFAULT_ERROR_PAGES) <= sizeof(Arena::poolB)) ? 1 : -1];
+STATIC_ASSERT(sizeof(HTTP_DEFAULT_ERROR_PAGES) <= sizeof(Arena::poolB));
 
 #ifdef MAIN_FILE
 	u8 Arena::poolA[ARENA_SIZE] ALIGNED(4096);

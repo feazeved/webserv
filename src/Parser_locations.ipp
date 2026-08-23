@@ -11,7 +11,7 @@ namespace HTTP {
 //
 
 static inline
-void s_set_methods(Array32<StringView> &methods, Location &location) {
+void s_set_methods(Array32<StringView32> &methods, Location &location) {
 	for (u32 index = 0; index < methods.count; index++)
 	{
 		if (methods[index] == "GET")
@@ -91,12 +91,12 @@ void s_parse_cgi(const Array32<Token> &tokens, usize &cursor, usize end, Locatio
 	const usize definitionStart = cursor;
 	while (cursor != end && tokens[cursor].type != Token::CLOSE_BRACKET) {
 		const usize extensionIndex = cursor;
-		const StringView &extension = tokens[cursor].value;
+		const StringView32 &extension = tokens[cursor].value;
 		if (tokens[cursor].type != Token::WORD || extension.length < 2
 			|| extension.get()[0] != '.')
 			PERR_EXIT(1, "Error: Invalid CGI extension");
 		for (usize index = definitionStart; index < extensionIndex; index += 4) {
-			const StringView &previous = tokens[index].value;
+			const StringView32 &previous = tokens[index].value;
 			if (previous.length == extension.length
 				&& MEMCMP(previous.get(), extension.get(), extension.length) == 0)
 				PERR_EXIT(1, "Error: Duplicate CGI extension");
@@ -116,7 +116,7 @@ void s_parse_cgi(const Array32<Token> &tokens, usize &cursor, usize end, Locatio
 	if (cursor == end || tokens[cursor].type != Token::CLOSE_BRACKET)
 		PERR_EXIT(1, "Error: Invalid CGI block");
 	if (cursor != definitionStart)
-		loc.cgiBlock = StringView(tokens[cursor].value.offset - blockOffset + 1, blockOffset);
+		loc.cgiBlock = StringView32(tokens[cursor].value.offset - blockOffset + 1, blockOffset);
 }
 
 PARSER_INL

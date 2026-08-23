@@ -122,6 +122,7 @@
 #define HTTP_ERROR_509 HTTP_ERROR_PAGE("509", "Server Error")
 #define HTTP_ERROR_510 HTTP_ERROR_PAGE("510", "Not Extended")
 #define HTTP_ERROR_511 HTTP_ERROR_PAGE("511", "Network Authentication Required")
+#define HTTP_ERROR(code) HTTP_ERROR_##code
 
 #define HTTP_DEFAULT_ERROR_PAGES \
 	HTTP_ERROR_400 HTTP_ERROR_401 HTTP_ERROR_402 HTTP_ERROR_403 \

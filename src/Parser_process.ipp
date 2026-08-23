@@ -10,18 +10,17 @@
 namespace HTTP {
 
 static inline
-bool s_next_cgi_word(const char *&cursor, const char *end,
-	const char *&word, usize &length) {
+bool s_next_cgi_word(const char *&cursor, const char *end, StringView &ext) {
 	while (cursor != end && ((u8)*cursor <= 32 || s_is_config_delimiter(*cursor)))
 		cursor++;
 	if (cursor == end)
 		return false;
 
-	word = cursor;
+	ext.ptr = (u8*) cursor;
 	while (cursor != end && (u8)*cursor > 32
 		&& !s_is_config_delimiter(*cursor))
 		cursor++;
-	length = (usize)(cursor - word);
+	ext.length = (usize)(cursor - (char*)ext.ptr);
 	return true;
 }
 
@@ -32,47 +31,36 @@ bool s_next_cgi_word(const char *&cursor, const char *end,
 */
 PARSER_INL
 (void) process_cgi_block(VirtualServer &server) {
-	u8 packed[MAX_LOCATION_BLOCK_SIZE];
+	u8 buffer[MAX_LOCATION_BLOCK_SIZE];
 
-	for (u32 locationIndex = 0; locationIndex < server.locations.count; locationIndex++) {
-		StringView &block = server.locations[locationIndex].cgiBlock;
+	for (u32 i = 0;	i < server.locations.count;	i++) {
+		StringView32 &block = server.locations[i].cgiBlock;
+
 		if (block.length == 0)
 			continue;
 
 		const char *cursor = block.get();
 		const char *const end = cursor + block.length;
-		usize packedSize = 0;
-		const char *extension;
-		const char *equals;
-		const char *interpreter;
-		usize extensionLength;
-		usize equalsLength;
-		usize interpreterLength;
+		usize packSize = 0;
+		StringView extension, interpreter;
 
-		while (s_next_cgi_word(cursor, end, extension, extensionLength)) {
-			if (!s_next_cgi_word(cursor, end, equals, equalsLength)
-				|| !s_next_cgi_word(cursor, end, interpreter, interpreterLength)
-				|| extensionLength < 2 || extension[0] != '.'
-				|| equalsLength != 1 || equals[0] != '='
-				|| extensionLength > UINT16_MAX
-				|| interpreterLength > UINT16_MAX
-				|| packedSize + 4 + extensionLength + interpreterLength > sizeof(packed))
-				PERR_EXIT(true, "Error: Invalid CGI block encoding");
+		while (s_next_cgi_word(cursor, end, extension)) {
+			s_next_cgi_word(cursor, end, interpreter);
+			s_next_cgi_word(cursor, end, interpreter);
 
-			packed[packedSize++] = (u8)(extensionLength >> 8);
-			packed[packedSize++] = (u8)extensionLength;
-			packed[packedSize++] = (u8)(interpreterLength >> 8);
-			packed[packedSize++] = (u8)interpreterLength;
-			MEMCPY(packed + packedSize, extension, extensionLength);
-			packedSize += extensionLength;
-			MEMCPY(packed + packedSize, interpreter, interpreterLength);
-			packedSize += interpreterLength;
+			buffer[packSize++] = (u8)(extension.length >> 8);
+			buffer[packSize++] = (u8)extension.length;
+			buffer[packSize++] = (u8)(interpreter.length >> 8);
+			buffer[packSize++] = (u8)interpreter.length;
+
+			MEMCPY(buffer + packSize, extension.ptr, extension.length);
+			packSize += extension.length;
+			MEMCPY(buffer + packSize, interpreter.ptr, interpreter.length);
+			packSize += interpreter.length;
 		}
 
-		if (packedSize == 0)
-			PERR_EXIT(true, "Error: Empty CGI block encoding");
-		MEMCPY(Arena::get_ptr(block.offset), packed, packedSize);
-		block.length = (u32)packedSize;
+		MEMCPY(Arena::get_ptr(block.offset), buffer, packSize);
+		block.length = (u32)packSize;
 	}
 }
 }

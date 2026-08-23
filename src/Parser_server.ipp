@@ -11,7 +11,7 @@ static inline
 void s_directive_error_page(Directive &dir, VirtualServer &server) {
 	if (dir.args.count < 2)
 		PERR_EXIT(1, "Error: Invalid error page");
-	StringView path = dir.args[dir.args.count - 1];
+	StringView32 path = dir.args[dir.args.count - 1];
 	if (s_length_check(path.length))
 		PERR_EXIT(1, "Error: Invalid error page");
 	for (u32 index = 0; index + 1 < dir.args.count; index++) {
@@ -30,7 +30,7 @@ static inline
 void s_directive_listen(Directive &dir, VirtualServer &server) {
 	if (server.port != SIZE_MAX || dir.args.count != 1)
 		PERR_EXIT(1, "Error: Invalid port definition");
-	const StringView &listen = dir.args[0];
+	const StringView32 &listen = dir.args[0];
 	const char *port = listen.get();
 	usize portLength = listen.length;
 	char *separator = (char*)MEMCHR(port, ':', portLength);
@@ -39,7 +39,7 @@ void s_directive_listen(Directive &dir, VirtualServer &server) {
 		if (hostLength == 0 || hostLength == listen.length - 1
 			|| server.host.length != 0)
 			PERR_EXIT(1, "Error: Invalid listen address");
-		server.host = StringView((u32)hostLength, listen.offset);
+		server.host = StringView32((u32)hostLength, listen.offset);
 		*separator = '\0';
 		port = separator + 1;
 		portLength -= hostLength + 1;
@@ -102,7 +102,7 @@ PARSER_INL
 			HTTP::Location loc;
 			parse_location(tokens, cursor, end, loc);
 			for (usize index = 0; index < locationIndex; index++) {
-				const StringView &path = server.locations[index].url;
+				const StringView32 &path = server.locations[index].url;
 				if (path.length == loc.url.length && MEMCMP(path.get(), loc.url.get(), path.length) == 0)
 					PERR_EXIT(1, "Error: Duplicate location");
 			}
@@ -118,7 +118,7 @@ PARSER_INL
 	if (server.port == SIZE_MAX)
 		PERR_EXIT(1, "Error: Missing listen directive");
 	if (server.host.length == 0)
-		server.host = StringView(sizeof("localhost") - 1, (u32)(fileOffset + fileSize + 4));
+		server.host = StringView32(sizeof("localhost") - 1, (u32)(fileOffset + fileSize + 4));
 	return 0;
 }
 
