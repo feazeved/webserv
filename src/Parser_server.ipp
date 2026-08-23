@@ -15,7 +15,7 @@ void s_directive_error_page(Directive &dir, VirtualServer &server) {
 	if (s_length_check(path.length))
 		PERR_EXIT(1, "Error: Invalid error page");
 	for (u32 index = 0; index + 1 < dir.args.count; index++) {
-		usize error = s_strtol10(dir.args[index].get(), dir.args[index].length);
+		usize error = s_strtol10(dir.args[index].c_str(), dir.args[index].length);
 		const bool validError = (error >= 400 && error <= 431) || (error >= 500 && error <= 511);
 		if (dir.args[index].length != 3 || !validError)
 			PERR_EXIT(1, "Error: Invalid error number");
@@ -31,7 +31,7 @@ void s_directive_listen(Directive &dir, VirtualServer &server) {
 	if (server.port != SIZE_MAX || dir.args.count != 1)
 		PERR_EXIT(1, "Error: Invalid port definition");
 	const StringView32 &listen = dir.args[0];
-	const char *port = listen.get();
+	const char *port = listen.c_str();
 	usize portLength = listen.length;
 	char *separator = (char*)MEMCHR(port, ':', portLength);
 	if (separator != NULL) {
@@ -67,7 +67,7 @@ void s_parse_server_directive(VirtualServer &server, const Array32<Token> &token
 	else if (dir.name == "client_max_body_size") {
 		if (server.maxBodySize != SIZE_MAX || dir.args.count != 1)
 			PERR_EXIT(1, "Error: Invalid max body size definition");
-		server.maxBodySize = s_strtol10(dir.args[0].get(), dir.args[0].length);
+		server.maxBodySize = s_strtol10(dir.args[0].c_str(), dir.args[0].length);
 		if (server.maxBodySize < 1 || server.maxBodySize > 20)
 			PERR_EXIT(1, "Error: Invalid max body size");
 		server.maxBodySize <<= 20;	// TODO: add M check for size
@@ -103,7 +103,7 @@ PARSER_INL
 			parse_location(tokens, cursor, end, loc);
 			for (usize index = 0; index < locationIndex; index++) {
 				const StringView32 &path = server.locations[index].url;
-				if (path.length == loc.url.length && MEMCMP(path.get(), loc.url.get(), path.length) == 0)
+				if (path.length == loc.url.length && MEMCMP(path.c_str(), loc.url.c_str(), path.length) == 0)
 					PERR_EXIT(1, "Error: Duplicate location");
 			}
 			server.locations[locationIndex] = loc;

@@ -54,8 +54,8 @@ void s_parse_location_directive(Location &location, const Array32<Token> &tokens
 	}
 	else if (dir.name == "upload_store") {
 		struct stat st;
-		if (dir.args.count != 1 || stat(dir.args[0].get(), &st) == -1
-			|| !S_ISDIR(st.st_mode) || access(dir.args[0].get(), W_OK | X_OK) == -1)
+		if (dir.args.count != 1 || stat(dir.args[0].c_str(), &st) == -1
+			|| !S_ISDIR(st.st_mode) || access(dir.args[0].c_str(), W_OK | X_OK) == -1)
 			PERR_EXIT(1, "Error: Invalid upload store");
 		location.uploadStore = dir.args[0];
 		length = dir.args[0].length;
@@ -63,7 +63,7 @@ void s_parse_location_directive(Location &location, const Array32<Token> &tokens
 	else if (dir.name == "return") {
 		if (dir.args.count != 2)
 			PERR_EXIT(1, "Error: Invalid redirect");
-		usize status = s_strtol10(dir.args[0].get(), 3);
+		usize status = s_strtol10(dir.args[0].c_str(), 3);
 		location.redirectStatus = status;
 		if (dir.args[0].length != 3 || status < 300 || status > 399
 			|| !location.redirectStatus.is_valid())
@@ -93,12 +93,12 @@ void s_parse_cgi(const Array32<Token> &tokens, usize &cursor, usize end, Locatio
 		const usize extensionIndex = cursor;
 		const StringView32 &extension = tokens[cursor].value;
 		if (tokens[cursor].type != Token::WORD || extension.length < 2
-			|| extension.get()[0] != '.')
+			|| extension.c_str()[0] != '.')
 			PERR_EXIT(1, "Error: Invalid CGI extension");
 		for (usize index = definitionStart; index < extensionIndex; index += 4) {
 			const StringView32 &previous = tokens[index].value;
 			if (previous.length == extension.length
-				&& MEMCMP(previous.get(), extension.get(), extension.length) == 0)
+				&& MEMCMP(previous.c_str(), extension.c_str(), extension.length) == 0)
 				PERR_EXIT(1, "Error: Duplicate CGI extension");
 		}
 		cursor++;
@@ -127,7 +127,7 @@ PARSER_INL
 	if (cursor == end || tokens[cursor].type != Token::WORD)
 		PERR_EXIT(1, "Error: Expected location");
 	loc.url = tokens[cursor].value;
-	if (loc.url.length == 0 || loc.url.get()[0] != '/')
+	if (loc.url.length == 0 || loc.url.c_str()[0] != '/')
 		PERR_EXIT(1, "Error: Invalid location path");
 	cursor++;
 	if (cursor == end || tokens[cursor].type != Token::OPEN_BRACKET)
