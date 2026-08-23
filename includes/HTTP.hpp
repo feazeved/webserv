@@ -7,12 +7,8 @@
 #include "StringView.hpp"
 #include "Status.hpp"
 #include "State.hpp"
-namespace HTTP {
 
-// cgi {
-//     .py = /usr/bin/python3;
-//     .pl = /usr/bin/perl;	
-// }
+namespace HTTP {
 
 struct Token {
 	enum Type {

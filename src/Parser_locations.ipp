@@ -77,6 +77,11 @@ void s_parse_location_directive(Location &location, const Array32<Token> &tokens
 		PERR_EXIT(1, "Error: Path size is too large");
 }
 
+// cgi {
+//	.py = /usr/bin/python3;
+//	.pl = /usr/bin/perl;	
+// }
+
 static inline 
 void s_parse_cgi(const Array32<Token> &tokens, usize &cursor, usize end, Location &loc) {
 	if (cursor == end || tokens[cursor].type != Token::WORD

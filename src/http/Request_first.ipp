@@ -1,37 +1,35 @@
 #pragma once
 #include "Request.hpp"
+#include "Array.hpp"
 
 namespace HTTP {
 
-REQUEST_INL
-(isize) check_location(Cursor &src, VirtualServer* cfg) {
-	bool found = false;
-	std::vector<Location>::iterator it = cfg->locations.begin();
+// 
+static inline 
+bool s_check_location(u8 *ptr, usize length, VirtualServer* cfg, u8 mode) {
+	Array32<Location> &locations = cfg->locations;
 
-	const u8 *pathPtr = src.memStart + path.index;
-	const usize pathLength = path.size;
+	usize cmpLength = 1;
+	while (cmpLength < length && ptr[cmpLength] != '/')
+		cmpLength++;
 
-	for(; it != cfg->locations.end(); it++)
-	{
-		if (MEMCMP(pathPtr, it->url.c_str(), it->url.size()) == 0 && pathLength == it->url.size())
-		{
-			found = true;
-			break ;
+	for (usize i = 0; i < locations.count; i++) {
+		if (MEMCMP(ptr, locations[i].url.c_str(), cmpLength) == 0) {
+			if ((locations[i].methods & (mode & 7)) != 0)
+				return true;
 		}
 	}
-
-	if (found)
-		return !!(it->methods & (mode & 7));
 	return false;
 }
 
 REQUEST_INL
 (isize) parse_target(Cursor &src, VirtualServer* cfg) {
-
 	u8 *const lineStart = src.readPtr;
 	u8* &ptr = src.readPtr;
 	u8 *end = src.lineEnd;
 
+	if (*ptr != '/')
+		return -1;
 	query.index = 0;
 	query.size = 0;
 	path.index = 0;
@@ -55,7 +53,7 @@ REQUEST_INL
 	}
 	contentType = src.match_mime();	// TODO: 
 
-	if(!check_location(src, cfg))
+	if(!s_check_location(lineStart, path.size, cfg, mode))
 		return -1;
 	return 0;
 }

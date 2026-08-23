@@ -17,6 +17,20 @@
 
 namespace HTTP {
 
+static inline
+void	s_append_html_escaped(Cursor& dst, const std::string& str) {
+	for (usize i = 0; i < str.size(); i++) {
+		switch (str[i]) {
+			case '&':	dst.append("&amp;");	break ;
+			case '<':	dst.append("&lt;");		break ;
+			case '>':	dst.append("&gt;");		break ;
+			case '"':	dst.append("&quot;");	break ;
+			default:	dst.append((const u8*)&str[i], 1);	break ;
+		}
+	}
+}
+
+
 CONNECTION_INL
 (isize) get_autoindex() {
 	Location*	location = NULL;
