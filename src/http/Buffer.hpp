@@ -111,6 +111,8 @@ public:
 	Buffer() : cursor (data, bufferSize) {}
 };
 
+typedef Buffer<16384> Buffer16k;
+
 #include "Buffer_add.ipp"
 #include "Buffer_search.ipp"
 #include "Buffer_string.ipp"

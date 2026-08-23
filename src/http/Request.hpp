@@ -1,6 +1,4 @@
 #pragma once
-#include <string>
-#include <vector>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/epoll.h>
@@ -24,6 +22,7 @@ public:
 		u16 size;
 	}	path, query, cookies;
 
+	u16 locationIndex;
 	usize bodySize, chunkSize;
 	Status status;
 	u8 mode;

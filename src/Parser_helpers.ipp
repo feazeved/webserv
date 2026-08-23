@@ -123,7 +123,7 @@ usize s_find_scope_end(const Array32<Token> &tokens, usize begin, usize end) {
 		distance++;
 	}
 	if (it == end)
-		PERR_EXIT(1, "Error: Invalid block");
+		PERR_EXIT(1, "Error: Invalid block scope");
 	return distance;
 }
 
@@ -148,6 +148,8 @@ usize s_count_locations(const Array32<Token> &tokens, usize cursor, usize end) {
 				cursor++;
 		}
 	}
+	if (locationCount >= UINT16_MAX)
+		PERR_EXIT(1, "Error: More than 65535 locations");
 	return locationCount;
 }
 

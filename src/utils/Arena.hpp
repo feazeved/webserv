@@ -6,9 +6,13 @@
 #include "status_codes.hpp"
 
 /*
-	Arena will have 64MB + Parsing Capacity. Ideally, anything that is supposed
-	to be temporary is allocated within the ConnectionPool reserved space
-	That way, the memory is essentially freed when the application starts running
+	Arena has two pools, A that belongs to the connection pool and B
+	that belongs to the config structure. Since parsing uses tokens
+	and directives, they can be allocated in poolA, so their cost
+	is effectively free because they can be safely overwritten
+
+	There is no need to store different offsets, given that the memory
+	layout is sequential and won't exceed 4 GB (not even close)
 */
 
 class Arena {

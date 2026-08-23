@@ -11,3 +11,5 @@
 6. Revise Arena starting size
 
 7. Make a better string view class, it is super annoying to use
+
+8. Validate the CGI interpreters

@@ -24,17 +24,27 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
+(void) build_path(char* buffer, const char *ptr, usize length) {
+	const StringView32& root = cfg->locations[request.locationIndex].root;
+
+	MEMCPY(buffer, root.c_str(), root.length);
+	buffer += root.length;
+	MEMCPY(buffer, ptr, length);
+	buffer[length] = 0;
+}
+
+CONNECTION_INL
 (isize) configure() {
 	if (request.options & Options::CHUNKED_LENGTH)
 		request.bodySize = cfg->maxBodySize;
 
 	if (request.mode & Mode::CGI)
 		return cgi_first_run();
-	else if (request.mode & Mode::GET)
-		return get_first_run();
+	else if (request.mode & Mode::POST)
+		return post_first_run();
 	else if (request.mode & Mode::DELETE)
 		return del_first_run();
 	else
-		return post_first_run();
+		return get_first_run();
 }
 }

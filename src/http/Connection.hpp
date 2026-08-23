@@ -7,15 +7,12 @@
 #include <fcntl.h>
 #include <cstring>
 #include <sys/stat.h>
-#include <string>
 
-#include "HTTP.hpp"
-#include "core.hpp"
 #include "Buffer.hpp"
 #include "VirtualServer.hpp"
 
 #include "Request.hpp"
-#include "State.hpp"
+
 
 #define CONNECTION_INL(ret_type) ret_type inline HTTP::Connection::
 
@@ -38,8 +35,6 @@ public:
 	static const usize bufferSize = HTTP_BUFFERSIZE - metasizeAlign;
 
 	typedef Buffer<bufferSize> HTTP_Buffer;
-	// Actually the buffer should be here like
-	// u8 rawData[32768];
 
 public:
 	VirtualServer* cfg;
@@ -53,9 +48,9 @@ public:
 	pid_t processId;
 
 	// TODO: These FDs can be moved to the buffer
-	i32 clientFd;	// Duplex FD
-	i32 writeFd;	// CGI Input or POST
-	i32 readFd;		// CGI Output or GET/DEL
+	int clientFd;	// Duplex FD
+	int writeFd;	// CGI Input or POST
+	int readFd;		// CGI Output or GET/DEL
 
 	isize dispatch(u32 events);
 
@@ -102,18 +97,21 @@ public:
 	isize error_path();
 	void  build_header();
 	isize build_cgi_header();
+	void build_path(char* buffer, const char* ptr, usize length);
 
 	// HTTP Methods
 	isize del_method();
-	isize del_first_run();
 	isize get_method();
+	isize post_method();
+	isize cgi_method();
+	isize sse_method();
+	isize get_directory(struct stat *st);
+
+	isize del_first_run();
 	isize get_autoindex();
 	isize get_first_run();
-	isize post_method();
 	isize post_first_run();
-	isize cgi_method();
 	isize cgi_first_run();
-	isize sse_method();
 
 	// Common
 	isize read_from_server();
@@ -135,12 +133,7 @@ public:
 // namespace HTTP
 }
 
-#include "Connection_fs_helpers.ipp"
 #include "Connection_configure.ipp"
 #include "Connection_common.ipp"
 #include "Connection_game.ipp"
-
 #include "Connection_cgi.ipp"
-#include "Connection_get.ipp"
-#include "Connection_post.ipp"
-#include "Connection_delete.ipp"

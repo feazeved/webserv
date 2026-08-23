@@ -48,7 +48,7 @@ CONNECTION_INL
 	s_append_mime(dst, request.contentType);
 
 	dst.append("\r\n\r\n");
-
+	state |= State::WRITING_TO_CLIENT;
 }
 // Namespace HTTP
 }

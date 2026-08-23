@@ -66,6 +66,12 @@
 #define HTTP_STATUS_511 "511 Network Authentication Required"
 #define HTTP_STATUS(code) HTTP_STATUS_##code
 
+/* 
+	TODO: Ideally these should be 256 bytes at most, so I can access them
+	in poolB with a 256 byte stride. That'll make a 256 byte inline memcpy
+	attractive as well
+*/
+
 #define HTTP_ERROR_PAGE(code, reason) \
 	"<!doctype html><html lang=en><meta charset=utf-8>" \
 	"<meta name=viewport content=\"width=device-width\">" \

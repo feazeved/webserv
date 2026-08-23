@@ -1,14 +1,10 @@
 #pragma once
 #include "Connection.hpp"
-#include "Connection_fs_helpers.ipp"
 #include "HTTP.hpp"
-#include <algorithm>
 #include <cerrno>
 #include <cstdio>
 #include <ctime>
 #include <fcntl.h>
-#include <locale>
-#include <vector>
 #include <cstring>
 #include <sys/stat.h>
 #include <string>
@@ -30,20 +26,13 @@ void	s_append_html_escaped(Cursor& dst, const std::string& str) {
 	}
 }
 
-
 CONNECTION_INL
-(isize) get_autoindex() {
+(isize) get_autoindex(u8* path) {
 	Location*	location = NULL;
 	std::string	relative;
 	std::string	dirPath;
 	const char*	reqPath = (const char*)recvBuffer.cursor.memStart + request.path.index;
 	std::string	urlPath(reqPath, request.path.size);
-
-	if (!s_resolve_location(cfg, reqPath, request.path.size, &location, relative)) {
-		request.status = Status::i404;
-		return -1;
-	}
-	s_join_path(location->root, relative, dirPath);
 
 	DIR* dir = opendir(dirPath.c_str());
 	if (dir == NULL) {
@@ -128,69 +117,27 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(isize) get_first_run() {
-	const char*	reqPath = (const char*)recvBuffer.cursor.memStart + request.path.index;
-	Location*	location = NULL;
-	std::string	relative;
-	std::string	fullpath;
+(isize) get_directory(struct stat *st) {
+	bool resolvedIndex = false;
+	if (!location->index.empty()) {
+		std::string	indexPath = fullpath;
+		if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
+			indexPath += '/';
+		indexPath += location->index;
 
-	// There is no location. Error 404
-	if (!s_resolve_location(cfg, reqPath, request.path.size, &location, relative)) {
-		request.status = Status::i404;
-		return -1;
-	}
-	s_join_path(location->root, relative, fullpath);
-
-	struct stat st;
-	if (stat(fullpath.c_str(), &st) == -1) {
-		request.status = (errno == ENOENT) ? Status::i404 : (errno == EACCES ? Status::i403 : Status::i500);
-		return -1;
-	}
-
-	if (S_ISDIR(st.st_mode)) {
-		bool	resolvedIndex = false;
-		if (!location->index.empty()) {
-			std::string	indexPath = fullpath;
-			if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
-				indexPath += '/';
-			indexPath += location->index;
-
-			struct stat	indexStat;
-			if (stat(indexPath.c_str(), &indexStat) == 0 && !S_ISDIR(indexStat.st_mode)) {
-				fullpath = indexPath;
-				st = indexStat;
-				resolvedIndex = true;
-			}
-		}
-		if (!resolvedIndex) {
-			if (location->autoindex)
-				return get_autoindex();
-			request.status = Status::i403;
-			return -1;
+		struct stat	indexStat;
+		if (stat(indexPath.c_str(), &indexStat) == 0 && !S_ISDIR(indexStat.st_mode)) {
+			fullpath = indexPath;
+			st = indexStat;
+			resolvedIndex = true;
 		}
 	}
-
-	i32	rawFd = open(fullpath.c_str(), O_RDONLY);
-	if (rawFd == -1) {
-		request.status = (errno == ENOENT) ? Status::i404 : (errno == EACCES ? Status::i403 : Status::i500);
+	if (!resolvedIndex) {
+		if (location->autoindex)
+			return get_autoindex();
+		request.status = Status::i403;
 		return -1;
 	}
-
-	readFd = rawFd;
-	writeFd = -1;
-	request.status = Status::i200;
-	request.bodySize = (usize)st.st_size;
-	build_header();
-	state |= State::WRITING_TO_CLIENT;
-	return 0;
-}
-
-// Header will already be built in the configure function
-CONNECTION_INL
-(isize) get_method() {
-	if (readFd == -1)
-		return 0;
-	return read_from_server();
 }
 
 // namespace HTTP
