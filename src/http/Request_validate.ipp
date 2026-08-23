@@ -5,7 +5,7 @@ namespace HTTP {
 //
 
 REQUEST_INL
-(isize) validate_header(Cursor &src, VirtualServer* cfg) {
+(isize) validate_header(HTTP_Buffer &src, VirtualServer* cfg) {
 	const bool isBodyMethod = mode & (Mode::POST | Mode::CGI);
 	const bool encodingSet = !(options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH));
 

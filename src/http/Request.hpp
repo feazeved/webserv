@@ -37,13 +37,13 @@ public:
 	}
 
 	// Parsing
-	isize check_location(Cursor &src, VirtualServer* cfg);
-	isize parse_target(Cursor &src, VirtualServer* cfg);
-	isize parse_first_line(Cursor &src, VirtualServer* cfg, usize lineLength);
-	isize parse_header(Cursor &src, VirtualServer* cfg);
-	isize parse_line(Cursor &src, VirtualServer* cfg, usize lineLength);
-	isize parse_cgi_line(Cursor &src, Cursor &dst);
-	isize validate_header(Cursor &src, VirtualServer* cfg);
+	isize check_location(HTTP_Buffer &src, VirtualServer* cfg);
+	isize parse_target(HTTP_Buffer &src, VirtualServer* cfg);
+	isize parse_first_line(HTTP_Buffer &src, VirtualServer* cfg, usize lineLength);
+	isize parse_header(HTTP_Buffer &src, VirtualServer* cfg);
+	isize parse_line(HTTP_Buffer &src, VirtualServer* cfg, usize lineLength);
+	isize parse_cgi_line(HTTP_Buffer &src, HTTP_Buffer &dst);
+	isize validate_header(HTTP_Buffer &src, VirtualServer* cfg);
 
 };
 }

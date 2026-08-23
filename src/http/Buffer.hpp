@@ -1,6 +1,7 @@
 #pragma once
 #include <unistd.h>
 #include "core.hpp"
+#include "HTTP.hpp"
 
 #define BUFFER_INL(ret_type) template <usize bufferSize> ret_type inline HTTP::Buffer<bufferSize>::
 
@@ -101,6 +102,8 @@ public:
 
 };
 }
+
+typedef HTTP::Buffer<HTTP_BUFFERSIZE> HTTP_Buffer
 
 #include "Buffer_add.ipp"
 #include "Buffer_search.ipp"

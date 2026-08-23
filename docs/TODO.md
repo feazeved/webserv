@@ -1,15 +1,9 @@
-1. Ensure all fields being stored in parsing are no longer than 4096 bytes
+1. Ensure all fields being stored in parsing are no longer than 4096 bytes	(Done?)
 
-2. Ensure S_ISDIR check is in a common helper (uploadStore parserlocations)
+2. Possibly make s_length_check print the error line
 
-3. Possibly make s_length_check print the error line
+3. Make a better string view class, it is super annoying to use
 
-4. Fix default error pages using epoch
+4. Validate the CGI interpreters (check for access)
 
-5. Fix processing of CGI block
-
-6. Revise Arena starting size
-
-7. Make a better string view class, it is super annoying to use
-
-8. Validate the CGI interpreters
+5. Do more target validation inside check_location, it is too permissive

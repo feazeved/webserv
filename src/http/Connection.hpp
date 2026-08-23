@@ -13,7 +13,6 @@
 
 #include "Request.hpp"
 
-
 #define CONNECTION_INL(ret_type) ret_type inline HTTP::Connection::
 
 // For epoll conformity, cgi should be an object of Connection, 
@@ -33,8 +32,6 @@ public:
 	static const usize metasizeAlign = ALIGN_UP(metadataSize / 2, 8ul);
 	static const usize bytesFree = 2 * metasizeAlign - metadataSize;	// Debug only
 	static const usize bufferSize = HTTP_BUFFERSIZE - metasizeAlign;
-
-	typedef Buffer<bufferSize> HTTP_Buffer;
 
 public:
 	VirtualServer* cfg;
@@ -119,7 +116,7 @@ public:
 	isize write_to_client(u32 events);
 	isize read_from_client(u32 events);
 
-	isize dechunk(Cursor& src, Cursor& dst);
+	isize dechunk(HTTP_Buffer& src, HTTP_Buffer& dst);
 	isize decode();
 
 	// ======== Constructors ====================

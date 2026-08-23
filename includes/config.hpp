@@ -1,6 +1,6 @@
 #pragma once
 
-#define HTTP_BUFFERSIZE 16384
+#define HTTP_BUFFERSIZE 8192
 
 #define MAX_VIRTUAL_SERVERS (64)
 #define MAX_LOCATION_BLOCK_SIZE (16ul * 1024ul)
