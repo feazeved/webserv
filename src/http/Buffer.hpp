@@ -60,8 +60,8 @@ struct Cursor {
 	}
 
 	// Search
-	isize find_line_end();
-	bool find_header_end();
+	usize find_line_end();
+	usize find_header_end();
 	isize match_field();
 	isize match_mime();
 
@@ -110,8 +110,6 @@ public:
 	// Constructors
 	Buffer() : cursor (data, bufferSize) {}
 };
-
-typedef Buffer<16384> Buffer16k;
 
 #include "Buffer_add.ipp"
 #include "Buffer_search.ipp"

@@ -138,7 +138,7 @@ CONNECTION_INL
 
 	// Return path until the operation isnt complete
 	if (request.status.is_set()) {
-		if (sendBuffer.cursor.find_header_end() == false) {
+		if (sendBuffer.cursor.find_header_end() != SIZE_MAX) {
 			if (sendBuffer.cursor.is_full())
 				return -1;	// ERROR: CGI Header is too big
 			return 0;	// Still no CGI Header

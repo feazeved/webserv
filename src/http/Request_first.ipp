@@ -71,9 +71,8 @@ REQUEST_INL
 
 // Returning 
 REQUEST_INL
-(isize) parse_first_line(Cursor &src, VirtualServer* cfg) {
-	const usize lineLength = (usize)(src.lineEnd - src.readPtr);
-	if (lineLength < 14 || lineLength >= 8192)
+(isize) parse_first_line(Cursor &src, VirtualServer* cfg, usize lineLength) {
+	if (lineLength < 14 || lineLength >= 8000)
 		return -1;	// ERROR: Bad request "GET / HTTP/1.1" shortest possible
 
 	if (src.strcmp("GET"))

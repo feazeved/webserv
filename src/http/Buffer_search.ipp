@@ -3,40 +3,35 @@
 #include "HTTP.hpp"
 
 CURSOR_INL
-(isize) find_line_end() {
+(usize) find_line_end() {
 	const u8 *const searchEnd = writePtr - memStart >= 3 ? writePtr - 3 : memStart;
-	lineEnd = NULL;
 
 	while (scanPtr < searchEnd) {
 		if (MEMCMP(scanPtr, "\r\n", 2) == 0) {
-			lineEnd = scanPtr;
+			usize lineEnd = (usize)(scanPtr - readPtr);
 			scanPtr += 2;
-			if (MEMCMP(scanPtr, "\r\n", 2) == 0) {
-				scanPtr += 2;
-				return 2; // Found header end
-			}
-			return 1; // Found line end
+			return lineEnd; // Found line end
 		}
 		else
 			scanPtr++;
 	}
-	return 0;
+	return SIZE_MAX;
 }
 
-// Does not update start and end (not for line parsing)
 CURSOR_INL
-(bool) find_header_end() {
+(usize) find_header_end() {
 	const u8 *const searchEnd = writePtr - memStart >= 3 ? writePtr - 3 : memStart;
 
 	while (scanPtr < searchEnd) {
 		if (MEMCMP(scanPtr, "\r\n\r\n", 4) == 0) {
+			usize lineLength = (usize)(scanPtr - readPtr);
 			scanPtr += 4;
-			return true; // Found header end
+			return lineLength; // Found header end
 		}
 		else
 			scanPtr++;
 	}
-	return false;
+	return SIZE_MAX;
 }
 
 /* (IMPORTANT) This function presumes 32 byte padding

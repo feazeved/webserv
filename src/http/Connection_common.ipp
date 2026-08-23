@@ -114,13 +114,13 @@ CONNECTION_INL
 
 	while (src.readPtr < searchEnd) {
 		if (request.chunkSize == SIZE_MAX) {
-			isize rvalue = src.find_line_end();
-			if (rvalue == 0)
+			usize lineLength = src.find_line_end();
+			if (lineLength == SIZE_MAX)
 				break;
 			request.chunkSize = src.strtol16();
 				// TODO: skip spaces here
 			if (request.chunkSize == 0) {
-				if (rvalue != 2)
+				if (lineLength != 0)
 					return -1;	// CLOSING ERROR: no header end after 0
 				request.bodySize = 0;
 				break;

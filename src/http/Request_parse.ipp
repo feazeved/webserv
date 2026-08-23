@@ -6,20 +6,19 @@ namespace HTTP {
 // TODO: Add a check for line length here if it makes sense
 REQUEST_INL
 (isize) parse_header(Cursor &src, VirtualServer* cfg) {
-	isize rvalue;
-	while ((rvalue = src.find_line_end()) != 0) {
-		if (parse_line(src, cfg) < 0)
-			return -1;	// ERROR: Invalid header
-		if (rvalue == 2)
+	usize lineLength;
+	while ((lineLength = src.find_line_end()) != SIZE_MAX) {
+		if (lineLength == 0)
 			return validate_header(src, cfg);
+		if (parse_line(src, cfg, lineLength) < 0)
+			return -1;	// ERROR: Invalid header
 	}
 	return 0;
 }
 
 REQUEST_INL
-(isize) parse_line(Cursor &src, VirtualServer* cfg) {
-	const usize lineLength = (usize)(src.lineEnd - src.readPtr);
-	if (lineLength < 2 || lineLength >= 8192) {	// TODO: Fix magic numbers
+(isize) parse_line(Cursor &src, VirtualServer* cfg, usize lineLength) {
+	if (lineLength < 2 || lineLength >= 8000) {	// TODO: Fix magic numbers
 		status = Status::i401;
 		return -1;
 	}
@@ -102,9 +101,8 @@ REQUEST_INL
 		dst.insert(str, length, 256 - length);
 		return rvalue;
 	}
-	else {
+	else
 		dst.append(field, totalLength);
-	}
 	return fieldIndex;
 }
 
