@@ -15,15 +15,17 @@ bool s_read_whole_file(const char *filePath, usize &fileSize, usize &fileOffset,
 		PERR_RETURN(1, "Error: Failed to open file");
 
 	struct stat st;
-	if (fstat(fd, &st) == -1 || st.st_size < 16 || (usize)st.st_size > MAX_FILE_SIZE - 127) {
+	if (fstat(fd, &st) == -1 || st.st_size < 16) {
 		close(fd);
 		PERR_RETURN(1, "Error: Invalid file");
 	}
 
 	fileSize = (usize) st.st_size;
-	fileOffset = Arena::alloc_index(fileSize + 1 + padSize);
+	fileOffset = Arena::alloc_b(fileSize + 1 + padSize);
+	if (fileOffset == UINT32_MAX)
+		PERR_RETURN(1, "Error: Out of memory");
 
-	u8* ptr = Arena::data + fileOffset;
+	u8* ptr = Arena::get_ptr(fileOffset);
 	usize curBytes = 0;
 	while (curBytes < fileSize) {
 		usize bytesRemaining = fileSize - curBytes;
@@ -56,7 +58,7 @@ Directive s_build_directive(const Array32<Token> &tokens, usize &cursor, usize e
 		cursor++;
 	if (cursor == end || tokens[cursor].type != Token::SEMICOLON)
 		PERR_EXIT(1, "Error: Unexpected token");
-	if (dir.args.alloc((u32)(cursor - argumentStart)) == true)
+	if (dir.args.alloc_a((u32)(cursor - argumentStart)) == true)
 		_exit(1);
 	for (u32 index = 0; index < dir.args.count; index++)
 		dir.args[index] = tokens[argumentStart + index].value;

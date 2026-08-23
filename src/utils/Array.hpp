@@ -10,20 +10,29 @@ public:
 
 	Array32() : offset(0), count(0) {}
 
-	bool alloc(u32 numElements) {
+	bool alloc_a(u32 numElements) {
 		usize totalSize = numElements * sizeof(Type);
 		count = numElements;
-		offset = Arena::alloc_index(totalSize);
+		offset = Arena::alloc_a(totalSize);
+		if (offset == UINT32_MAX)
+			return true;
+		return false;
+	}
+
+	bool alloc_b(u32 numElements) {
+		usize totalSize = numElements * sizeof(Type);
+		count = numElements;
+		offset = Arena::alloc_a(totalSize);
 		if (offset == UINT32_MAX)
 			return true;
 		return false;
 	}
 
 	Type& operator[] (usize index) {
-		return ((Type*)(Arena::data + offset))[index];
+		return ((Type*)(Arena::get_ptr(offset)))[index];
 	}
 
 	const Type& operator[] (usize index) const {
-		return ((const Type*)(Arena::data + offset))[index];
+		return ((const Type*)(Arena::get_ptr(offset)))[index];
 	}
 };

@@ -93,7 +93,7 @@ PARSER_INL
 		PERR_EXIT(1, "Error: Empty server block");
 
 	usize locationCount = s_count_locations(tokens, cursor, end);
-	if (server.locations.alloc(locationCount) == true)
+	if (server.locations.alloc_b(locationCount) == true)
 		_exit(1);
 
 	usize locationIndex = 0;

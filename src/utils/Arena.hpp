@@ -3,6 +3,7 @@
 #include "core.hpp"
 #include <unistd.h>
 #include "config.hpp"
+#include "status_codes.hpp"
 
 /*
 	Arena will have 64MB + Parsing Capacity. Ideally, anything that is supposed
@@ -13,39 +14,49 @@
 class Arena {
 private:
 	Arena();
-
 public:
-	static u8 data[ARENA_SIZE] ALIGNED(4096);
-	static usize size;
+	static u8 poolA[ARENA_SIZE] ALIGNED(4096);
+	static u8 poolB[MAX_FILE_SIZE] ALIGNED(4096);
+	static usize sizeA, sizeB;
 
 	static void clear() {
-		size = 0;
+		sizeA = 0;
+		sizeB = 0;
 	}
 
-	static void* alloc(usize bytes) {
-		bytes = ALIGN_UP(bytes, 64);
-		if (bytes > sizeof(data) - size) {
-			PRINT_LN(2, "Error: Out of memory");
-			return NULL;
-		}
-		u8* ptr = data + size;
-		size += bytes;
-		return ptr;
+	static u8* get_ptr(usize fileOffset) {
+		return poolA + fileOffset;
 	}
 
-	static u32 alloc_index(usize bytes) {
+	static u32 alloc_a(usize bytes) {
 		bytes = ALIGN_UP(bytes, 64);
-		if (bytes > sizeof(data) - size) {
+		if (bytes > sizeof(poolA) - sizeA) {
 			PRINT_LN(2, "Error: Out of memory");
 			return UINT32_MAX;
 		}
-		u32 index = size;
-		size += bytes;
+		u32 index = sizeA;
+		sizeA += bytes;
 		return index;
 	}
+
+	static u32 alloc_b(usize bytes) {
+		bytes = ALIGN_UP(bytes, 64);
+		if (bytes > sizeof(poolB) - sizeB) {
+			PRINT_LN(2, "Error: Out of memory");
+			return UINT32_MAX;
+		}
+		u32 index = sizeB;
+		sizeB += bytes;
+		return index;
+	}
+
 };
 
+typedef char t_assertions_must_fit[(sizeof(HTTP_DEFAULT_ERROR_PAGES) <= sizeof(Arena::poolB)) ? 1 : -1];
+
 #ifdef MAIN_FILE
-	u8 Arena::data[ARENA_SIZE] ALIGNED(4096);
-	usize Arena::size = CONNECTION_POOL_SIZE;
+	u8 Arena::poolA[ARENA_SIZE] ALIGNED(4096);
+	u8 Arena::poolB[ARENA_SIZE] ALIGNED(4096) = HTTP_DEFAULT_ERROR_PAGES;
+	usize Arena::sizeA = 0;
+	usize Arena::sizeB = sizeof(HTTP_DEFAULT_ERROR_PAGES) + 1;
 #endif

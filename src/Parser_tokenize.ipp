@@ -48,7 +48,7 @@ Token s_match_delimiter(char *ptr, usize delimPos, isize &braces) {
 	Token token;
 	char delimiter = ptr[delimPos];
 
-	token.value = StringView(1, (u32)(ptr + delimPos - (char*)Arena::data));
+	token.value = StringView(1, (u32)(ptr + delimPos - (char*)Arena::poolA));
 	switch (delimiter) {
 		case '{' :
 			token.type = Token::OPEN_BRACKET;
@@ -77,14 +77,14 @@ PARSER_INL
 	usize length;
 	isize braces = 0;
 	usize tokenIndex = 0;
-	char *ptr = (char*) Arena::data + fileOffset;
+	char *ptr = (char*) Arena::get_ptr(fileOffset);
 
 	s_strip_comments(ptr, fileSize);
 	serverCount = s_count_servers(ptr, fileSize);
 	if (serverCount == 0 || serverCount > MAX_VIRTUAL_SERVERS)
 		PERR_EXIT(1, "Error: Invalid config");
 
-	if (tokArray.alloc((u32)s_count_tokens(ptr)) == true)
+	if (tokArray.alloc_a((u32)s_count_tokens(ptr)) == true)
 		_exit(1);
 
 	while (true) {
@@ -99,7 +99,7 @@ PARSER_INL
 		else {
 			length = s_get_next_word(ptr);
 			token.type = Token::WORD;
-			token.value = StringView((u32)length, (u32)(ptr - (char*)Arena::data));
+			token.value = StringView((u32)length, (u32)(ptr - (char*)Arena::poolA));
 			ptr += length;
 		}
 		tokArray[tokenIndex++] = token;
@@ -109,7 +109,7 @@ PARSER_INL
 	for (u32 index = 0; index < tokArray.count; index++) {
 		if (tokArray[index].type == Token::WORD) {
 			StringView &word = tokArray[index].value;
-			((char*)Arena::data + word.offset)[word.length] = '\0';
+			((char*)Arena::poolA + word.offset)[word.length] = '\0';
 		}
 	}
 	return tokArray;

@@ -26,10 +26,6 @@ public:
 	ConnectionPool connections;
 	i32 epollFd;
 
-	char* get_ptr() {
-		return parser.fileOffset + (char*) Arena::data;
-	}
-
 	Server(const char *filePath)
 		: parser(filePath, servers), epollFd(-1) {
 

@@ -37,7 +37,7 @@ public:
 				PERR_EXIT(1, "Error: Unexpected token");
 			cursor++;
 		}
-
+		Arena::sizeA = 0;
 		for (usize index = 0; index < serverCount; index++) {
 			process_cgi_block(servers[index]);
 			cache_error_pages(servers[index]);
@@ -46,7 +46,6 @@ public:
 
 	Array32<Token> tokenize();
 	void cache_error_pages(VirtualServer &server);
-	bool cache_default_error_pages();
 	void process_cgi_block(VirtualServer &server);
 	isize parse_location(const Array32<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc);
 	isize parse_server(const Array32<Token> &tokens, usize cursor, usize end, VirtualServer &server);

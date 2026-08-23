@@ -71,7 +71,7 @@ PARSER_INL
 
 		if (packedSize == 0)
 			PERR_EXIT(true, "Error: Empty CGI block encoding");
-		MEMCPY(Arena::data + block.offset, packed, packedSize);
+		MEMCPY(Arena::get_ptr(block.offset), packed, packedSize);
 		block.length = (u32)packedSize;
 	}
 }

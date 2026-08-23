@@ -21,7 +21,7 @@ public:
 	Bitmap blockBitmap;
 	Bitmap elementBitmap[64];		// Metadata for each 64 Connection Block
 
-	ConnectionPool() : connections((Connection*) Arena::data) {
+	ConnectionPool() : connections((Connection*) Arena::poolA) {
 	}
 
 	~ConnectionPool() {

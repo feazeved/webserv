@@ -14,7 +14,7 @@ public:
 	StringView(u32 length, u32 offset) : offset(offset), length(length) {}
 
 	const char *get() const {
-		return (const char*)Arena::data + offset;
+		return (const char*)Arena::get_ptr(offset);
 	}
 
 	template <usize size>
