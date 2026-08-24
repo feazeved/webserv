@@ -9,9 +9,9 @@ namespace HTTP {
 
 template <usize bufferSize>
 class Buffer {
-	static const usize minReadSize = 4;
-
 public:
+	typedef Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;
+	static const usize minReadSize = 4;
 	u8 data[bufferSize - 24];	// Last cache line is reserved for unbounded memory loads
 	u8 *readPtr, *scanPtr, *writePtr;
 
@@ -23,6 +23,11 @@ public:
 	ALWAYS_INLINE
 	const u8* get_end() const {
 		return data + sizeof(data);
+	}
+
+	ALWAYS_INLINE
+	usize bytes_free() const {
+		return data + sizeof(data) - writePtr;
 	}
 
 	usize compact() {
@@ -71,6 +76,10 @@ public:
 		return writePtr >= get_end();
 	}
 
+	// HTTP
+	isize dechunk(HTTP_Buffer& tmp, usize &chunkSize, usize &bodySize);
+	isize decode(int writeFd, usize &chunkSize, usize &bodySize);
+
 	// Search
 	usize find_line_end();
 	usize find_header_end();
@@ -83,34 +92,34 @@ public:
 	usize strtol10();
 	usize strtol16();
 
-	template <usize N>
-	bool strcmp(const char (&string)[N]);
-
-	template <usize N>
-	bool strcasecmp(const char (&string)[N]);
+	template <usize N> bool strcmp(const char (&string)[N]);
+	template <usize N> bool strcasecmp(const char (&string)[N]);
 
 	bool skip_spaces();
 
-	// Adds
-	template <usize N>
-	void append(const char (&string)[N]);
-
+	// Appends and Prepends
+	template <usize N> void append(const char (&string)[N]);			// Implicit
+	template <usize N> void append_inline(const u8 *ptr, usize length);	// Explicit
 	void append(const u8 *ptr, usize length);
-	bool prepend(const u8 *ptr, usize length);
 
-	template <usize N>
-	void append_inline(const u8 *ptr, usize length);
-
-	usize append(Buffer &src, usize length);
+	template <usize N> void prepend(const char (&string)[N]);
+	template <usize N> void prepend_inline(const u8 *ptr, usize length);
+	void prepend(const u8 *ptr, usize length);
+	
+	usize append_buffer(Buffer &src, usize length);
+	void append_mime(u8 mimeIndex);
 	void append_digit10(usize number);
 
-	void copy(const Buffer& other);
-	bool insert(const u8 *ptr, usize length, usize insertIndex);
-
+	Buffer& operator=(const Buffer& other) {
+		const usize bytesUsed = (usize)(other.writePtr - other.readPtr);
+		writePtr = data + bytesUsed;
+		readPtr = data;
+		scanPtr = data;
+		MEMCPY(data, other.readPtr, bytesUsed);
+	}
 };
+typedef Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;
 }
-
-typedef HTTP::Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;
 
 #include "Buffer_add.ipp"
 #include "Buffer_search.ipp"

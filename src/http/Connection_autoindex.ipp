@@ -31,7 +31,7 @@ CONNECTION_INL
 	Location*	location = NULL;
 	std::string	relative;
 	std::string	dirPath;
-	const char*	reqPath = (const char*)recvBuffer.cursor.memStart + request.path.index;
+	const char*	reqPath = (const char*)recvBuffer.data + request.path.index;
 	std::string	urlPath(reqPath, request.path.size);
 
 	DIR* dir = opendir(dirPath.c_str());
@@ -56,7 +56,7 @@ CONNECTION_INL
 	// Body size is unknown until the directory listing is built... I (Felipe) decided to
 	// build the html in a temp and then copy it to clientInput
 	Buffer<16384>	temp;
-	Cursor&			body = temp.cursor;
+	Cursor&			body = temp;
 
 	body.append("<!DOCTYPE html>\n<html>\n<head><title><Index of ");
 	s_append_html_escaped(body, urlPath);
@@ -103,11 +103,11 @@ CONNECTION_INL
 	}
 	body.append("<tr><td colspan=\"3\"><hr></td></tr>\n</table>\n</body>\n</html>\n");
 
-	request.bodySize = (usize)(body.writePtr - body.memStart);
+	request.bodySize = (usize)(body.writePtr - body.data);
 	request.status = Status::i200;
 	request.contentType = Mime::HTML;
 	build_header();
-	sendBuffer.cursor.append(body, request.bodySize);
+	sendBuffer.append(body, request.bodySize);
 
 	readFd = -1;
 	writeFd = -1;

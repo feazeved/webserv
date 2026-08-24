@@ -25,10 +25,8 @@ public:
 	u16 locationIndex;
 	usize bodySize, chunkSize;
 	Status status;
-	u8 mode;
 	u8 options;
 	u8 contentType;
-	u8 cgiType;			// TODO: create enum
 
 	void reset() {
 		path.index = 0;
@@ -41,20 +39,16 @@ public:
 		bodySize = 0;
 		chunkSize = 0;
 		status.reset();
-		mode = 0;
 		options = 0;
 		contentType = Mime::OCTET_STREAM;
-		cgiType = 0;
 	}
 
 	// Parsing
-	isize check_location(HTTP_Buffer &src, VirtualServer* cfg);
 	isize parse_target(HTTP_Buffer &src, VirtualServer* cfg);
 	isize parse_first_line(HTTP_Buffer &src, VirtualServer* cfg, usize lineLength);
-	isize parse_header(HTTP_Buffer &src, VirtualServer* cfg);
 	isize parse_line(HTTP_Buffer &src, VirtualServer* cfg, usize lineLength);
 	isize parse_cgi_line(HTTP_Buffer &src, HTTP_Buffer &dst);
-	isize validate_header(HTTP_Buffer &src, VirtualServer* cfg);
+	Mode::e_http_mode validate_header(HTTP_Buffer &src, VirtualServer* cfg);
 
 };
 }

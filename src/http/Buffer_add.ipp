@@ -2,25 +2,21 @@
 #include "Buffer.hpp"
 
 BUFFER_INL
-(bool) prepend(const u8 *ptr, usize length) {
-	const usize readSize = (usize)(readPtr - data);
-	if (readSize < length)
-		return false;
+(void) prepend(const u8 *ptr, usize length) {
 	readPtr -= length;
 	MEMCPY(readPtr, ptr, length);
-	return true;
 }
 
 BUFFER_INL
-(bool) insert(const u8 *ptr, usize length, usize insertIndex) {
-	MEMCPY(data + insertIndex, ptr, length);
-	return true;
+(template <usize N> void) prepend(const char (&string)[N]) {
+	readPtr -= N;
+	MEMCPY(readPtr, string, N);
 }
 
 BUFFER_INL
-(template <usize N> void) append(const char (&string)[N]) {
-	MEMCPY_INLINE(writePtr, string, N - 1);
-	writePtr += N - 1;
+(template <usize N> void) prepend_inline(const u8 *ptr, usize length) {
+	readPtr -= length;
+	MEMCPY_INLINE(writePtr, ptr, N);
 }
 
 BUFFER_INL
@@ -30,15 +26,30 @@ BUFFER_INL
 }
 
 BUFFER_INL
+(template <usize N> void) append(const char (&string)[N]) {
+	MEMCPY_INLINE(writePtr, string, N - 1);
+	writePtr += N - 1;
+}
+
+BUFFER_INL
 (template <usize N> void) append_inline(const u8 *ptr, usize length) {
 	MEMCPY_INLINE(writePtr, ptr, N);
 	writePtr += length;
 }
 
+BUFFER_INL
+(void) append_mime(u8 mimeIndex) {
+	static const u8 mimeStrings[][32] = MIME_STRINGS;
+
+	const u8 *str = mimeStrings[mimeIndex];
+	MEMCPY_INLINE(writePtr, str + 1, 24);
+	writePtr += *str;
+}
+
 // Should be impossible for dst buffer to not fit
 // TODO: Might remove MIN3 and have it overflow to guarantee behavior
 BUFFER_INL
-(usize) append(Buffer &src, usize length) {
+(usize) append_buffer(Buffer &src, usize length) {
 	usize remainingSrc = src.writePtr - src.readPtr;	// How many bytes it has read
 	usize remainingDst = get_end() - writePtr;	// How many bytes are free in the buffer
 	usize appendLength = MIN3(length, remainingSrc, remainingDst);
@@ -63,15 +74,4 @@ BUFFER_INL
 
 	MEMCPY_INLINE(writePtr, digitStart, 24);
 	writePtr += digitLength + 2;
-}
-
-// Copies the contents of another buffer into this buffer
-// Good for defragmentation
-BUFFER_INL
-(void) copy(const Buffer& other) {
-	const usize bytesUsed = (usize)(other.writePtr - other.readPtr);
-	writePtr = data + bytesUsed;
-	readPtr = data;
-	scanPtr = data;
-	MEMCPY(data, other.readPtr, bytesUsed);
 }

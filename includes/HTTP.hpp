@@ -44,30 +44,36 @@ struct Location {
 // These are exclusive states
 namespace Mode {
 	enum e_http_mode {
+		PARSING = 0,
+		GET = 1 << 0,
+		POST = 1 << 1,
+		FLUSHING = 1 << 2,	// Is done, streaming header
+		CGI = 1 << 3,
+		SSE = 1 << 4,
+		CLOSE = 1 << 5		// Also done, streaming header, will close
+	};
+}
+
+// namespace State {
+// 	enum e_http_state {
+// 		READING_FROM_CLIENT = 1,
+// 		WRITING_TO_CLIENT = 2,
+// 		READING_FROM_SERVER = 4,
+// 		WRITING_TO_SERVER = 8
+// 	};
+// }
+
+namespace Options {
+	enum e_http_options {
 		GET = 1 << 0,
 		POST = 1 << 1,
 		DELETE = 1 << 2,
 		CGI = 1 << 3,
-		SSE = 1 << 4
-	};
-}
-
-namespace State {
-	enum e_http_state {
-		READING_FROM_CLIENT = 1,
-		WRITING_TO_CLIENT = 2,
-		PARSING = 4,
-		FIRST_LINE = 8,
-		CLOSE = 16
-	};
-}
-
-namespace Options {
-	enum e_http_options {
-		CHUNKED_LENGTH = 1 << 0,
-		FIXED_LENGTH = 1 << 1,
-		HOST = 1 << 2,
-		CONNECTION_TYPE = 1 << 3	// Keep alive or
+		SSE = 1 << 4,
+		CHUNKED_LENGTH = 1 << 5,
+		FIXED_LENGTH = 1 << 6,
+		HOST = 1 << 7,
+		CONNECTION_TYPE = 1 << 8	// Keep alive or
 	};
 }
 

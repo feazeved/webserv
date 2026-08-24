@@ -15,11 +15,11 @@ void s_set_methods(Array32<StringView32> &methods, Location &location) {
 	for (u32 index = 0; index < methods.count; index++)
 	{
 		if (methods[index] == "GET")
-			location.methods |= Mode::GET;
+			location.methods |= Options::GET;
 		else if (methods[index] == "POST")
-			location.methods |= Mode::POST;
+			location.methods |= Options::POST;
 		else if (methods[index] == "DELETE")
-			location.methods |= Mode::DELETE;
+			location.methods |= Options::DELETE;
 		else
 			PERR_EXIT(1, "Error: Invalid method");
 	}

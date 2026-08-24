@@ -41,10 +41,9 @@ public:
 	time_t startTime;
 	u8 bonusTime; // Value ranging from -30s to 30s
 	u8 state;
+	Mode::e_http_mode mode;
 
 	pid_t processId;
-
-	// TODO: These FDs can be moved to the buffer
 	int clientFd;	// Duplex FD
 	int writeFd;	// CGI Input or POST
 	int readFd;		// CGI Output or GET/DEL
@@ -90,6 +89,7 @@ public:
 	i32 handle_game_request();
 
 	// Configuration
+	isize parse();
 	isize configure();
 	isize error_path();
 	void  build_header();
@@ -98,8 +98,8 @@ public:
 
 	// HTTP Methods
 	isize del_method();
-	isize get_method();
-	isize post_method();
+	isize upload_file(u32 events);
+	isize download_file();
 	isize cgi_method();
 	isize sse_method();
 	isize get_directory(struct stat *st);
@@ -116,7 +116,6 @@ public:
 	isize write_to_client(u32 events);
 	isize read_from_client(u32 events);
 
-	isize dechunk(HTTP_Buffer& src, HTTP_Buffer& dst);
 	isize decode();
 
 	// ======== Constructors ====================
@@ -129,8 +128,3 @@ public:
 
 // namespace HTTP
 }
-
-#include "Connection_configure.ipp"
-#include "Connection_common.ipp"
-#include "Connection_game.ipp"
-#include "Connection_cgi.ipp"

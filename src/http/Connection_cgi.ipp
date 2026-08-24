@@ -60,8 +60,6 @@ void s_exec_script(u8 cgiType, const char *scriptPath, int fdIn[2], int fdOut[2]
 	HTTP_COOKIE=session=xyz
 */
 
-// GET a.py?
-
 static inline
 void s_append_env(u8* buffer, Request &request) {
 	static u8 scriptName[256 + 64] = "SCRIPT_NAME=";	// Making it static avoids having to copy SCRIPT_NAME=
@@ -97,12 +95,12 @@ CONNECTION_INL
 	if (s_set_noblock(fdOut[0]) == false || s_set_noblock(fdIn[1]) == false)
 		goto ErrorCloseOutput;
 
-	s_append_env(recvBuffer.cursor.memStart, request);
+	s_append_env(recvBuffer.data, request);
 	processId = fork();
 	if (processId < 0)
 		goto ErrorCloseOutput;
 	if (processId == 0)
-		s_exec_script(request.cgiType, (char*)recvBuffer.cursor.memStart, fdIn, fdOut);
+		s_exec_script(request.cgiType, (char*)recvBuffer.data, fdIn, fdOut);
 
 	close(fdIn[0]);
 	close(fdOut[1]);
@@ -128,18 +126,34 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) cgi_method() {
-	isize bytesRead, bytesWritten;
+	isize bytesWritten, bytesRead;
 
-	bytesWritten = write_to_server();
-	bytesRead = read_from_server();
+	if (request.options & Options::CHUNKED_LENGTH)
+		bytesWritten = decode();
+	else {
+		bytesWritten = recvBuffer.write(writeFd, request.bodySize);
+		if (bytesWritten > 0)
+			request.bodySize -= (usize) bytesWritten;
+	}
+
+	if (request.bodySize == 0) {	// Must guarantee that bodySize is 0
+		close(writeFd);
+		writeFd = -1;	// Finished reading
+	}
+
+	bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
+	if (bytesRead == 0) {
+		close(readFd);
+		readFd = -1;
+	}
 
 	isize delta = ((bytesWritten < 0 || bytesRead < 0) ? -1 : 1);
 	bonusTime = CLAMP(bonusTime + delta, 0, 30);
 
 	// Return path until the operation isnt complete
 	if (request.status.is_set()) {
-		if (sendBuffer.cursor.find_header_end() != SIZE_MAX) {
-			if (sendBuffer.cursor.is_full())
+		if (sendBuffer.find_header_end() != SIZE_MAX) {
+			if (sendBuffer.is_full())
 				return -1;	// ERROR: CGI Header is too big
 			return 0;	// Still no CGI Header
 		}

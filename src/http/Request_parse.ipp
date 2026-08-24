@@ -4,25 +4,6 @@
 namespace HTTP {
 
 REQUEST_INL
-(isize) parse_header(HTTP_Buffer &src, VirtualServer* cfg) {
-	usize lineLength;
-	while ((lineLength = src.find_line_end()) != SIZE_MAX) {
-		if (lineLength == 0) {
-			src.readPtr = src.scanPtr;
-			return validate_header(src, cfg);
-		}
-		if (parse_line(src, cfg, lineLength) < 0)
-			return -1;	// ERROR: Invalid header
-	}
-	// TODO: Review this
-	if ((usize)(src.writePtr - src.readPtr) >= sizeof(src.data) - 2) {
-		status = Status::i431;
-		return -1;
-	}
-	return 0;
-}
-
-REQUEST_INL
 (isize) parse_line(HTTP_Buffer &src, VirtualServer* cfg, usize lineLength) {
 	if (lineLength < 2 || lineLength >= 8000) {
 		status = lineLength < 2 ? Status::i400 : Status::i431;
@@ -110,9 +91,8 @@ REQUEST_INL
 		isize rvalue = status.is_valid() == true ? 0 : -1;
 		if (rvalue == -1)
 			status = Status::i500;	// CGI output an invalid status, should be server error
-		const u8 *str = (const u8*) status.c_str();
-		usize length = status.size();
-		dst.insert(str, length, 256 - length);
+		StringView str = status.status_str();
+		dst.prepend((u8*)str.ptr, str.length);
 		return rvalue;
 	}
 

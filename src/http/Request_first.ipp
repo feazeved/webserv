@@ -15,7 +15,7 @@ u16 s_check_location(u8 *ptr, usize length, VirtualServer* cfg, Request &request
 	for (usize i = 0; i < locations.count; i++) {
 		if (MEMCMP(ptr, locations[i].url.c_str(), cmpLength) == 0) {
 			match = true;
-			if ((locations[i].methods & (request.mode & 7)) != 0) {
+			if ((locations[i].methods & (request.options & 7)) != 0) {
 
 				return (u16) i;
 			}
@@ -73,11 +73,11 @@ REQUEST_INL
 	u8 *const lineEnd = src.readPtr + lineLength;
 
 	if (src.strcmp("GET "))
-		mode = Mode::GET;
+		options |= Options::GET;
 	else if (src.strcmp("POST "))
-		mode = Mode::POST;
+		options |= Options::POST;
 	else if (src.strcmp("DELETE "))
-		mode = Mode::DELETE;
+		options |= Options::DELETE;
 	else {
 		status = Status::i501;
 		return -1;

@@ -2,6 +2,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+#include "Buffer.hpp"
 #include "core.hpp"
 #include "HTTP.hpp"
 
@@ -27,15 +28,33 @@ isize s_get_status(Status &status) {
 	return -1;
 }
 
-// static inline
-// struct stat* s_check_path(char* buffer, Status &status) {
-// 	static struct stat st;
+static inline
+void s_build_path(char* buffer, const char *ptr, usize length, StringView32& root) {
+	// const StringView32& root = cfg->locations[request.locationIndex].root;
 
-// 	if (stat(buffer, &st) == -1) {
-// 		status = (errno == ENOENT) ? Status::i404 : Status::i500;
-// 		return &st;
-// 	}
-// 	return NULL;
-// }
+	MEMCPY(buffer, root.c_str(), root.length);
+	buffer += root.length;
+	MEMCPY(buffer, ptr, length);
+	buffer[length] = 0;
+}
+
+
+// Check epoll, see if can write, if not, set to write and return 0
+static inline
+isize s_write_to_client(HTTP_Buffer &buffer, int fd, u32 events) {
+	isize bytesWritten = buffer.write(fd, ATOMIC_IOSIZE);
+	if (bytesWritten < 0)
+		return bytesWritten;
+	return bytesWritten;
+}
+
+// Check epoll, see if can read, if not, set to write and return 0
+static inline
+isize s_read_from_client(HTTP_Buffer &buffer, int fd, u32 events) {
+	isize bytesRead = buffer.read(fd, ATOMIC_IOSIZE);
+	if (bytesRead < 0)
+		return bytesRead;
+	return bytesRead;
+}
 
 }

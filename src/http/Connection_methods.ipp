@@ -8,7 +8,7 @@ namespace HTTP {
 CONNECTION_INL
 (isize) del_first_run() {
 	char pathBuffer[8192];
-	char* ptr = request.path.index + (char*) recvBuffer.cursor.memStart;
+	char* ptr = request.path.index + (char*) recvBuffer.data;
 
 	build_path(pathBuffer, ptr, request.path.size);
 
@@ -33,22 +33,23 @@ CONNECTION_INL
 	Location &loc = cfg->locations[request.locationIndex];
 	const StringView32 &storePath = loc.uploadStore;
 
-	build_path(pathBuffer, storePath.c_str(), storePath.length);
+	s_build_path(pathBuffer, storePath.c_str(), storePath.length, loc.root);
 
-	int	rawFd = open(storePath.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0644);
-	if (rawFd == -1)
+	writeFd = open(storePath.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0644);
+	if (writeFd == -1) {
+		mode = Mode::CLOSE;
 		return s_get_status(request.status);
-
-	writeFd = rawFd;
+	}
 	return 0;
 }
 
 CONNECTION_INL
 (isize) get_first_run() {
 	char pathBuffer[8192];
-	char* ptr = request.path.index + (char*) recvBuffer.cursor.memStart;
+	char* ptr = request.path.index + (char*) recvBuffer.data;
+	Location &loc = cfg->locations[request.locationIndex];
 
-	build_path(pathBuffer, ptr, request.path.size);
+	s_build_path(pathBuffer, ptr, request.path.size, loc.root);
 
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)
@@ -65,34 +66,49 @@ CONNECTION_INL
 	request.status = Status::i200;
 	request.bodySize = (usize)st.st_size;
 	build_header();
-	state |= State::WRITING_TO_CLIENT;
 	return 0;
 }
 
-// Header will already be built in the configure function
 CONNECTION_INL
-(isize) get_method() {
-	if (readFd == -1)
-		return 0;
-	return read_from_server();
+(isize) upload_file(u32 events) {
+	isize bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
+	if (bytesRead == 0) {
+		close(readFd);
+		readFd = -1;
+		mode = Mode::FLUSHING;
+	}
+	else if (bytesRead == -1) {
+		close(readFd);
+		readFd = -1;
+		mode = Mode::CLOSE;
+		return -1;
+	}
+	if (write_to_client(events) == -1)
+		return -1;
+	return bytesRead;
 }
 
 CONNECTION_INL
-(isize) post_method() {
-	isize bytesWritten = write_to_server();
-	if (bytesWritten < 0)
-		return bytesWritten;
+(isize) download_file() {
+	isize bytesWritten;
 
-	if (!request.status.is_set() && writeFd == -1) {
+	if (request.options & Options::CHUNKED_LENGTH)
+		bytesWritten = decode();
+	else {
+		bytesWritten = recvBuffer.write(writeFd, request.bodySize);
+		if (bytesWritten > 0)
+			request.bodySize -= (usize) bytesWritten;
+	}
+
+	if (!request.status.is_set() && request.bodySize == 0) {	// Must guarantee that bodySize is 0
+		close(writeFd);
+		writeFd = -1;	// Finished reading
 		request.status = Status::i201;
 		build_header();
+		mode = Mode::FLUSHING;
 	}
-	return bytesWritten;
-}
 
-CONNECTION_INL
-(isize) del_method() {
-	return 0;
+	return bytesWritten;
 }
 
 // HTTP namespace
