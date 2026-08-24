@@ -109,7 +109,7 @@ PARSER_INL
 	for (u32 index = 0; index < tokArray.count; index++) {
 		if (tokArray[index].type == Token::WORD) {
 			StringView32 &word = tokArray[index].value;
-			((char*)Arena::poolA + word.offset)[word.length] = '\0';
+			word.c_str_mut()[word.length] = '\0';
 		}
 	}
 	return tokArray;

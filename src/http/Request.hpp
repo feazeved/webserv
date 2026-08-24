@@ -31,9 +31,20 @@ public:
 	u8 cgiType;			// TODO: create enum
 
 	void reset() {
-		MEMSET_INLINE(this, 0, sizeof(Request));
+		path.index = 0;
+		path.size = 0;
+		query.index = 0;
+		query.size = 0;
+		cookies.index = 0;
+		cookies.size = 0;
+		locationIndex = 0;
+		bodySize = 0;
+		chunkSize = 0;
 		status.reset();
+		mode = 0;
+		options = 0;
 		contentType = Mime::OCTET_STREAM;
+		cgiType = 0;
 	}
 
 	// Parsing

@@ -4,14 +4,12 @@
 BUFFER_INL
 (usize) itoa10(usize number, char *bufferEnd) {
 	*bufferEnd = 0;
-	char *obuffer = --bufferEnd;
-	do
-	{
+	char *const obuffer = bufferEnd;	// TODO: Check if it isn't --Bufferend
+	do {
 		*--bufferEnd = (char)((number % 10) + '0');
 		number /= 10;
 	}	while (number != 0);
-	usize digitLength = (usize) (obuffer - bufferEnd);
-	return digitLength;
+	return (usize)(obuffer - bufferEnd);
 }
 
 BUFFER_INL
@@ -21,14 +19,12 @@ BUFFER_INL
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
 	*bufferEnd = 0;
-	char *obuffer = --bufferEnd;
-	do
-	{
+	char *const obuffer = bufferEnd;	// TODO: Check if it isn't --Bufferend
+	do {
 		*--bufferEnd = digits[(number % 16)];
 		number /= 16;
 	}	while (number != 0);
-	usize digitLength = (usize) (obuffer - bufferEnd);
-	return digitLength;
+	return (usize)(obuffer - bufferEnd);
 }
 
 BUFFER_INL
@@ -73,7 +69,7 @@ BUFFER_INL
 (bool) skip_spaces() {
 	while ((*readPtr == ' ' || *readPtr == '\t'))
 		readPtr++;
-	return MEMCMP(readPtr, "\r\n", 2) == 0;
+	return MEMCMP(readPtr, "\r\n", 2) != 0;
 }
 
 // Compares and advances pointer if valid

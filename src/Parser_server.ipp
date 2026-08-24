@@ -16,13 +16,10 @@ void s_directive_error_page(Directive &dir, VirtualServer &server) {
 		PERR_EXIT(1, "Error: Invalid error page");
 	for (u32 index = 0; index + 1 < dir.args.count; index++) {
 		usize error = s_strtol10(dir.args[index].c_str(), dir.args[index].length);
-		const bool validError = (error >= 400 && error <= 431) || (error >= 500 && error <= 511);
-		if (dir.args[index].length != 3 || !validError)
+		Status status(error);
+		if (dir.args[index].length != 3 || !status.is_error())
 			PERR_EXIT(1, "Error: Invalid error number");
-		if (error < 500)
-			server.clientErrors[error - 400] = path;
-		else
-			server.serverErrors[error - 500] = path;
+		server.errorPages[Status::s_page_idx(error)] = path;
 	}
 }
 
@@ -71,7 +68,7 @@ void s_directive_body_size(const StringView32 &value, usize &bodySize, VirtualSe
 	}
 
 	const usize bytes = s_strtol10(str, digitLength);
-	if (bytes >= (1ul << (63 - factor)))	// TODO: Check carefully
+	if (bytes == SIZE_MAX || bytes > (SIZE_MAX >> factor))
 		PERR_EXIT(1, "Error: Invalid max body size");
 	bodySize = bytes << factor;
 }

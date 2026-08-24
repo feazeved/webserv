@@ -2,15 +2,17 @@
 #include "core.hpp"
 #include "core_builtins.ipp"
 #include "status_codes.hpp"
+#include "StringView.hpp"
 
 namespace HTTP {
 
 /*
-	This class indexes HTTP Statuses in a lookup-table for O1 string retrieval.
-	The strings are stored linearly in memory, like so [length1][string1][\0][length2][string2][\0]
+	This class indexes HTTP statuses in a lookup table for O(1) string retrieval.
+	The strings are stored linearly in Arena::poolB as
+	[length1][string1][\0][length2][string2][\0].
 
-	If the index stored is 1, it means the index was not set
-	If the index stored is 2, it means the status is invalid
+	Index 1 is unset and index 2 is invalid.  Both point at empty strings; valid
+	indices point at the first byte of their status string.
 
 	Example Usage:
 		Get a compile-time string:
@@ -20,6 +22,11 @@ namespace HTTP {
 */
 class Status {
 public:
+	static const usize clientErrorCount = 32;
+	static const usize serverErrorCount = 12;
+	static const usize errorPageCount = clientErrorCount + serverErrorCount;
+
+public:
 	u16 index;
 
 	#pragma push_macro("ADD")
@@ -27,7 +34,7 @@ public:
 	#define ADD(code) (i##code + sizeof(HTTP_STATUS(code)) + 1)
 	enum Code
 	{
-		i000 = 1,        i100 = 3,        i101 = ADD(100), i102 = ADD(101),
+		i000 = 1, ixxx = 2, i100 = 4,     i101 = ADD(100), i102 = ADD(101),
 		i103 = ADD(102), i104 = ADD(103), i200 = ADD(104), i201 = ADD(200),
 		i202 = ADD(201), i203 = ADD(202), i204 = ADD(203), i205 = ADD(204),
 		i206 = ADD(205), i207 = ADD(206), i208 = ADD(207), i226 = ADD(208),
@@ -44,92 +51,170 @@ public:
 		i503 = ADD(502), i504 = ADD(503), i505 = ADD(504), i506 = ADD(505),
 		i507 = ADD(506), i508 = ADD(507), i510 = ADD(508), i511 = ADD(510)
 	};
+
+	#undef ADD
+	#define ADD(code) (p##code + sizeof(HTTP_ERROR(code)))
+	enum Page
+	{
+		p400 = sizeof(HTTP_STATUS_STRINGS) - 1,
+		p401 = ADD(400), p402 = ADD(401), p403 = ADD(402),
+		p404 = ADD(403), p405 = ADD(404), p406 = ADD(405),
+		p407 = ADD(406), p408 = ADD(407), p409 = ADD(408),
+		p410 = ADD(409), p411 = ADD(410), p412 = ADD(411),
+		p413 = ADD(412), p414 = ADD(413), p415 = ADD(414),
+		p416 = ADD(415), p417 = ADD(416), p418 = ADD(417),
+		p419 = ADD(418), p420 = ADD(419), p421 = ADD(420),
+		p422 = ADD(421), p423 = ADD(422), p424 = ADD(423),
+		p425 = ADD(424), p426 = ADD(425), p427 = ADD(426),
+		p428 = ADD(427), p429 = ADD(428), p430 = ADD(429),
+		p431 = ADD(430), p500 = ADD(431), p501 = ADD(500),
+		p502 = ADD(501), p503 = ADD(502), p504 = ADD(503),
+		p505 = ADD(504), p506 = ADD(505), p507 = ADD(506),
+		p508 = ADD(507), p509 = ADD(508), p510 = ADD(509),
+		p511 = ADD(510), pEnd = ADD(511)
+	};
 	#pragma pop_macro("ADD")
 
 	ALWAYS_INLINE
-	static u16 s_index(usize div, usize rem) {
+	static u16 s_code_index(usize div, usize rem) {
 		static const u16 s_offsets[160] = {
-			i100, i101, i102, i103, i104, i000, i000, i000,
-			i000, i000, i000, i000, i000, i000, i000, i000,
-			i000, i000, i000, i000, i000, i000, i000, i000,
-			i000, i000, i000, i000, i000, i000, i000, i000,
+			i100, i101, i102, i103, i104, ixxx, ixxx, ixxx,
+			ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx,
+			ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx,
+			ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx,
 			i200, i201, i202, i203, i204, i205, i206, i207,
-			i208, i000, i000, i000, i000, i000, i000, i000,
-			i000, i000, i000, i000, i000, i000, i000, i000,
-			i000, i000, i226, i000, i000, i000, i000, i000,
+			i208, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx,
+			ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx,
+			ixxx, ixxx, i226, ixxx, ixxx, ixxx, ixxx, ixxx,
 			i300, i301, i302, i303, i304, i305, i306, i307,
-			i308, i000, i000, i000, i000, i000, i000, i000,
-			i000, i000, i000, i000, i000, i000, i000, i000,
-			i000, i000, i000, i000, i000, i000, i000, i000,
+			i308, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx,
+			ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx,
+			ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx,
 			i400, i401, i402, i403, i404, i405, i406, i407,
 			i408, i409, i410, i411, i412, i413, i414, i415,
-			i416, i417, i418, i000, i000, i421, i422, i423,
-			i424, i425, i426, i000, i428, i429, i000, i431,
+			i416, i417, i418, ixxx, ixxx, i421, i422, i423,
+			i424, i425, i426, ixxx, i428, i429, ixxx, i431,
 			i500, i501, i502, i503, i504, i505, i506, i507,
-			i508, i000, i510, i511, i000, i000, i000, i000,
-			i000, i000, i000, i000, i000, i000, i000, i000,
-			i000, i000, i000, i000, i000, i000, i000, i000
+			i508, ixxx, i510, i511, ixxx, ixxx, ixxx, ixxx,
+			ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx,
+			ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx
 		};
-		return (rem >= 32) ? 2 : s_offsets[div * 32 + rem];
+		return (rem >= 32) ? ixxx : s_offsets[div * 32 + rem];
+	}
+
+	ALWAYS_INLINE
+	static usize s_page_idx(usize number) {
+		if (number >= 400 && number <= 431)
+			return (number - 400);
+		else if (number >= 500 && number <= 511)
+			return (clientErrorCount + number - 500);
+		return SIZE_MAX;	
+	}
+
+	ALWAYS_INLINE
+	static u16 s_page_index(usize number) {
+		static const u16 s_offsets[errorPageCount] = {
+			p400, p401, p402, p403, p404, p405, p406, p407,
+			p408, p409, p410, p411, p412, p413, p414, p415,
+			p416, p417, p418, p419, p420, p421, p422, p423,
+			p424, p425, p426, p427, p428, p429, p430, p431,
+			p500, p501, p502, p503, p504, p505, p506, p507,
+			p508, p509, p510, p511
+		};
+
+		usize index = s_page_idx(number);
+		if (index != SIZE_MAX)
+			return s_offsets[index];
+		return UINT16_MAX;
 	}
 
 	ALWAYS_INLINE
 	static const char *s_strings(usize argIndex) {
-		static const char s_statusCodes[] = "\0\0\x0C"
-		HTTP_STATUS(100) "\0\x17" HTTP_STATUS(101) "\0\x0E" HTTP_STATUS(102) "\0\x0F"
-		HTTP_STATUS(103) "\0\x1F" HTTP_STATUS(104) "\0\x06" HTTP_STATUS(200) "\0\x0B"
-		HTTP_STATUS(201) "\0\x0C" HTTP_STATUS(202) "\0\x21" HTTP_STATUS(203) "\0\x0E"
-		HTTP_STATUS(204) "\0\x11" HTTP_STATUS(205) "\0\x13" HTTP_STATUS(206) "\0\x10"
-		HTTP_STATUS(207) "\0\x14" HTTP_STATUS(208) "\0\x0B" HTTP_STATUS(226) "\0\x14"
-		HTTP_STATUS(300) "\0\x15" HTTP_STATUS(301) "\0\x09" HTTP_STATUS(302) "\0\x0D"
-		HTTP_STATUS(303) "\0\x10" HTTP_STATUS(304) "\0\x0D" HTTP_STATUS(305) "\0\x0C"
-		HTTP_STATUS(306) "\0\x16" HTTP_STATUS(307) "\0\x16" HTTP_STATUS(308) "\0\x0F"
-		HTTP_STATUS(400) "\0\x10" HTTP_STATUS(401) "\0\x14" HTTP_STATUS(402) "\0\x0D"
-		HTTP_STATUS(403) "\0\x0D" HTTP_STATUS(404) "\0\x16" HTTP_STATUS(405) "\0\x12"
-		HTTP_STATUS(406) "\0\x21" HTTP_STATUS(407) "\0\x13" HTTP_STATUS(408) "\0\x0C"
-		HTTP_STATUS(409) "\0\x08" HTTP_STATUS(410) "\0\x13" HTTP_STATUS(411) "\0\x17"
-		HTTP_STATUS(412) "\0\x15" HTTP_STATUS(413) "\0\x10" HTTP_STATUS(414) "\0\x1A"
-		HTTP_STATUS(415) "\0\x19" HTTP_STATUS(416) "\0\x16" HTTP_STATUS(417) "\0\x0C"
-		HTTP_STATUS(418) "\0\x17" HTTP_STATUS(421) "\0\x19" HTTP_STATUS(422) "\0\x0A"
-		HTTP_STATUS(423) "\0\x15" HTTP_STATUS(424) "\0\x0D" HTTP_STATUS(425) "\0\x14"
-		HTTP_STATUS(426) "\0\x19" HTTP_STATUS(428) "\0\x15" HTTP_STATUS(429) "\0\x23"
-		HTTP_STATUS(431) "\0\x19" HTTP_STATUS(500) "\0\x13" HTTP_STATUS(501) "\0\x0F"
-		HTTP_STATUS(502) "\0\x17" HTTP_STATUS(503) "\0\x13" HTTP_STATUS(504) "\0\x1E"
-		HTTP_STATUS(505) "\0\x1B" HTTP_STATUS(506) "\0\x18" HTTP_STATUS(507) "\0\x11"
-		HTTP_STATUS(508) "\0\x10" HTTP_STATUS(510) "\0\x23" HTTP_STATUS(511) "\0";
-		return s_statusCodes + argIndex;
+		return (const char*)Arena::poolB + argIndex;
 	}
 
-	Status() : index(1) {}
+	// TODO: This should go. The size should be encoded in the string, just like for status
+	ALWAYS_INLINE
+	static u16 s_page_size(usize number) {
+		static const u16 s_offsets[errorPageCount] = {
+			sizeof(HTTP_ERROR_400) - 1, sizeof(HTTP_ERROR_401) - 1,
+			sizeof(HTTP_ERROR_402) - 1, sizeof(HTTP_ERROR_403) - 1,
+			sizeof(HTTP_ERROR_404) - 1, sizeof(HTTP_ERROR_405) - 1,
+			sizeof(HTTP_ERROR_406) - 1, sizeof(HTTP_ERROR_407) - 1,
+			sizeof(HTTP_ERROR_408) - 1, sizeof(HTTP_ERROR_409) - 1,
+			sizeof(HTTP_ERROR_410) - 1, sizeof(HTTP_ERROR_411) - 1,
+			sizeof(HTTP_ERROR_412) - 1, sizeof(HTTP_ERROR_413) - 1,
+			sizeof(HTTP_ERROR_414) - 1, sizeof(HTTP_ERROR_415) - 1,
+			sizeof(HTTP_ERROR_416) - 1, sizeof(HTTP_ERROR_417) - 1,
+			sizeof(HTTP_ERROR_418) - 1, sizeof(HTTP_ERROR_419) - 1,
+			sizeof(HTTP_ERROR_420) - 1, sizeof(HTTP_ERROR_421) - 1,
+			sizeof(HTTP_ERROR_422) - 1, sizeof(HTTP_ERROR_423) - 1,
+			sizeof(HTTP_ERROR_424) - 1, sizeof(HTTP_ERROR_425) - 1,
+			sizeof(HTTP_ERROR_426) - 1, sizeof(HTTP_ERROR_427) - 1,
+			sizeof(HTTP_ERROR_428) - 1, sizeof(HTTP_ERROR_429) - 1,
+			sizeof(HTTP_ERROR_430) - 1, sizeof(HTTP_ERROR_431) - 1,
+			sizeof(HTTP_ERROR_500) - 1, sizeof(HTTP_ERROR_501) - 1,
+			sizeof(HTTP_ERROR_502) - 1, sizeof(HTTP_ERROR_503) - 1,
+			sizeof(HTTP_ERROR_504) - 1, sizeof(HTTP_ERROR_505) - 1,
+			sizeof(HTTP_ERROR_506) - 1, sizeof(HTTP_ERROR_507) - 1,
+			sizeof(HTTP_ERROR_508) - 1, sizeof(HTTP_ERROR_509) - 1,
+			sizeof(HTTP_ERROR_510) - 1, sizeof(HTTP_ERROR_511) - 1
+		};
 
+		usize index = s_page_idx(number);
+		if (index != SIZE_MAX)
+			return s_offsets[index];
+		return UINT16_MAX;
+	}
+
+	ALWAYS_INLINE
+	Status() : index(i000) {}
+
+	ALWAYS_INLINE
+	Status(Code code) : index(code) {}
+
+	// TODO: reverse this, constructors have the function and assign gets constructor
+	ALWAYS_INLINE
+	explicit Status(usize number) : index(i000) {
+		*this = number;
+	}
+
+	ALWAYS_INLINE
+	explicit Status(const char *str) : index(i000) {
+		*this = str;
+	}
+
+	ALWAYS_INLINE
 	Status& operator=(Code code) {
 		index = code;
 		return *this;
 	}
 
+	ALWAYS_INLINE
 	Status& operator=(usize number) {
 		usize div = number / 100;
 		usize rem = number - div * 100;
-		index = (number - 100 >= 500) ? 2 : s_index(div - 1, rem);
+		index = (number - 100 >= 500) ? ixxx : s_code_index(div - 1, rem);
 		return *this;
 	}
 
+	ALWAYS_INLINE
 	Status& operator=(const char *str) {
-		if (str[0] >= '1' && str[0] <= '5' &&
-			str[1] >= '0' && str[1] <= '9' &&
-			str[2] >= '0' && str[2] <= '9') {
-			usize div = (usize)(str[0] - '1');
-			usize rem = 10 * (usize)(str[1] - '0') + (usize)(str[2] - '0');
-			index = s_index(div, rem);
+		if (str[0] >= '1' && str[0] <= '5'
+			&& str[1] >= '0' && str[1] <= '9'
+			&& str[2] >= '0' && str[2] <= '9') {
+			const usize div = (usize)(str[0] - '1');
+			const usize rem = 10 * (usize)(str[1] - '0') + (usize)(str[2] - '0');
+			index = s_code_index(div, rem);
 		}
 		else
-			index = 2;
+			index = ixxx;
 		return *this;
 	}
 
 	ALWAYS_INLINE
 	void reset() {
-		index = 1;
+		index = i000;
 	}
 
 	ALWAYS_INLINE
@@ -138,7 +223,7 @@ public:
 	}
 
 	ALWAYS_INLINE
-	static usize size(Code value){
+	static usize size(Code value) {
 		return (usize) (s_strings(value)[-1]);
 	}
 
@@ -152,9 +237,74 @@ public:
 		return (usize) (s_strings(index)[-1]);
 	}
 
+	// New
+	ALWAYS_INLINE
+	static usize error_code(usize slot) {
+		if (slot < 32)
+			return 400 + slot;
+		if (slot < errorPageCount)
+			return 500 + slot - clientErrorCount;
+		return 0;
+	}
+
+	ALWAYS_INLINE
+	static u16 default_error_index(usize number) {
+		return s_page_index(number);
+	}
+
+	ALWAYS_INLINE
+	static usize default_error_size(usize number) {
+		return s_page_size(number);
+	}
+
+	// Don't know if this belongs here
+	ALWAYS_INLINE
+	static StringView32 default_error_page(usize number) {
+		const usize pageSize = s_page_size(number);
+		if (pageSize < 0)
+			return StringView32();
+		const usize pageIndex = s_page_index(number);
+		return StringView32(pageSize, Arena::get_b_offset(pageIndex));
+	}
+
+	ALWAYS_INLINE
+	bool operator==(Code code) const {
+		return index == (u16)code;
+	}
+
+	ALWAYS_INLINE
+	bool operator!=(Code code) const {
+		return index != (u16)code;
+	}
+
 	ALWAYS_INLINE
 	bool is_valid() const {
-		return index > 2;
+		return index > ixxx;
+	}
+
+	ALWAYS_INLINE
+	bool is_informational() const {
+		return index >= i100 && index < i200;
+	}
+
+	ALWAYS_INLINE
+	bool is_success() const {
+		return index >= i200 && index < i300;
+	}
+
+	ALWAYS_INLINE
+	bool is_redirect() const {
+		return index >= i300 && index < i400;
+	}
+
+	ALWAYS_INLINE
+	bool is_client_error() const {
+		return index >= i400 && index < i500;
+	}
+
+	ALWAYS_INLINE
+	bool is_server_error() const {
+		return index >= i500;
 	}
 
 	ALWAYS_INLINE
@@ -164,7 +314,11 @@ public:
 
 	ALWAYS_INLINE
 	bool is_set() const {
-		return index != 1;
+		return index != i000;
 	}
 };
+
+STATIC_ASSERT(Status::pEnd <= UINT16_MAX);
+STATIC_ASSERT(Status::i511 <= UINT16_MAX);
+
 }

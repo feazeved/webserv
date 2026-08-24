@@ -18,8 +18,7 @@ namespace HTTP {
 class VirtualServer {
 public:
 	StringView32			serverRoot;
-	StringView32			clientErrors[32];
-	StringView32			serverErrors[12];
+	StringView32			errorPages[Status::errorPageCount];
 	StringView32			host;
 	Array32<Location>	locations;
 	usize				port;

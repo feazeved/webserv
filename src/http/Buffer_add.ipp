@@ -14,6 +14,7 @@ BUFFER_INL
 BUFFER_INL
 (bool) insert(const u8 *ptr, usize length, usize insertIndex) {
 	MEMCPY(data + insertIndex, ptr, length);
+	return true;
 }
 
 BUFFER_INL
@@ -61,7 +62,7 @@ BUFFER_INL
 	*mid = '\n';
 
 	MEMCPY_INLINE(writePtr, digitStart, 24);
-	writePtr += digitLength;
+	writePtr += digitLength + 2;
 }
 
 // Copies the contents of another buffer into this buffer
@@ -71,5 +72,6 @@ BUFFER_INL
 	const usize bytesUsed = (usize)(other.writePtr - other.readPtr);
 	writePtr = data + bytesUsed;
 	readPtr = data;
+	scanPtr = data;
 	MEMCPY(data, other.readPtr, bytesUsed);
 }

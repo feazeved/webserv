@@ -3,39 +3,43 @@
 
 namespace HTTP {
 
-// TODO: Add a check for line length here if it makes sense
 REQUEST_INL
-(isize) parse_header(Cursor &src, VirtualServer* cfg) {
+(isize) parse_header(HTTP_Buffer &src, VirtualServer* cfg) {
 	usize lineLength;
 	while ((lineLength = src.find_line_end()) != SIZE_MAX) {
-		if (lineLength == 0)
+		if (lineLength == 0) {
+			src.readPtr = src.scanPtr;
 			return validate_header(src, cfg);
+		}
 		if (parse_line(src, cfg, lineLength) < 0)
 			return -1;	// ERROR: Invalid header
+	}
+	// TODO: Review this
+	if ((usize)(src.writePtr - src.readPtr) >= sizeof(src.data) - 2) {
+		status = Status::i431;
+		return -1;
 	}
 	return 0;
 }
 
 REQUEST_INL
-(isize) parse_line(Cursor &src, VirtualServer* cfg, usize lineLength) {
-	if (lineLength < 2 || lineLength >= 8000) {	// TODO: Fix magic numbers
-		status = Status::i401;
+(isize) parse_line(HTTP_Buffer &src, VirtualServer* cfg, usize lineLength) {
+	if (lineLength < 2 || lineLength >= 8000) {
+		status = lineLength < 2 ? Status::i400 : Status::i431;
 		return -1;
 	}
 
-	isize fieldIndex = src.match_field();
+	u8* lineEnd = src.readPtr + lineLength;
+	const isize fieldIndex = src.match_field();
+	if (fieldIndex < 0 || !src.skip_spaces())	// Reject empty values
+		goto Error;
 	switch (fieldIndex) {
 		default:
-			if (fieldIndex < 0)
-				goto Error;
-			return fieldIndex;
-
-		case Field::LOCATION:
-			
+			src.readPtr = lineEnd;
 			break;
 
 		case Field::TRANSFER_ENCODING:
-			if ((options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH)))
+			if (options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH))
 				goto Error; // ERROR: bad request, transfer method had already been set
 			if (src.strcasecmp("chunked") == false)
 				goto Error; // ERROR: bad request, transfer encoding isnt chunked
@@ -43,12 +47,16 @@ REQUEST_INL
 			break;
 
 		case Field::CONTENT_LENGTH:
-			if ((options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH)))
+			if (options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH))
 				goto Error; // ERROR: bad request, transfer method had already been set
 			bodySize = src.strtol10();
+			if (bodySize == SIZE_MAX)
+				goto Error;
+			if (bodySize > cfg->maxBodySize) {
+				status = Status::i413;
+				return -1;
+			}
 			options |= Options::FIXED_LENGTH;
-			if (bodySize > cfg->maxBodySize)
-				goto Error;	// ERROR: not a number or too large
 			break;
 
 		case Field::HOST:
@@ -60,34 +68,40 @@ REQUEST_INL
 			options |= Options::HOST;
 			break;
 		case Field::COOKIES:
-			src.skip_spaces();
-			cookies.index = src.readPtr - src.memStart;
-			cookies.size = src.lineEnd - src.readPtr;
+			while ((lineEnd[-1] == ' ' || lineEnd[-1] == '\t'))
+				lineEnd--;
+			cookies.index = (u16)(src.readPtr - src.data);
+			cookies.size = (u16)(lineEnd - src.readPtr);
 			break;
 	}
 
 	if (src.skip_spaces())
-		goto Error;	// ERROR: bad request, garbage after field value
+		goto Error;
+	src.readPtr = src.scanPtr;
+	return fieldIndex;
 
-	return fieldIndex;	// Positive values mean something was matched, 0 means unknown
-
-	Error:
-		status = Status::i400;
-		return -1;
+Error:
+	status = Status::i400;
+	return -1;
 }
 
-// NOTES: i think the call here is because CGI output is server controlled, 
-// we perform little error checking and presume the output is correct. 
-// Only quick sanity checks
+/*
+	CGI output is server-controlled, so this path performs only the inexpensive
+	structural checks needed before forwarding the line.
+*/
 REQUEST_INL
-(isize) parse_cgi_line(Cursor &src, Cursor &dst) {
-	const u8 *field = src.readPtr;
-	const usize totalLength = (usize)(src.lineEnd - src.readPtr);
+(isize) parse_cgi_line(HTTP_Buffer &src, HTTP_Buffer &dst) {
+	const u8 *const field = src.readPtr;
+	const u8 *const lineEnd = src.scanPtr - 2;
+	const usize totalLength = (usize)(lineEnd - src.readPtr);
 
-	isize fieldIndex = src.match_field();
+	const isize fieldIndex = src.match_field();
 	if (fieldIndex <= 0) {
 		if (fieldIndex < 0)
 			status = Status::i500;
+		else
+			dst.append(field, totalLength);
+		src.readPtr = src.scanPtr;
 		return fieldIndex;
 	}
 
@@ -101,10 +115,10 @@ REQUEST_INL
 		dst.insert(str, length, 256 - length);
 		return rvalue;
 	}
-	else
-		dst.append(field, totalLength);
+
+	dst.append(field, totalLength);
+	src.readPtr = src.scanPtr;
 	return fieldIndex;
 }
 
-// HTTP NAMESPACE END
 }

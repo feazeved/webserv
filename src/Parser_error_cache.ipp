@@ -34,33 +34,20 @@ void s_build_error_page_path(char *out, const StringView32 &root, const StringVi
 	out[length] = '\0';
 }
 
-static inline
-StringView32& s_error_page_at(VirtualServer &server, usize index) {
-	if (index < s_client_error_count)
-		return server.clientErrors[index];
-	return server.serverErrors[index - s_client_error_count];
-}
-
-/*
-	TODO: These need to access the flattened string definition of the errors in poolB
-	Probably the same way Status does it, by keeping indexes. Might be a good idea to move
-	the access error functions to the Status class
-*/
-
 PARSER_INL
 (void) cache_error_pages(VirtualServer &server) {
-	char pathBuffer[16384];
+	char pathBuffer[4 * MAX_PATH_SIZE];
 	usize tmpSize, tmpOffset;
-	StringView configuredPaths[s_error_page_count];
+	StringView32 configuredPaths[Status::errorPageCount];
 
-	for (usize index = 0; index < s_error_page_count; index++)
-		configuredPaths[index] = s_error_page_at(server, index);
+	for (usize index = 0; index < Status::errorPageCount; index++)
+		configuredPaths[index] = server.errorPages[index];
 
-	for (usize index = 0; index < s_error_page_count; index++) {
-		StringView32 &page = s_error_page_at(server, index);
+	for (usize index = 0; index < Status::errorPageCount; index++) {
+		StringView32 &page = server.errorPages[index];
 		const StringView32 &path = configuredPaths[index];
 		if (path.length == 0) {
-			page = s_default_error_pages[index];
+			page = Status::default_error_page(Status::error_code(index));
 			continue;
 		}
 
@@ -73,7 +60,7 @@ PARSER_INL
 				break;
 		}
 		if (duplicate != index) {
-			page = s_error_page_at(server, duplicate);
+			page = server.errorPages[duplicate];
 			continue;
 		}
 		s_build_error_page_path(pathBuffer, server.serverRoot, path);

@@ -11,8 +11,10 @@
 	and directives, they can be allocated in poolA, so their cost
 	is effectively free because they can be safely overwritten
 
-	There is no need to store different offsets, given that the memory
-	layout is sequential and won't exceed 4 GB (not even close)
+	Offsets use one logical address space: pool A starts at zero and pool B
+	starts at sizeof(poolA).  The combined space stays well below 4 GB.
+	Pool B begins with immutable status/error strings; allocations start at
+	the next cache-line boundary.
 */
 
 class Arena {
@@ -20,14 +22,16 @@ private:
 	Arena();
 public:
 	static u8 poolA[ARENA_SIZE] ALIGNED(4096);
-	static u8 poolB[MAX_FILE_SIZE] ALIGNED(4096);
+	static u8 poolB[ARENA_SIZE] ALIGNED(4096);
 	static usize sizeA, sizeB;
+	static const usize poolBStaticSize = ALIGN_UP(sizeof(HTTP_ARENA_STATIC_STRINGS), 64);
 
 	static void clear() {
 		sizeA = 0;
-		sizeB = 0;
+		sizeB = poolBStaticSize;
 	}
 
+	// TODO: technically, this might be UB? But not really
 	static u8* get_ptr(usize fileOffset) {
 		return poolA + fileOffset;
 	}
@@ -49,18 +53,20 @@ public:
 			PRINT_LN(2, "Error: Out of memory");
 			return UINT32_MAX;
 		}
-		u32 index = sizeB;
+		u32 index = sizeB + sizeof(poolA);
 		sizeB += bytes;
 		return index;
 	}
 
 };
 
-STATIC_ASSERT(sizeof(HTTP_DEFAULT_ERROR_PAGES) <= sizeof(Arena::poolB));
+STATIC_ASSERT(sizeof(Arena::poolA) + sizeof(Arena::poolB) <= UINT32_MAX);
+STATIC_ASSERT(sizeof(HTTP_ARENA_STATIC_STRINGS) <= UINT16_MAX);
+STATIC_ASSERT(Arena::poolBStaticSize <= sizeof(Arena::poolB));
 
 #ifdef MAIN_FILE
 	u8 Arena::poolA[ARENA_SIZE] ALIGNED(4096);
-	u8 Arena::poolB[ARENA_SIZE] ALIGNED(4096) = HTTP_DEFAULT_ERROR_PAGES;
+	u8 Arena::poolB[ARENA_SIZE] ALIGNED(4096) = HTTP_ARENA_STATIC_STRINGS;
 	usize Arena::sizeA = 0;
-	usize Arena::sizeB = sizeof(HTTP_DEFAULT_ERROR_PAGES) + 1;
+	usize Arena::sizeB = Arena::poolBStaticSize;
 #endif

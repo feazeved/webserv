@@ -21,8 +21,8 @@ public:
 	static const usize s_maxEvents = 16;
 
 public:
-	Parser parser;
 	VirtualServer servers[MAX_VIRTUAL_SERVERS];
+	Parser parser;
 	ConnectionPool connections;
 	i32 epollFd;
 

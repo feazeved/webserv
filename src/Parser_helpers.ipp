@@ -15,7 +15,7 @@ bool s_read_whole_file(const char *filePath, usize &fileSize, usize &fileOffset,
 		PERR_RETURN(1, "Error: Failed to open file");
 
 	struct stat st;
-	if (fstat(fd, &st) == -1 || st.st_size < 16) {
+	if (fstat(fd, &st) == -1 || st.st_size < 16 || st.st_size >= UINT32_MAX) {
 		close(fd);
 		PERR_RETURN(1, "Error: Invalid file");
 	}

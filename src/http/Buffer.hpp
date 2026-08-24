@@ -16,15 +16,22 @@ public:
 	u8 *readPtr, *scanPtr, *writePtr;
 
 	ALWAYS_INLINE
-	u8* get_end() const {
+	u8* get_end() {	// rename to mptr
+		return data + sizeof(data);
+	}
+
+	ALWAYS_INLINE
+	const u8* get_end() const {
 		return data + sizeof(data);
 	}
 
 	usize compact() {
 		const usize bytesUsed = (usize)(writePtr - readPtr);
+		const usize scanOffset = (usize)(scanPtr - readPtr);
 
 		MEMMOVE(data, readPtr, bytesUsed);
 		readPtr = data;
+		scanPtr = data + scanOffset;
 		writePtr = data + bytesUsed;
 		return (usize)(get_end() - writePtr);
 	}
@@ -103,7 +110,7 @@ public:
 };
 }
 
-typedef HTTP::Buffer<HTTP_BUFFERSIZE> HTTP_Buffer
+typedef HTTP::Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;
 
 #include "Buffer_add.ipp"
 #include "Buffer_search.ipp"

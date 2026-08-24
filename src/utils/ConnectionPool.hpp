@@ -44,12 +44,11 @@ public:
 	}
 
 	void clear() {
-		usize blockIndex;
-
-		while ((blockIndex = blockBitmap.find_first_set()) != SIZE_MAX) {
-			clear_block(blockIndex);
-			blockBitmap.bitclr(blockIndex);
+		for (usize blockIndex = 0; blockIndex < blockCount; blockIndex++) {
+			if (elementBitmap[blockIndex].bitmap != 0)
+				clear_block(blockIndex);
 		}
+		blockBitmap.clear();
 	}
 
 	usize get_slot() {

@@ -22,7 +22,7 @@ public:
 	bool alloc_b(u32 numElements) {
 		usize totalSize = numElements * sizeof(Type);
 		count = numElements;
-		offset = Arena::alloc_a(totalSize);
+		offset = Arena::alloc_b(totalSize);
 		if (offset == UINT32_MAX)
 			return true;
 		return false;

@@ -4,7 +4,7 @@
 
 BUFFER_INL
 (usize) find_line_end() {
-	const u8 *const searchEnd = writePtr - data >= 3 ? writePtr - 3 : data;
+	const u8 *const searchEnd = writePtr - data >= 2 ? writePtr - 1 : data;
 
 	while (scanPtr < searchEnd) {
 		if (MEMCMP(scanPtr, "\r\n", 2) == 0) {
@@ -20,7 +20,7 @@ BUFFER_INL
 
 BUFFER_INL
 (usize) find_header_end() {
-	const u8 *const searchEnd = writePtr - data >= 3 ? writePtr - 3 : data;
+	const u8 *const searchEnd = writePtr - data >= 4 ? writePtr - 3 : data;
 
 	while (scanPtr < searchEnd) {
 		if (MEMCMP(scanPtr, "\r\n\r\n", 4) == 0) {
@@ -91,3 +91,4 @@ BUFFER_INL
 	readPtr++;
 	return s_match(readPtr, 5, ltable);
 }
+
