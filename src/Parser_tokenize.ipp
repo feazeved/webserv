@@ -77,7 +77,7 @@ PARSER_INL
 	usize length;
 	isize braces = 0;
 	usize tokenIndex = 0;
-	char *ptr = (char*) Arena::get_ptr(fileOffset);
+	char *ptr = (char*) Arena::mptr(fileOffset);
 
 	s_strip_comments(ptr, fileSize);
 	serverCount = s_count_servers(ptr, fileSize);

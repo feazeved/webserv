@@ -27,7 +27,7 @@ bool s_read_whole_file(const char *filePath, usize &fileSize, usize &fileOffset,
 		PERR_RETURN(1, "Error: Out of memory");
 	}
 
-	u8* ptr = Arena::get_ptr(fileOffset);
+	u8* ptr = Arena::mptr(fileOffset);
 	usize curBytes = 0;
 	while (curBytes < fileSize) {
 		usize bytesRemaining = fileSize - curBytes;
@@ -155,6 +155,7 @@ usize s_count_locations(const Array32<Token> &tokens, usize cursor, usize end) {
 
 static inline
 usize s_count_servers(const char *str, usize length) {
+	const char *ostr;
 	const char *end = str + length;
 	usize serverCount = 0;
 	isize pdepth = 0;
@@ -172,6 +173,7 @@ usize s_count_servers(const char *str, usize length) {
 			str++;
 		pdepth = (*str == '{') ? 1 : -1;
 		str++;
+		ostr = str;
 		for (; str < end && pdepth > 0; str++) {
 			for (; *str != '}'; str++)
 				pdepth += *str == '{';
@@ -179,6 +181,8 @@ usize s_count_servers(const char *str, usize length) {
 				pdepth--;
 		}
 		if (pdepth != 0)
+			return SIZE_MAX;
+		if (str - ostr > MAX_SERVER_BLOCK_SIZE)
 			return SIZE_MAX;
 		serverCount++;
 	}

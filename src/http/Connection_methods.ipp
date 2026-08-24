@@ -3,6 +3,7 @@
 
 #include "Connection.hpp"
 #include "Connection_helpers.ipp"
+
 namespace HTTP {
 
 CONNECTION_INL

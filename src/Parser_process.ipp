@@ -116,7 +116,7 @@ PARSER_INL
 			packSize += interpreter.length;
 		}
 
-		MEMCPY(Arena::get_ptr(block.offset), buffer, packSize);
+		MEMCPY(Arena::mptr(block.offset), buffer, packSize);
 		block.length = (u32)packSize;
 	}
 }

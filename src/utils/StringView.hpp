@@ -14,11 +14,11 @@ public:
 	StringView32(u32 length, u32 offset) : offset(offset), length(length) {}
 
 	const char *kptr() const {
-		return (const char*)Arena::get_ptr(offset);
+		return (const char*)Arena::mptr(offset);
 	}
 
 	char *mptr() const {
-		return (char*)Arena::get_ptr(offset);
+		return (char*)Arena::mptr(offset);
 	}
 
 	template <usize size>

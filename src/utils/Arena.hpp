@@ -23,9 +23,9 @@ struct Arena {
 	union {
 		struct {
 			u8 A[CONNECTION_POOL_SIZE] ALIGNED(4096);
-			u8 B[MAX_FILE_SIZE] ALIGNED(4096);	
+			u8 B[CONFIG_POOL_SIZE] ALIGNED(4096);	
 		};
-		u8 base[CONNECTION_POOL_SIZE + MAX_FILE_SIZE] ALIGNED(4096);
+		u8 base[CONNECTION_POOL_SIZE + CONFIG_POOL_SIZE] ALIGNED(4096);
 	}	static pool;
 	static usize sizeA, sizeB;
 	static const usize poolBStaticSize = ALIGN_UP(sizeof(HTTP_ARENA_STATIC_STRINGS), 64);
@@ -35,7 +35,7 @@ struct Arena {
 		sizeB = poolBStaticSize;
 	}
 
-	static u8* get_ptr(usize fileOffset) {
+	static u8* mptr(usize fileOffset) {
 		return pool.base + fileOffset;
 	}
 

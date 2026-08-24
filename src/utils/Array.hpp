@@ -29,10 +29,10 @@ public:
 	}
 
 	Type& operator[] (usize index) {
-		return ((Type*)(Arena::get_ptr(offset)))[index];
+		return ((Type*)(Arena::mptr(offset)))[index];
 	}
 
 	const Type& operator[] (usize index) const {
-		return ((const Type*)(Arena::get_ptr(offset)))[index];
+		return ((const Type*)(Arena::mptr(offset)))[index];
 	}
 };

@@ -7,3 +7,7 @@
 4. Validate the CGI interpreters (check for access)
 
 5. Do more target validation inside check_location, it is too permissive
+
+6. Check stat functions vs fstat
+
+7. Make multi-level bitarray (see how to do specializations)

@@ -1,15 +1,18 @@
 #pragma once
+#include "core.hpp"
 
+// Server configuration
 #define HTTP_BUFFERSIZE 8192
-#define MAX_VIRTUAL_SERVERS (64)
+#define MAX_VIRTUAL_SERVERS (64)	// TODO: This isn't really configurable yet
 
-#define MAX_LOCATION_BLOCK_SIZE (16ul * 1024ul)
-#define MAX_FILE_SIZE (MAX_LOCATION_BLOCK_SIZE * MAX_VIRTUAL_SERVERS)
-#define MAX_PATH_SIZE (4096ul)
+#define MAX_SERVER_BLOCK_SIZE UINT16_MAX
+#define MAX_LOCATION_BLOCK_SIZE INT16_MAX
 
+#define CONFIG_POOL_SIZE (MAX_SERVER_BLOCK_SIZE * MAX_VIRTUAL_SERVERS)
 #define CONNECTION_POOL_SIZE (4096ul * HTTP_BUFFERSIZE)
-#define ARENA_SIZE (2ul * MAX_FILE_SIZE)
 
+// Kernel configurations
+#define MAX_PATH_SIZE (4096ul)
 #ifdef PIPE_BUF
 	#if PIPE_BUF > 4096
 		#define ATOMIC_IOSIZE 4096
@@ -23,3 +26,6 @@
 		#define ATOMIC_IOSIZE 512
 	#endif
 #endif
+
+
+STATIC_ASSERT(MAX_LOCATION_BLOCK_SIZE < UINT16_MAX);
