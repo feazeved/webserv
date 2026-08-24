@@ -15,7 +15,7 @@ void s_directive_error_page(Directive &dir, VirtualServer &server) {
 	if (s_length_check(path.length))
 		PERR_EXIT(1, "Error: Invalid error page");
 	for (u32 index = 0; index + 1 < dir.args.count; index++) {
-		usize error = s_strtol10(dir.args[index].c_str(), dir.args[index].length);
+		usize error = s_strtol10(dir.args[index].kptr(), dir.args[index].length);
 		Status status(error);
 		if (dir.args[index].length != 3 || !status.is_error())
 			PERR_EXIT(1, "Error: Invalid error number");
@@ -28,7 +28,7 @@ void s_directive_listen(Directive &dir, VirtualServer &server) {
 	if (server.port != SIZE_MAX || dir.args.count != 1)
 		PERR_EXIT(1, "Error: Invalid port definition");
 	const StringView32 &listen = dir.args[0];
-	const char *port = listen.c_str();
+	const char *port = listen.kptr();
 	usize portLength = listen.length;
 	char *separator = (char*)MEMCHR(port, ':', portLength);
 	if (separator != NULL) {
@@ -52,7 +52,7 @@ void s_directive_body_size(const StringView32 &value, usize &bodySize, VirtualSe
 		PERR_EXIT(1, "Error: Invalid max body size");
 
 	u8 factor = 0;
-	const char *str = value.c_str();
+	const char *str = value.kptr();
 	usize digitLength = value.length;
 	if (str[digitLength - 1] == 'G') {
 		factor = 30;
@@ -115,7 +115,7 @@ PARSER_INL
 			parse_location(tokens, cursor, end, loc);
 			for (usize index = 0; index < locationIndex; index++) {
 				const StringView32 &path = server.locations[index].url;
-				if (path.length == loc.url.length && MEMCMP(path.c_str(), loc.url.c_str(), path.length) == 0)
+				if (path.length == loc.url.length && MEMCMP(path.kptr(), loc.url.kptr(), path.length) == 0)
 					PERR_EXIT(1, "Error: Duplicate location");
 			}
 			server.locations[locationIndex] = loc;

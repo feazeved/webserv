@@ -13,7 +13,7 @@ u16 s_check_location(u8 *ptr, usize length, VirtualServer* cfg, Request &request
 		cmpLength++;
 
 	for (usize i = 0; i < locations.count; i++) {
-		if (MEMCMP(ptr, locations[i].url.c_str(), cmpLength) == 0) {
+		if (MEMCMP(ptr, locations[i].url.kptr(), cmpLength) == 0) {
 			match = true;
 			if ((locations[i].methods & (request.options & 7)) != 0) {
 

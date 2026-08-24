@@ -13,17 +13,17 @@ public:
 	StringView32() : offset(0), length(0) {}
 	StringView32(u32 length, u32 offset) : offset(offset), length(length) {}
 
-	const char *c_str() const {
+	const char *kptr() const {
 		return (const char*)Arena::get_ptr(offset);
 	}
 
-	char *c_str_mut() const {
+	char *mptr() const {
 		return (char*)Arena::get_ptr(offset);
 	}
 
 	template <usize size>
 	bool operator==(const char (&literal)[size]) const {
-		return length == size - 1 && MEMCMP_INLINE(c_str(), literal) == 0;
+		return length == size - 1 && MEMCMP_INLINE(kptr(), literal) == 0;
 	}
 };
 

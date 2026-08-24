@@ -99,12 +99,12 @@ public:
 
 	// Appends and Prepends
 	template <usize N> void append(const char (&string)[N]);			// Implicit
-	template <usize N> void append_inline(const u8 *ptr, usize length);	// Explicit
-	void append(const u8 *ptr, usize length);
+	template <usize N> void append_inline(const char* ptr, usize length);	// Explicit
+	void append(const char* ptr, usize length);
 
 	template <usize N> void prepend(const char (&string)[N]);
-	template <usize N> void prepend_inline(const u8 *ptr, usize length);
-	void prepend(const u8 *ptr, usize length);
+	template <usize N> void prepend_inline(const char* ptr, usize length);
+	void prepend(const char* ptr, usize length);
 	
 	usize append_buffer(Buffer &src, usize length);
 	void append_mime(u8 mimeIndex);

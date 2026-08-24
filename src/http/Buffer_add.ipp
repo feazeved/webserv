@@ -2,7 +2,7 @@
 #include "Buffer.hpp"
 
 BUFFER_INL
-(void) prepend(const u8 *ptr, usize length) {
+(void) prepend(const char* ptr, usize length) {
 	readPtr -= length;
 	MEMCPY(readPtr, ptr, length);
 }
@@ -14,13 +14,13 @@ BUFFER_INL
 }
 
 BUFFER_INL
-(template <usize N> void) prepend_inline(const u8 *ptr, usize length) {
+(template <usize N> void) prepend_inline(const char* ptr, usize length) {
 	readPtr -= length;
 	MEMCPY_INLINE(writePtr, ptr, N);
 }
 
 BUFFER_INL
-(void) append(const u8 *ptr, usize length) {
+(void) append(const char* ptr, usize length) {
 	MEMCPY(writePtr, ptr, length);
 	writePtr += length;
 }
@@ -32,7 +32,7 @@ BUFFER_INL
 }
 
 BUFFER_INL
-(template <usize N> void) append_inline(const u8 *ptr, usize length) {
+(template <usize N> void) append_inline(const char* ptr, usize length) {
 	MEMCPY_INLINE(writePtr, ptr, N);
 	writePtr += length;
 }

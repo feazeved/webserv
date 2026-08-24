@@ -16,7 +16,7 @@ namespace HTTP {
 class Status {
 public:
 	static const usize errorPageCount = 32 + 12;
-	static const usize arenaOffset = sizeof(Arena::poolA);
+	static const usize arenaOffset = sizeof(Arena::pool.A);
 	static char *const startPtr;
 
 	u16 index;

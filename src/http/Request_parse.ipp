@@ -72,9 +72,9 @@ Error:
 */
 REQUEST_INL
 (isize) parse_cgi_line(HTTP_Buffer &src, HTTP_Buffer &dst) {
-	const u8 *const field = src.readPtr;
-	const u8 *const lineEnd = src.scanPtr - 2;
-	const usize totalLength = (usize)(lineEnd - src.readPtr);
+	const char* const field = (char*)src.readPtr;
+	const char* const lineEnd = (char*)src.scanPtr - 2;
+	const usize totalLength = (usize)(lineEnd - (char*)src.readPtr);
 
 	const isize fieldIndex = src.match_field();
 	if (fieldIndex <= 0) {
@@ -92,7 +92,7 @@ REQUEST_INL
 		if (rvalue == -1)
 			status = Status::i500;	// CGI output an invalid status, should be server error
 		StringView str = status.status_str();
-		dst.prepend((u8*)str.ptr, str.length);
+		dst.prepend(str.ptr, str.length);
 		return rvalue;
 	}
 

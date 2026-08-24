@@ -33,9 +33,9 @@ CONNECTION_INL
 	Location &loc = cfg->locations[request.locationIndex];
 	const StringView32 &storePath = loc.uploadStore;
 
-	s_build_path(pathBuffer, storePath.c_str(), storePath.length, loc.root);
+	s_build_path(pathBuffer, storePath.kptr(), storePath.length, loc.root);
 
-	writeFd = open(storePath.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0644);
+	writeFd = open(storePath.kptr(), O_WRONLY | O_CREAT | O_EXCL, 0644);
 	if (writeFd == -1) {
 		mode = Mode::CLOSE;
 		return s_get_status(request.status);

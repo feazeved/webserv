@@ -32,7 +32,7 @@ static inline
 void s_build_path(char* buffer, const char *ptr, usize length, StringView32& root) {
 	// const StringView32& root = cfg->locations[request.locationIndex].root;
 
-	MEMCPY(buffer, root.c_str(), root.length);
+	MEMCPY(buffer, root.kptr(), root.length);
 	buffer += root.length;
 	MEMCPY(buffer, ptr, length);
 	buffer[length] = 0;

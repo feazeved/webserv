@@ -13,14 +13,14 @@ static inline
 void s_build_error_page_path(char *out, const StringView32 &root, const StringView32 &path) {
 	usize length = 0;
 	if (root.length != 0) {
-		MEMCPY(out, root.c_str(), root.length);
+		MEMCPY(out, root.kptr(), root.length);
 		length = root.length;
 	}
 
 	usize pathOffset = 0;
 	if (root.length != 0 && path.length != 0) {
 		const bool rootHasSlash = out[length - 1] == '/';
-		const bool pathHasSlash = path.c_str()[0] == '/';
+		const bool pathHasSlash = path.kptr()[0] == '/';
 		if (rootHasSlash && pathHasSlash)
 			pathOffset = 1;
 		else if (!rootHasSlash && !pathHasSlash)
@@ -28,7 +28,7 @@ void s_build_error_page_path(char *out, const StringView32 &root, const StringVi
 	}
 
 	const usize pathLength = path.length - pathOffset;
-	MEMCPY(out + length, path.c_str() + pathOffset, pathLength);
+	MEMCPY(out + length, path.kptr() + pathOffset, pathLength);
 	length += pathLength;
 	out[length] = '\0';
 }
@@ -55,7 +55,7 @@ PARSER_INL
 			const StringView32 &previousPath = configuredPaths[duplicate];
 			if (path.length == previousPath.length
 				&& previousPath.length != 0
-				&& MEMCMP(path.c_str(), previousPath.c_str(), path.length) == 0)
+				&& MEMCMP(path.kptr(), previousPath.kptr(), path.length) == 0)
 				break;
 		}
 		if (duplicate != index) {
@@ -97,7 +97,7 @@ PARSER_INL
 		if (block.length == 0)
 			continue;
 
-		char *cursor = block.c_str_mut();
+		char *cursor = block.mptr();
 		char *const end = cursor + block.length;
 		usize packSize = 0;
 		StringView extension, interpreter;

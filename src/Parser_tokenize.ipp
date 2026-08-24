@@ -48,7 +48,7 @@ Token s_match_delimiter(char *ptr, usize delimPos, isize &braces) {
 	Token token;
 	char delimiter = ptr[delimPos];
 
-	token.value = StringView32(1, (u32)(ptr + delimPos - (char*)Arena::poolA));
+	token.value = StringView32(1, (u32)(ptr + delimPos - (char*)Arena::pool.A));
 	switch (delimiter) {
 		case '{' :
 			token.type = Token::OPEN_BRACKET;
@@ -99,7 +99,7 @@ PARSER_INL
 		else {
 			length = s_get_next_word(ptr);
 			token.type = Token::WORD;
-			token.value = StringView32((u32)length, (u32)(ptr - (char*)Arena::poolA));
+			token.value = StringView32((u32)length, (u32)(ptr - (char*)Arena::pool.A));
 			ptr += length;
 		}
 		tokArray[tokenIndex++] = token;
@@ -109,7 +109,7 @@ PARSER_INL
 	for (u32 index = 0; index < tokArray.count; index++) {
 		if (tokArray[index].type == Token::WORD) {
 			StringView32 &word = tokArray[index].value;
-			word.c_str_mut()[word.length] = '\0';
+			word.mptr()[word.length] = '\0';
 		}
 	}
 	return tokArray;

@@ -26,11 +26,11 @@ CONNECTION_INL
 
 	sendBuffer.append("HTTP/1.1 ");
 	if (request.status.is_error()) {
-		sendBuffer.append((u8*) str.ptr, str.length);
+		sendBuffer.append(str.ptr, str.length);
 		sendBuffer.append("\r\n");
 	}
 	else {
-		sendBuffer.append_inline<3>((const u8*) str.ptr, 3);
+		sendBuffer.append_inline<3>(str.ptr, 3);
 		sendBuffer.append("OK\r\n");
 	}
 

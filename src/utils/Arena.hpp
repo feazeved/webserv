@@ -8,21 +8,25 @@
 /*
 	Arena has two pools, A that belongs to the connection pool and B
 	that belongs to the config structure. Since parsing uses tokens
-	and directives, they can be allocated in poolA, so their cost
+	and directives, they can be allocated in pool A, so their cost
 	is effectively free because they can be safely overwritten
 
 	Offsets use one logical address space: pool A starts at zero and pool B
-	starts at sizeof(poolA).  The combined space stays well below 4 GB.
+	starts at sizeof(pool A).  The combined space stays well below 4 GB.
 	Pool B begins with immutable status/error strings; allocations start at
 	the next cache-line boundary.
 */
 
-class Arena {
-private:
-	Arena();
-public:
-	static u8 poolA[ARENA_SIZE] ALIGNED(4096);
-	static u8 poolB[ARENA_SIZE] ALIGNED(4096);
+// STATIC_ASSERT(sizeof())
+
+struct Arena {
+	union {
+		struct {
+			u8 A[CONNECTION_POOL_SIZE] ALIGNED(4096);
+			u8 B[MAX_FILE_SIZE] ALIGNED(4096);	
+		};
+		u8 base[CONNECTION_POOL_SIZE + MAX_FILE_SIZE] ALIGNED(4096);
+	}	static pool;
 	static usize sizeA, sizeB;
 	static const usize poolBStaticSize = ALIGN_UP(sizeof(HTTP_ARENA_STATIC_STRINGS), 64);
 
@@ -31,14 +35,13 @@ public:
 		sizeB = poolBStaticSize;
 	}
 
-	// TODO: technically, this might be UB? But not really
 	static u8* get_ptr(usize fileOffset) {
-		return poolA + fileOffset;
+		return pool.base + fileOffset;
 	}
 
 	static u32 alloc_a(usize bytes) {
 		bytes = ALIGN_UP(bytes, 64);
-		if (bytes > sizeof(poolA) - sizeA) {
+		if (bytes > sizeof(pool.A) - sizeA) {
 			PRINT_LN(2, "Error: Out of memory");
 			return UINT32_MAX;
 		}
@@ -49,24 +52,23 @@ public:
 
 	static u32 alloc_b(usize bytes) {
 		bytes = ALIGN_UP(bytes, 64);
-		if (bytes > sizeof(poolB) - sizeB) {
+		if (bytes > sizeof(pool.B) - sizeB) {
 			PRINT_LN(2, "Error: Out of memory");
 			return UINT32_MAX;
 		}
-		u32 index = sizeB + sizeof(poolA);
+		u32 index = sizeB + sizeof(pool.A);
 		sizeB += bytes;
 		return index;
 	}
-
 };
 
-STATIC_ASSERT(sizeof(Arena::poolA) + sizeof(Arena::poolB) <= UINT32_MAX);
+STATIC_ASSERT(sizeof(Arena::pool.A) + sizeof(Arena::pool.B) <= UINT32_MAX);
 STATIC_ASSERT(sizeof(HTTP_ARENA_STATIC_STRINGS) <= UINT16_MAX);
-STATIC_ASSERT(Arena::poolBStaticSize <= sizeof(Arena::poolB));
+// STATIC_ASSERT(arena.pool.BStaticSize <= sizeof(arena.pool.B));
 
 #ifdef MAIN_FILE
-	u8 Arena::poolA[ARENA_SIZE] ALIGNED(4096);
-	u8 Arena::poolB[ARENA_SIZE] ALIGNED(4096) = HTTP_ARENA_STATIC_STRINGS;
+	u8 Arena::pool.A[ARENA_SIZE] ALIGNED(4096);
+	u8 Arena::pool.B[ARENA_SIZE] ALIGNED(4096) = HTTP_ARENA_STATIC_STRINGS;
 	usize Arena::sizeA = 0;
-	usize Arena::sizeB = Arena::poolBStaticSize;
+	usize Arena::sizeB = Arena::pool.BStaticSize;
 #endif

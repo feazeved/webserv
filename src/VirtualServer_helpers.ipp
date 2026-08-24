@@ -17,7 +17,7 @@ static bool s_resolve_host_and_port(const HTTP::StringView32& host, usize port, 
 	hints.ai_flags = 0;
 
 	addrinfo* result = NULL;
-	i32 status = getaddrinfo(host.c_str(), NULL, &hints, &result);
+	i32 status = getaddrinfo(host.kptr(), NULL, &hints, &result);
 	if (status != 0 || result == NULL)
 		return true;
 
