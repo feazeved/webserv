@@ -29,11 +29,11 @@ public:
 
 class StringView {
 public:
-	u8 *ptr;
+	char *ptr;
 	usize length;
 
 	StringView() : ptr(0), length(0) {}
-	StringView(u8 *newPtr, u32 length) : ptr(newPtr), length(length) {}
+	StringView(char* newPtr, u32 length) : ptr(newPtr), length(length) {}
 
 	template <usize size>
 	bool operator==(const char (&literal)[size]) const {

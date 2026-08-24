@@ -47,7 +47,7 @@ PARSER_INL
 		StringView32 &page = server.errorPages[index];
 		const StringView32 &path = configuredPaths[index];
 		if (path.length == 0) {
-			page = Status::default_error_page(Status::error_code(index));
+			page = Status::s_error_str(index);
 			continue;
 		}
 

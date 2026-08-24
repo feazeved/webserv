@@ -19,7 +19,7 @@ void s_directive_error_page(Directive &dir, VirtualServer &server) {
 		Status status(error);
 		if (dir.args[index].length != 3 || !status.is_error())
 			PERR_EXIT(1, "Error: Invalid error number");
-		server.errorPages[Status::s_page_idx(error)] = path;
+		server.errorPages[status.get_page_index()] = path;
 	}
 }
 

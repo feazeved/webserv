@@ -16,7 +16,7 @@ bool s_next_cgi_word(char *&cursor, char *end, StringView &word) {
 	if (cursor == end)
 		return false;
 
-	word.ptr = (u8*)cursor;
+	word.ptr = cursor;
 	while (cursor != end && (u8)*cursor > 32 && !s_is_config_delimiter(*cursor))
 		cursor++;
 	word.length = (usize)(cursor - (const char*)word.ptr);

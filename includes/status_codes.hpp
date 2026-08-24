@@ -24,141 +24,164 @@
 #define HTTP_STATUS_306 "306 (Unused)"
 #define HTTP_STATUS_307 "307 Temporary Redirect"
 #define HTTP_STATUS_308 "308 Permanent Redirect"
-#define HTTP_STATUS_400 "400 Bad Request"
-#define HTTP_STATUS_401 "401 Unauthorized"
-#define HTTP_STATUS_402 "402 Payment Required"
-#define HTTP_STATUS_403 "403 Forbidden"
-#define HTTP_STATUS_404 "404 Not Found"
-#define HTTP_STATUS_405 "405 Method Not Allowed"
-#define HTTP_STATUS_406 "406 Not Acceptable"
-#define HTTP_STATUS_407 "407 Proxy Authentication Required"
-#define HTTP_STATUS_408 "408 Request Timeout"
-#define HTTP_STATUS_409 "409 Conflict"
-#define HTTP_STATUS_410 "410 Gone"
-#define HTTP_STATUS_411 "411 Length Required"
-#define HTTP_STATUS_412 "412 Precondition Failed"
-#define HTTP_STATUS_413 "413 Content Too Large"
-#define HTTP_STATUS_414 "414 URI Too Long"
-#define HTTP_STATUS_415 "415 Unsupported Media Type"
-#define HTTP_STATUS_416 "416 Range Not Satisfiable"
-#define HTTP_STATUS_417 "417 Expectation Failed"
-#define HTTP_STATUS_418 "418 I'm a teapot"
-#define HTTP_STATUS_421 "421 Misdirected Request"
-#define HTTP_STATUS_422 "422 Unprocessable Content"
-#define HTTP_STATUS_423 "423 Locked"
-#define HTTP_STATUS_424 "424 Failed Dependency"
-#define HTTP_STATUS_425 "425 Too Early"
-#define HTTP_STATUS_426 "426 Upgrade Required"
-#define HTTP_STATUS_428 "428 Precondition Required"
-#define HTTP_STATUS_429 "429 Too Many Requests"
-#define HTTP_STATUS_431 "431 Request Header Fields Too Large"
-#define HTTP_STATUS_500 "500 Internal Server Error"
-#define HTTP_STATUS_501 "501 Not Implemented"
-#define HTTP_STATUS_502 "502 Bad Gateway"
-#define HTTP_STATUS_503 "503 Service Unavailable"
-#define HTTP_STATUS_504 "504 Gateway Timeout"
-#define HTTP_STATUS_505 "505 HTTP Version Not Supported"
-#define HTTP_STATUS_506 "506 Variant Also Negotiates"
-#define HTTP_STATUS_507 "507 Insufficient Storage"
-#define HTTP_STATUS_508 "508 Loop Detected"
-#define HTTP_STATUS_510 "510 Not Extended"
-#define HTTP_STATUS_511 "511 Network Authentication Required"
+
+#define HTTP_STATUS_REASON_400 "Bad Request"
+#define HTTP_STATUS_REASON_401 "Unauthorized"
+#define HTTP_STATUS_REASON_402 "Payment Required"
+#define HTTP_STATUS_REASON_403 "Forbidden"
+#define HTTP_STATUS_REASON_404 "Not Found"
+#define HTTP_STATUS_REASON_405 "Method Not Allowed"
+#define HTTP_STATUS_REASON_406 "Not Acceptable"
+#define HTTP_STATUS_REASON_407 "Proxy Authentication Required"
+#define HTTP_STATUS_REASON_408 "Request Timeout"
+#define HTTP_STATUS_REASON_409 "Conflict"
+#define HTTP_STATUS_REASON_410 "Gone"
+#define HTTP_STATUS_REASON_411 "Length Required"
+#define HTTP_STATUS_REASON_412 "Precondition Failed"
+#define HTTP_STATUS_REASON_413 "Content Too Large"
+#define HTTP_STATUS_REASON_414 "URI Too Long"
+#define HTTP_STATUS_REASON_415 "Unsupported Media Type"
+#define HTTP_STATUS_REASON_416 "Range Not Satisfiable"
+#define HTTP_STATUS_REASON_417 "Expectation Failed"
+#define HTTP_STATUS_REASON_418 "I'm a teapot"
+#define HTTP_STATUS_REASON_421 "Misdirected Request"
+#define HTTP_STATUS_REASON_422 "Unprocessable Content"
+#define HTTP_STATUS_REASON_423 "Locked"
+#define HTTP_STATUS_REASON_424 "Failed Dependency"
+#define HTTP_STATUS_REASON_425 "Too Early"
+#define HTTP_STATUS_REASON_426 "Upgrade Required"
+#define HTTP_STATUS_REASON_428 "Precondition Required"
+#define HTTP_STATUS_REASON_429 "Too Many Requests"
+#define HTTP_STATUS_REASON_431 "Request Header Fields Too Large"
+#define HTTP_STATUS_REASON_500 "Internal Server Error"
+#define HTTP_STATUS_REASON_501 "Not Implemented"
+#define HTTP_STATUS_REASON_502 "Bad Gateway"
+#define HTTP_STATUS_REASON_503 "Service Unavailable"
+#define HTTP_STATUS_REASON_504 "Gateway Timeout"
+#define HTTP_STATUS_REASON_505 "HTTP Version Not Supported"
+#define HTTP_STATUS_REASON_506 "Variant Also Negotiates"
+#define HTTP_STATUS_REASON_507 "Insufficient Storage"
+#define HTTP_STATUS_REASON_508 "Loop Detected"
+#define HTTP_STATUS_REASON_510 "Not Extended"
+#define HTTP_STATUS_REASON_511 "Network Authentication Required"
+
+#define HTTP_STATUS_400 "400 " HTTP_STATUS_REASON_400
+#define HTTP_STATUS_401 "401 " HTTP_STATUS_REASON_401
+#define HTTP_STATUS_402 "402 " HTTP_STATUS_REASON_402
+#define HTTP_STATUS_403 "403 " HTTP_STATUS_REASON_403
+#define HTTP_STATUS_404 "404 " HTTP_STATUS_REASON_404
+#define HTTP_STATUS_405 "405 " HTTP_STATUS_REASON_405
+#define HTTP_STATUS_406 "406 " HTTP_STATUS_REASON_406
+#define HTTP_STATUS_407 "407 " HTTP_STATUS_REASON_407
+#define HTTP_STATUS_408 "408 " HTTP_STATUS_REASON_408
+#define HTTP_STATUS_409 "409 " HTTP_STATUS_REASON_409
+#define HTTP_STATUS_410 "410 " HTTP_STATUS_REASON_410
+#define HTTP_STATUS_411 "411 " HTTP_STATUS_REASON_411
+#define HTTP_STATUS_412 "412 " HTTP_STATUS_REASON_412
+#define HTTP_STATUS_413 "413 " HTTP_STATUS_REASON_413
+#define HTTP_STATUS_414 "414 " HTTP_STATUS_REASON_414
+#define HTTP_STATUS_415 "415 " HTTP_STATUS_REASON_415
+#define HTTP_STATUS_416 "416 " HTTP_STATUS_REASON_416
+#define HTTP_STATUS_417 "417 " HTTP_STATUS_REASON_417
+#define HTTP_STATUS_418 "418 " HTTP_STATUS_REASON_418
+#define HTTP_STATUS_421 "421 " HTTP_STATUS_REASON_421
+#define HTTP_STATUS_422 "422 " HTTP_STATUS_REASON_422
+#define HTTP_STATUS_423 "423 " HTTP_STATUS_REASON_423
+#define HTTP_STATUS_424 "424 " HTTP_STATUS_REASON_424
+#define HTTP_STATUS_425 "425 " HTTP_STATUS_REASON_425
+#define HTTP_STATUS_426 "426 " HTTP_STATUS_REASON_426
+#define HTTP_STATUS_428 "428 " HTTP_STATUS_REASON_428
+#define HTTP_STATUS_429 "429 " HTTP_STATUS_REASON_429
+#define HTTP_STATUS_431 "431 " HTTP_STATUS_REASON_431
+#define HTTP_STATUS_500 "500 " HTTP_STATUS_REASON_500
+#define HTTP_STATUS_501 "501 " HTTP_STATUS_REASON_501
+#define HTTP_STATUS_502 "502 " HTTP_STATUS_REASON_502
+#define HTTP_STATUS_503 "503 " HTTP_STATUS_REASON_503
+#define HTTP_STATUS_504 "504 " HTTP_STATUS_REASON_504
+#define HTTP_STATUS_505 "505 " HTTP_STATUS_REASON_505
+#define HTTP_STATUS_506 "506 " HTTP_STATUS_REASON_506
+#define HTTP_STATUS_507 "507 " HTTP_STATUS_REASON_507
+#define HTTP_STATUS_508 "508 " HTTP_STATUS_REASON_508
+#define HTTP_STATUS_510 "510 " HTTP_STATUS_REASON_510
+#define HTTP_STATUS_511 "511 " HTTP_STATUS_REASON_511
+
 #define HTTP_STATUS(code) HTTP_STATUS_##code
+#define HTTP_STATUS_REASON(code) HTTP_STATUS_REASON_##code
 
-/*
-	Length-prefixed, NUL-terminated status strings.  Status stores a u16 byte
-	offset into this table, so keep this order in sync with Status::Code.
-*/
-#define HTTP_STATUS_STRINGS \
-	"\0\0\0\x0C" \
-	HTTP_STATUS(100) "\0\x17" HTTP_STATUS(101) "\0\x0E" HTTP_STATUS(102) "\0\x0F" \
-	HTTP_STATUS(103) "\0\x1F" HTTP_STATUS(104) "\0\x06" HTTP_STATUS(200) "\0\x0B" \
-	HTTP_STATUS(201) "\0\x0C" HTTP_STATUS(202) "\0\x21" HTTP_STATUS(203) "\0\x0E" \
-	HTTP_STATUS(204) "\0\x11" HTTP_STATUS(205) "\0\x13" HTTP_STATUS(206) "\0\x10" \
-	HTTP_STATUS(207) "\0\x14" HTTP_STATUS(208) "\0\x0B" HTTP_STATUS(226) "\0\x14" \
-	HTTP_STATUS(300) "\0\x15" HTTP_STATUS(301) "\0\x09" HTTP_STATUS(302) "\0\x0D" \
-	HTTP_STATUS(303) "\0\x10" HTTP_STATUS(304) "\0\x0D" HTTP_STATUS(305) "\0\x0C" \
-	HTTP_STATUS(306) "\0\x16" HTTP_STATUS(307) "\0\x16" HTTP_STATUS(308) "\0\x0F" \
-	HTTP_STATUS(400) "\0\x10" HTTP_STATUS(401) "\0\x14" HTTP_STATUS(402) "\0\x0D" \
-	HTTP_STATUS(403) "\0\x0D" HTTP_STATUS(404) "\0\x16" HTTP_STATUS(405) "\0\x12" \
-	HTTP_STATUS(406) "\0\x21" HTTP_STATUS(407) "\0\x13" HTTP_STATUS(408) "\0\x0C" \
-	HTTP_STATUS(409) "\0\x08" HTTP_STATUS(410) "\0\x13" HTTP_STATUS(411) "\0\x17" \
-	HTTP_STATUS(412) "\0\x15" HTTP_STATUS(413) "\0\x10" HTTP_STATUS(414) "\0\x1A" \
-	HTTP_STATUS(415) "\0\x19" HTTP_STATUS(416) "\0\x16" HTTP_STATUS(417) "\0\x10" \
-	HTTP_STATUS(418) "\0\x17" HTTP_STATUS(421) "\0\x19" HTTP_STATUS(422) "\0\x0A" \
-	HTTP_STATUS(423) "\0\x15" HTTP_STATUS(424) "\0\x0D" HTTP_STATUS(425) "\0\x14" \
-	HTTP_STATUS(426) "\0\x19" HTTP_STATUS(428) "\0\x15" HTTP_STATUS(429) "\0\x23" \
-	HTTP_STATUS(431) "\0\x21" HTTP_STATUS(500) "\0\x13" HTTP_STATUS(501) "\0\x0F" \
-	HTTP_STATUS(502) "\0\x17" HTTP_STATUS(503) "\0\x13" HTTP_STATUS(504) "\0\x1E" \
-	HTTP_STATUS(505) "\0\x1B" HTTP_STATUS(506) "\0\x18" HTTP_STATUS(507) "\0\x11" \
-	HTTP_STATUS(508) "\0\x10" HTTP_STATUS(510) "\0\x23" HTTP_STATUS(511) "\0"
-
-#define HTTP_ERROR_PAGE(code, reason) \
+#define HTTP_STATUS_PAGE(code, reason) \
 	"<!doctype html><meta charset=utf-8>" \
 	"<title>" code " " reason "</title>" \
 	"<style>body{font:16px sans-serif;text-align:center;padding:10vh}" \
 	"h1{font-size:4em;margin:0}</style>" \
 	"<h1>" code "</h1><p>" reason "</p></html>"
 
-#define HTTP_ERROR_PAGE_MAX_SIZE 255
+#define HTTP_STATUS_STRINGIFY_RAW(value) #value
+#define HTTP_STATUS_STRINGIFY(value) HTTP_STATUS_STRINGIFY_RAW(value)
+#define HTTP_STATUS_DEFAULT_PAGE(code) \
+	HTTP_STATUS_PAGE(HTTP_STATUS_STRINGIFY(code), HTTP_STATUS_REASON(code))
 
-#define HTTP_ERROR_400 HTTP_ERROR_PAGE("400", "Bad Request")
-#define HTTP_ERROR_401 HTTP_ERROR_PAGE("401", "Unauthorized")
-#define HTTP_ERROR_402 HTTP_ERROR_PAGE("402", "Payment Required")
-#define HTTP_ERROR_403 HTTP_ERROR_PAGE("403", "Forbidden")
-#define HTTP_ERROR_404 HTTP_ERROR_PAGE("404", "Not Found")
-#define HTTP_ERROR_405 HTTP_ERROR_PAGE("405", "Method Not Allowed")
-#define HTTP_ERROR_406 HTTP_ERROR_PAGE("406", "Not Acceptable")
-#define HTTP_ERROR_407 HTTP_ERROR_PAGE("407", "Proxy Authentication Required")
-#define HTTP_ERROR_408 HTTP_ERROR_PAGE("408", "Request Timeout")
-#define HTTP_ERROR_409 HTTP_ERROR_PAGE("409", "Conflict")
-#define HTTP_ERROR_410 HTTP_ERROR_PAGE("410", "Gone")
-#define HTTP_ERROR_411 HTTP_ERROR_PAGE("411", "Length Required")
-#define HTTP_ERROR_412 HTTP_ERROR_PAGE("412", "Precondition Failed")
-#define HTTP_ERROR_413 HTTP_ERROR_PAGE("413", "Content Too Large")
-#define HTTP_ERROR_414 HTTP_ERROR_PAGE("414", "URI Too Long")
-#define HTTP_ERROR_415 HTTP_ERROR_PAGE("415", "Unsupported Media Type")
-#define HTTP_ERROR_416 HTTP_ERROR_PAGE("416", "Range Not Satisfiable")
-#define HTTP_ERROR_417 HTTP_ERROR_PAGE("417", "Expectation Failed")
-#define HTTP_ERROR_418 HTTP_ERROR_PAGE("418", "I'm a teapot")
-#define HTTP_ERROR_419 HTTP_ERROR_PAGE("419", "Client Error")
-#define HTTP_ERROR_420 HTTP_ERROR_PAGE("420", "Client Error")
-#define HTTP_ERROR_421 HTTP_ERROR_PAGE("421", "Misdirected Request")
-#define HTTP_ERROR_422 HTTP_ERROR_PAGE("422", "Unprocessable Content")
-#define HTTP_ERROR_423 HTTP_ERROR_PAGE("423", "Locked")
-#define HTTP_ERROR_424 HTTP_ERROR_PAGE("424", "Failed Dependency")
-#define HTTP_ERROR_425 HTTP_ERROR_PAGE("425", "Too Early")
-#define HTTP_ERROR_426 HTTP_ERROR_PAGE("426", "Upgrade Required")
-#define HTTP_ERROR_427 HTTP_ERROR_PAGE("427", "Client Error")
-#define HTTP_ERROR_428 HTTP_ERROR_PAGE("428", "Precondition Required")
-#define HTTP_ERROR_429 HTTP_ERROR_PAGE("429", "Too Many Requests")
-#define HTTP_ERROR_430 HTTP_ERROR_PAGE("430", "Client Error")
-#define HTTP_ERROR_431 HTTP_ERROR_PAGE("431", "Request Header Fields Too Large")
-#define HTTP_ERROR_500 HTTP_ERROR_PAGE("500", "Internal Server Error")
-#define HTTP_ERROR_501 HTTP_ERROR_PAGE("501", "Not Implemented")
-#define HTTP_ERROR_502 HTTP_ERROR_PAGE("502", "Bad Gateway")
-#define HTTP_ERROR_503 HTTP_ERROR_PAGE("503", "Service Unavailable")
-#define HTTP_ERROR_504 HTTP_ERROR_PAGE("504", "Gateway Timeout")
-#define HTTP_ERROR_505 HTTP_ERROR_PAGE("505", "HTTP Version Not Supported")
-#define HTTP_ERROR_506 HTTP_ERROR_PAGE("506", "Variant Also Negotiates")
-#define HTTP_ERROR_507 HTTP_ERROR_PAGE("507", "Insufficient Storage")
-#define HTTP_ERROR_508 HTTP_ERROR_PAGE("508", "Loop Detected")
-#define HTTP_ERROR_509 HTTP_ERROR_PAGE("509", "Server Error")
-#define HTTP_ERROR_510 HTTP_ERROR_PAGE("510", "Not Extended")
-#define HTTP_ERROR_511 HTTP_ERROR_PAGE("511", "Network Authentication Required")
-#define HTTP_ERROR(code) HTTP_ERROR_##code
+#define HTTP_STATUS_PAGE_MAX_SIZE 255
 
-#define HTTP_DEFAULT_ERROR_PAGES \
-	HTTP_ERROR_400 "\0" HTTP_ERROR_401 "\0" HTTP_ERROR_402 "\0" HTTP_ERROR_403 "\0" \
-	HTTP_ERROR_404 "\0" HTTP_ERROR_405 "\0" HTTP_ERROR_406 "\0" HTTP_ERROR_407 "\0" \
-	HTTP_ERROR_408 "\0" HTTP_ERROR_409 "\0" HTTP_ERROR_410 "\0" HTTP_ERROR_411 "\0" \
-	HTTP_ERROR_412 "\0" HTTP_ERROR_413 "\0" HTTP_ERROR_414 "\0" HTTP_ERROR_415 "\0" \
-	HTTP_ERROR_416 "\0" HTTP_ERROR_417 "\0" HTTP_ERROR_418 "\0" HTTP_ERROR_419 "\0" \
-	HTTP_ERROR_420 "\0" HTTP_ERROR_421 "\0" HTTP_ERROR_422 "\0" HTTP_ERROR_423 "\0" \
-	HTTP_ERROR_424 "\0" HTTP_ERROR_425 "\0" HTTP_ERROR_426 "\0" HTTP_ERROR_427 "\0" \
-	HTTP_ERROR_428 "\0" HTTP_ERROR_429 "\0" HTTP_ERROR_430 "\0" HTTP_ERROR_431 "\0" \
-	HTTP_ERROR_500 "\0" HTTP_ERROR_501 "\0" HTTP_ERROR_502 "\0" HTTP_ERROR_503 "\0" \
-	HTTP_ERROR_504 "\0" HTTP_ERROR_505 "\0" HTTP_ERROR_506 "\0" HTTP_ERROR_507 "\0" \
-	HTTP_ERROR_508 "\0" HTTP_ERROR_509 "\0" HTTP_ERROR_510 "\0" HTTP_ERROR_511 "\0"
+/*
+	Flat records stored in Arena::poolB:
+		[u8 status length][status][NUL]
+		[u8 page length][default page][NUL]  // error statuses only
 
-#define HTTP_ARENA_STATIC_STRINGS HTTP_STATUS_STRINGS HTTP_DEFAULT_ERROR_PAGES
+	Status::index points at the first byte of the status string.  Error-page
+	offsets are derived from that index; there is no page index table.
+*/
+#define HTTP_STATUS_STRINGS \
+	"\0\0\0\0\0\0\0\0" \
+	"\x0C" HTTP_STATUS(100) "\0" "\x17" HTTP_STATUS(101) "\0" \
+	"\x0E" HTTP_STATUS(102) "\0" "\x0F" HTTP_STATUS(103) "\0" \
+	"\x1F" HTTP_STATUS(104) "\0" "\x06" HTTP_STATUS(200) "\0" \
+	"\x0B" HTTP_STATUS(201) "\0" "\x0C" HTTP_STATUS(202) "\0" \
+	"\x21" HTTP_STATUS(203) "\0" "\x0E" HTTP_STATUS(204) "\0" \
+	"\x11" HTTP_STATUS(205) "\0" "\x13" HTTP_STATUS(206) "\0" \
+	"\x10" HTTP_STATUS(207) "\0" "\x14" HTTP_STATUS(208) "\0" \
+	"\x0B" HTTP_STATUS(226) "\0" "\x14" HTTP_STATUS(300) "\0" \
+	"\x15" HTTP_STATUS(301) "\0" "\x09" HTTP_STATUS(302) "\0" \
+	"\x0D" HTTP_STATUS(303) "\0" "\x10" HTTP_STATUS(304) "\0" \
+	"\x0D" HTTP_STATUS(305) "\0" "\x0C" HTTP_STATUS(306) "\0" \
+	"\x16" HTTP_STATUS(307) "\0" "\x16" HTTP_STATUS(308) "\0" \
+	"\x0F" HTTP_STATUS(400) "\0\xC8" HTTP_STATUS_DEFAULT_PAGE(400) "\0" \
+	"\x10" HTTP_STATUS(401) "\0\xCA" HTTP_STATUS_DEFAULT_PAGE(401) "\0" \
+	"\x14" HTTP_STATUS(402) "\0\xD2" HTTP_STATUS_DEFAULT_PAGE(402) "\0" \
+	"\x0D" HTTP_STATUS(403) "\0\xC4" HTTP_STATUS_DEFAULT_PAGE(403) "\0" \
+	"\x0D" HTTP_STATUS(404) "\0\xC4" HTTP_STATUS_DEFAULT_PAGE(404) "\0" \
+	"\x16" HTTP_STATUS(405) "\0\xD6" HTTP_STATUS_DEFAULT_PAGE(405) "\0" \
+	"\x12" HTTP_STATUS(406) "\0\xCE" HTTP_STATUS_DEFAULT_PAGE(406) "\0" \
+	"\x21" HTTP_STATUS(407) "\0\xEC" HTTP_STATUS_DEFAULT_PAGE(407) "\0" \
+	"\x13" HTTP_STATUS(408) "\0\xD0" HTTP_STATUS_DEFAULT_PAGE(408) "\0" \
+	"\x0C" HTTP_STATUS(409) "\0\xC2" HTTP_STATUS_DEFAULT_PAGE(409) "\0" \
+	"\x08" HTTP_STATUS(410) "\0\xBA" HTTP_STATUS_DEFAULT_PAGE(410) "\0" \
+	"\x13" HTTP_STATUS(411) "\0\xD0" HTTP_STATUS_DEFAULT_PAGE(411) "\0" \
+	"\x17" HTTP_STATUS(412) "\0\xD8" HTTP_STATUS_DEFAULT_PAGE(412) "\0" \
+	"\x15" HTTP_STATUS(413) "\0\xD4" HTTP_STATUS_DEFAULT_PAGE(413) "\0" \
+	"\x10" HTTP_STATUS(414) "\0\xCA" HTTP_STATUS_DEFAULT_PAGE(414) "\0" \
+	"\x1A" HTTP_STATUS(415) "\0\xDE" HTTP_STATUS_DEFAULT_PAGE(415) "\0" \
+	"\x19" HTTP_STATUS(416) "\0\xDC" HTTP_STATUS_DEFAULT_PAGE(416) "\0" \
+	"\x16" HTTP_STATUS(417) "\0\xD6" HTTP_STATUS_DEFAULT_PAGE(417) "\0" \
+	"\x10" HTTP_STATUS(418) "\0\xCA" HTTP_STATUS_DEFAULT_PAGE(418) "\0" \
+	"\x17" HTTP_STATUS(421) "\0\xD8" HTTP_STATUS_DEFAULT_PAGE(421) "\0" \
+	"\x19" HTTP_STATUS(422) "\0\xDC" HTTP_STATUS_DEFAULT_PAGE(422) "\0" \
+	"\x0A" HTTP_STATUS(423) "\0\xBE" HTTP_STATUS_DEFAULT_PAGE(423) "\0" \
+	"\x15" HTTP_STATUS(424) "\0\xD4" HTTP_STATUS_DEFAULT_PAGE(424) "\0" \
+	"\x0D" HTTP_STATUS(425) "\0\xC4" HTTP_STATUS_DEFAULT_PAGE(425) "\0" \
+	"\x14" HTTP_STATUS(426) "\0\xD2" HTTP_STATUS_DEFAULT_PAGE(426) "\0" \
+	"\x19" HTTP_STATUS(428) "\0\xDC" HTTP_STATUS_DEFAULT_PAGE(428) "\0" \
+	"\x15" HTTP_STATUS(429) "\0\xD4" HTTP_STATUS_DEFAULT_PAGE(429) "\0" \
+	"\x23" HTTP_STATUS(431) "\0\xF0" HTTP_STATUS_DEFAULT_PAGE(431) "\0" \
+	"\x19" HTTP_STATUS(500) "\0\xDC" HTTP_STATUS_DEFAULT_PAGE(500) "\0" \
+	"\x13" HTTP_STATUS(501) "\0\xD0" HTTP_STATUS_DEFAULT_PAGE(501) "\0" \
+	"\x0F" HTTP_STATUS(502) "\0\xC8" HTTP_STATUS_DEFAULT_PAGE(502) "\0" \
+	"\x17" HTTP_STATUS(503) "\0\xD8" HTTP_STATUS_DEFAULT_PAGE(503) "\0" \
+	"\x13" HTTP_STATUS(504) "\0\xD0" HTTP_STATUS_DEFAULT_PAGE(504) "\0" \
+	"\x1E" HTTP_STATUS(505) "\0\xE6" HTTP_STATUS_DEFAULT_PAGE(505) "\0" \
+	"\x1B" HTTP_STATUS(506) "\0\xE0" HTTP_STATUS_DEFAULT_PAGE(506) "\0" \
+	"\x18" HTTP_STATUS(507) "\0\xDA" HTTP_STATUS_DEFAULT_PAGE(507) "\0" \
+	"\x11" HTTP_STATUS(508) "\0\xCC" HTTP_STATUS_DEFAULT_PAGE(508) "\0" \
+	"\x10" HTTP_STATUS(510) "\0\xCA" HTTP_STATUS_DEFAULT_PAGE(510) "\0" \
+	"\x23" HTTP_STATUS(511) "\0\xF0" HTTP_STATUS_DEFAULT_PAGE(511) "\0"
+
+#define HTTP_ARENA_STATIC_STRINGS HTTP_STATUS_STRINGS
