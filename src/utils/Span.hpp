@@ -53,4 +53,11 @@ struct Span32 {
 struct Span16 {
 	u16 index;
 	u16 length;
+
+	Span extract(char* ptr) {
+		Span result;
+		result.ptr = ptr + index;
+		result.length = length;
+		return result;
+	}
 };

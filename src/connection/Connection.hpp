@@ -1,11 +1,16 @@
 #pragma once
 #include <sys/stat.h>
 #include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "core.hpp"
 #include "Buffer.hpp"
 #include "VirtualServer.hpp"
 #include "Request.hpp"
+#include "Environment.hpp"
+
+extern Environment g_fakeEnv;
 
 #define CONNECTION_INL(ret_type) ret_type inline Connection::
 
@@ -18,6 +23,7 @@ public:
 	static const usize bufferSize = HTTP_BUFFERSIZE - metasizeAlign;
 
 public:
+	static Environment s_fakeEnv;
 	VirtualServer* cfg;
 	HTTP_Buffer recvBuffer, sendBuffer;
 	Request request;
@@ -30,8 +36,6 @@ public:
 	int clientFd;	// Duplex FD
 	int writeFd;	// CGI Input or POST
 	int readFd;		// CGI Output or GET/DEL
-
-	isize dispatch(u32 events);
 
 	isize init(int fd, VirtualServer* c) {
 		ASSERT(clientFd != -1, "Assigned a connection already in use");
@@ -67,33 +71,35 @@ public:
 		return false;
 	}
 
-	// Game
-	int handle_game_request();
-
+	void append_env(char *pathBuffer);
+	void exec_script(char* cgiPath, char* scriptPath, int fdIn[2], int fdOut[2]);
+	
 	// Configuration
+	isize dispatch(u32 events);
 	isize parse(u32 events);
 	isize error_path();
 	void build_header();
 	isize build_cgi_header();
-	void build_path(char* buffer, const char* ptr, usize length);
+	isize close_connection();
 
-	// HTTP Methods
+	// Common
+	isize write_to_client(u32 events);
+	isize read_from_client(u32 events);
+
+	// Streaming
 	isize upload_file(u32 events);
 	isize download_file(u32 events);
-
 	isize cgi_method();
 	isize sse_method();
-	
-	isize get_directory(struct stat *st);
+
+	// First Run
 	isize del_first_run();
 	isize get_first_run();
 	isize post_first_run();
 	isize cgi_first_run();
 	isize get_autoindex();
+	isize get_directory(struct stat *st);
 
-	isize write_to_client(u32 events);
-	isize read_from_client(u32 events);
-	isize close_connection();
 
 	Connection() : clientFd(-1) {}
 };

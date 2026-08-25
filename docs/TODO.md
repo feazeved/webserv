@@ -11,3 +11,5 @@
 6. Check stat functions vs fstat
 
 7. Make multi-level bitarray (see how to do specializations)
+
+8. Null terminate CGI Blocks

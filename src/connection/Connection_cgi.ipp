@@ -1,21 +1,9 @@
 #pragma once
+#include "Connection.hpp"
 
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/epoll.h>
-#include "core.hpp"
-#include "core_macros.ipp"
-#include "http/Buffer.hpp"
-#include "http/Connection.hpp"
-#include "Environment.hpp"
-
-extern time_t g_timeNow;
-extern Environment g_fakeEnv;
-
-static inline
-void s_exec_script(u8 cgiType, const char *scriptPath, int fdIn[2], int fdOut[2]) {
-	static const char *cgiPath[] = {"/usr/bin/python3", "/usr/bin/other"};
-	const char *const argv[3] = {cgiPath[cgiType], scriptPath, NULL};
+CONNECTION_INL
+(void) exec_script(char* cgiPath, char* scriptPath, int fdIn[2], int fdOut[2]) {
+	char *const argv[3] = {cgiPath, scriptPath, NULL};
 
 	bool fail = dup2(STDOUT_FILENO, fdOut[1]) == -1 || 
 				dup2(STDIN_FILENO, fdIn[0]) == -1;
@@ -30,9 +18,7 @@ void s_exec_script(u8 cgiType, const char *scriptPath, int fdIn[2], int fdOut[2]
 		_exit(1);	// TODO: Appropriate return
 	}
 
-	// TODO: assumes path was built on clientOutput
-	// TODO: assumes cgiType is determined on parsing
-	execve(cgiPath[cgiType], (char* const*) argv, g_fakeEnv.envp);
+	execve(cgiPath, (char* const*) argv, g_fakeEnv.envp);
 	if (errno != ENOENT && errno != ENOTDIR)
 		_exit(126);
 	_exit(127);
@@ -41,36 +27,57 @@ void s_exec_script(u8 cgiType, const char *scriptPath, int fdIn[2], int fdOut[2]
 /*
 	Doing this before forking avoids Copy on Write. Fake env is good for that!
 	REQUEST_METHOD=POST
+	SCRIPT_NAME=/cgi/test.py
 	QUERY_STRING=a=1
 	CONTENT_LENGTH=42
+	CONTENT_TYPE=application/x-www-form-urlencoded
+
+	HTTP_HOST=example.com:8080
 	HTTP_COOKIE=session=xyz
 */
 
-static inline
-void s_append_env(u8* buffer, Request &request) {
-	static u8 scriptName[256 + 64] = "SCRIPT_NAME=";	// Making it static avoids having to copy SCRIPT_NAME=
-	static u8 requestMethod[32] = "REQUEST_METHOD=";
-	static const u8 methods[3][8] = {"GET", "POST", "DELETE"};
+CONNECTION_INL
+(void) append_env(char* scriptName) {
+	static char contentLength[48] = "HTTP_CONTENT_LENGTH=";
+	static const char requestMethod[3][24] = 
+		{"REQUEST_METHOD=GET", "REQUEST_METHOD=POST", "REQUEST_METHOD=DELETE"};
+	const usize methodIndex = (request.options & 7) / 2;
 
+	Span pathSpan = request.path.extract((char*) recvBuffer.data);
+	Span querySpan = request.query.extract((char*) recvBuffer.data);
+	Span cookieSpan = request.cookies.extract((char*) recvBuffer.data);
+	
 	g_fakeEnv.reset();
-	MEMCPY(scriptName + 12, buffer + request.path.index, request.path.length + 1);
-	MEMCPY_INLINE(requestMethod + 15, methods[(request.mode & 7) - 1], 8);			// TODO: triple check the enums
+	MEMCPY(scriptName + 12, pathSpan.ptr, pathSpan.length);
+	scriptName[12 + pathSpan.length] = 0;
 
-	u8* query = (buffer + request.query.index) - 13;	// Inplace changes query, overrides path
-	MEMCPY_INLINE(query, "QUERY_STRING=", 13);			// Totally safe dont worry about it, buffer is padded
+	querySpan.ptr -= 13;	// Inplace changes query, overrides path
+	MEMCPY_INLINE(querySpan.ptr, "QUERY_STRING=", 13); // Totally safe dont worry about it
 
-	u8* cookies = (buffer + request.cookies.index) - 12;	// Inplace changes Cookies
-	MEMCPY_INLINE(cookies, "HTTP_COOKIE=", 12);			// Worst case scenario overrides HTTP/1.1\r\n
+	cookieSpan.ptr -= 12;
+	MEMCPY_INLINE(cookieSpan.ptr, "HTTP_COOKIE=", 12); // Worst case scenario overrides HTTP/1.1\r\n
 
-	g_fakeEnv.append(scriptName);
-	g_fakeEnv.append(query);
-	g_fakeEnv.append(cookies);
-	g_fakeEnv.append((u8*) NULL);
+	if (request.options & Options::FIXED_LENGTH) {
+		char buffer[48];
+		// itoa
+		// MEMCMP_INLINE(contentLength + 20, );
+		s_fakeEnv.append(contentLength);
+	}
+	s_fakeEnv.append(requestMethod[methodIndex]);
+	s_fakeEnv.append(scriptName);
+	s_fakeEnv.append(querySpan.ptr);
+	s_fakeEnv.append(cookieSpan.ptr);
 }
 
 // TODO: parsing needs to build the path for the script
 CONNECTION_INL
 (isize) cgi_first_run() {
+	char pathBuffer[8192];
+	char scriptName[8192] = "SCRIPT_NAME=";
+	char* ptr = request.path.index + (char*) recvBuffer.data;
+	Location &loc = cfg->locations[request.locationIndex];
+	Span interpSpan = request.interpreter.extract(loc.cgiBlock.mptr());
+
 	int fdIn[2];
 	int fdOut[2];
 
@@ -81,12 +88,13 @@ CONNECTION_INL
 	if (VirtualServer::s_set_nonblocking(fdOut[0]) || VirtualServer::s_set_nonblocking(fdIn[1]))
 		goto ErrorCloseOutput;
 
-	s_append_env(recvBuffer.data, request);
+	s_build_path(pathBuffer, ptr, request.path.length, loc.root);
+	append_env(scriptName);
 	processId = fork();
 	if (processId < 0)
 		goto ErrorCloseOutput;
 	if (processId == 0)
-		s_exec_script(request.cgiType, (char*)recvBuffer.data, fdIn, fdOut);
+		exec_script(pathBuffer, interpSpan.ptr, fdIn, fdOut);
 
 	close(fdIn[0]);
 	close(fdOut[1]);
@@ -115,11 +123,18 @@ CONNECTION_INL
 	isize bytesWritten, bytesRead;
 
 	if (request.options & Options::CHUNKED_LENGTH)
-		bytesWritten = decode();
+		bytesWritten = recvBuffer.decode(writeFd, request.chunkSize, request.bodySize);
 	else {
 		bytesWritten = recvBuffer.write(writeFd, request.bodySize);
 		if (bytesWritten > 0)
 			request.bodySize -= (usize) bytesWritten;
+	}
+
+	if (bytesWritten == -1) {
+		close(writeFd);
+		writeFd = -1;
+		request.status = Status::i500;
+		return error_path();
 	}
 
 	if (request.bodySize == 0) {	// Must guarantee that bodySize is 0
@@ -136,11 +151,10 @@ CONNECTION_INL
 	isize delta = ((bytesWritten < 0 || bytesRead < 0) ? -1 : 1);
 	bonusTime = CLAMP(bonusTime + delta, 0, 30);
 
-	// Return path until the operation isnt complete
-	if (request.status.is_set()) {
+	if (!request.status.is_set()) {
 		if (sendBuffer.find_header_end() != SIZE_MAX) {
 			if (sendBuffer.is_full())
-				return -1;	// ERROR: CGI Header is too big
+				return -1;
 			return 0;	// Still no CGI Header
 		}
 		build_cgi_header();

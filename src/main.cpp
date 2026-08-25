@@ -10,11 +10,11 @@
 
 int g_epollFd = -1;
 
-int	main(int argc, char** argv)
+int	main(int argc, char** argv, char **envp)
 {
 	if (argc != 2)
 		PERR_RETURN(1, "Error: Usage -> ./webserv <config_file>");
 
-	Server server(argv[1]);
+	Server server(argv[1], envp);
 
 }

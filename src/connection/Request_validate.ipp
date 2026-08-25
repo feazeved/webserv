@@ -25,20 +25,24 @@ u16 s_check_location(u8 *ptr, usize length, VirtualServer* cfg, Request &request
 }
 
 static inline
-u16 s_check_cgi(Location *loc, StringView refExt) {
+Span16 s_check_cgi(Location *loc, StringView refExt) {
 	const char *basePtr = loc->cgiBlock.kptr();
 	usize blockLength = loc->cgiBlock.length;
 	u16 lengths[2];
-
+	Span16 result;
+	result.index = UINT16_MAX;
 	usize i = 0;
 	while (i < blockLength) {
 		MEMCPY_INLINE(lengths, basePtr + i, sizeof(lengths));
 		const char *ext = basePtr + i + sizeof(lengths);
-		if (refExt.length == lengths[0] && MEMCMP(ext, refExt.ptr, refExt.length) == 0)
-			return (u16)(i + lengths[0]);
+		if (refExt.length == lengths[0] && MEMCMP(ext, refExt.ptr, refExt.length) == 0) {
+			result.index = (u16)(i + lengths[0]);
+			result.length = (u16)(lengths[1]);
+			return result;
+		}
 		i += lengths[0] + lengths[1] + 1;	// +1 here right?
 	}
-	return UINT16_MAX;
+	return result;
 }
 
 REQUEST_INL
@@ -51,8 +55,8 @@ REQUEST_INL
 	if (locationIndex == UINT16_MAX)
 		return -1;
 	StringView pathStr (path.index + (char*)src.data, path.length);
-	interpreterIndex = s_check_cgi(&cfg->locations[locationIndex], pathStr);
-	if (interpreterIndex == UINT16_MAX)
+	interpreter = s_check_cgi(&cfg->locations[locationIndex], pathStr);
+	if (interpreter.index == UINT16_MAX)
 		contentType = src.match_mime();	// TODO: Is CGI a mime or octet stream?
 	else
 		options |= Options::CGI;

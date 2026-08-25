@@ -11,10 +11,9 @@ class Request {
 public:
 
 	// TODO: keeping track of size might not be necessary
-	Span16 path, query, cookies;
+	Span16 path, query, cookies, interpreter;
 
 	u16 locationIndex;
-	u16 interpreterIndex;
 	usize bodySize, chunkSize;
 	Status status;
 	u8 options;

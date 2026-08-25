@@ -10,6 +10,7 @@
 #include "ConnectionPool.hpp"
 #include "VirtualServer.hpp"
 #include "Parser.hpp"
+#include "Environment.hpp"
 
 #define SERVER_INL(ret_type) ret_type inline Server::
 
@@ -22,9 +23,10 @@ public:
 	ConnectionPool connections;
 	int epollFd;
 
-	Server(const char *filePath)
+	Server(const char *filePath, char **envp)
 		: parser(filePath, servers), epollFd(-1) {
 
+		Connection::s_fakeEnv.init(envp);
 		epollFd = epoll_create(1);
 		if (epollFd == -1)
 			PERR_EXIT(clear(), "Error: Failed to create epoll instance");
