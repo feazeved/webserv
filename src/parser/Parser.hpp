@@ -3,15 +3,28 @@
 #include <sys/stat.h>
 
 #include "core.hpp"
-#include "webserv.hpp"
 #include "Array.hpp"
 #include "VirtualServer.hpp"
 
 #define PARSER_INL(ret_type) ret_type inline Parser::
 
 class Parser {
-
 public:
+	struct Token {
+		enum Type {
+			OPEN_BRACKET,
+			CLOSE_BRACKET,
+			SEMICOLON,
+			WORD
+		}	type;
+		StringView32 value;
+	};
+
+	struct Directive {
+		StringView32 name;
+		Array32<StringView32> args;
+	};
+
 	usize fileOffset;
 	usize fileSize;
 	usize serverCount;

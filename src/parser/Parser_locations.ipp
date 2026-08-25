@@ -17,8 +17,8 @@ void s_set_methods(Array32<StringView32> &methods, Location &location) {
 }
 
 static inline 
-void s_parse_location_directive(Location &location, const Array32<Token> &tokens, usize &cursor, usize end) {
-	Directive dir = Parser::s_build_directive(tokens, cursor, end);
+void s_parse_location_directive(Location &location, const Array32<Parser::Token> &tokens, usize &cursor, usize end) {
+	Parser::Directive dir = Parser::s_build_directive(tokens, cursor, end);
 	u32 length = 1;
 
 	if (dir.name == "root") {
@@ -69,21 +69,21 @@ void s_parse_location_directive(Location &location, const Array32<Token> &tokens
 }
 
 static inline 
-void s_parse_cgi(const Array32<Token> &tokens, usize &cursor, usize end, Location &loc) {
-	if (cursor == end || tokens[cursor].type != Token::WORD
+void s_parse_cgi(const Array32<Parser::Token> &tokens, usize &cursor, usize end, Location &loc) {
+	if (cursor == end || tokens[cursor].type != Parser::Token::WORD
 		|| !(tokens[cursor].value == "cgi"))
 		PERR_EXIT(1, "Error: Unexpected token");
 	cursor++;
-	if (cursor == end || tokens[cursor].type != Token::OPEN_BRACKET)
+	if (cursor == end || tokens[cursor].type != Parser::Token::OPEN_BRACKET)
 		PERR_EXIT(1, "Error: Invalid CGI block");
 
 	const u32 blockOffset = tokens[cursor].value.offset;
 	cursor++;
 	const usize definitionStart = cursor;
-	while (cursor != end && tokens[cursor].type != Token::CLOSE_BRACKET) {
+	while (cursor != end && tokens[cursor].type != Parser::Token::CLOSE_BRACKET) {
 		const usize extensionIndex = cursor;
 		const StringView32 &extension = tokens[cursor].value;
-		if (tokens[cursor].type != Token::WORD || extension.length < 2
+		if (tokens[cursor].type != Parser::Token::WORD || extension.length < 2
 			|| extension.kptr()[0] != '.')
 			PERR_EXIT(1, "Error: Invalid CGI extension");
 		for (usize index = definitionStart; index < extensionIndex; index += 4) {
@@ -93,18 +93,18 @@ void s_parse_cgi(const Array32<Token> &tokens, usize &cursor, usize end, Locatio
 				PERR_EXIT(1, "Error: Duplicate CGI extension");
 		}
 		cursor++;
-		if (cursor == end || tokens[cursor].type != Token::WORD
+		if (cursor == end || tokens[cursor].type != Parser::Token::WORD
 			|| !(tokens[cursor].value == "="))
 			PERR_EXIT(1, "Error: Expected '=' in CGI definition");
 		cursor++;
-		if (cursor == end || tokens[cursor].type != Token::WORD)
+		if (cursor == end || tokens[cursor].type != Parser::Token::WORD)
 			PERR_EXIT(1, "Error: Invalid CGI interpreter");
 		cursor++;
-		if (cursor == end || tokens[cursor].type != Token::SEMICOLON)
+		if (cursor == end || tokens[cursor].type != Parser::Token::SEMICOLON)
 			PERR_EXIT(1, "Error: Expected ';' after CGI definition");
 		cursor++;
 	}
-	if (cursor == end || tokens[cursor].type != Token::CLOSE_BRACKET)
+	if (cursor == end || tokens[cursor].type != Parser::Token::CLOSE_BRACKET)
 		PERR_EXIT(1, "Error: Invalid CGI block");
 	if (cursor != definitionStart)
 		loc.cgiBlock = StringView32(tokens[cursor].value.offset - blockOffset + 1, blockOffset);

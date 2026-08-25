@@ -2,7 +2,7 @@
 #include "Parser.hpp"
 
 static inline
-void s_directive_error_page(Directive &dir, VirtualServer &server) {
+void s_directive_error_page(Parser::Directive &dir, VirtualServer &server) {
 	if (dir.args.count < 2)
 		PERR_EXIT(1, "Error: Invalid error page");
 	StringView32 path = dir.args[dir.args.count - 1];
@@ -18,7 +18,7 @@ void s_directive_error_page(Directive &dir, VirtualServer &server) {
 }
 
 static inline
-void s_directive_listen(Directive &dir, VirtualServer &server) {
+void s_directive_listen(Parser::Directive &dir, VirtualServer &server) {
 	if (server.port != SIZE_MAX || dir.args.count != 1)
 		PERR_EXIT(1, "Error: Invalid port definition");
 	const StringView32 &listen = dir.args[0];
@@ -68,8 +68,8 @@ void s_directive_body_size(const StringView32 &value, usize &bodySize, VirtualSe
 }
 
 static inline
-void s_parse_server_directive(VirtualServer &server, const Array32<Token> &tokens, usize &cursor, usize end) {
-	Directive dir = Parser::s_build_directive(tokens, cursor, end);
+void s_parse_server_directive(VirtualServer &server, const Array32<Parser::Token> &tokens, usize &cursor, usize end) {
+	Parser::Directive dir = Parser::s_build_directive(tokens, cursor, end);
 
 	if (dir.name == "error_page")
 		return s_directive_error_page(dir, server);
@@ -88,7 +88,7 @@ void s_parse_server_directive(VirtualServer &server, const Array32<Token> &token
 }
 
 static inline
-usize s_count_locations(const Array32<Token> &tokens, usize cursor, usize end) {
+usize s_count_locations(const Array32<Parser::Token> &tokens, usize cursor, usize end) {
 	usize locationCount = 0;
 	usize locationSize;
 
@@ -102,7 +102,7 @@ usize s_count_locations(const Array32<Token> &tokens, usize cursor, usize end) {
 			cursor += distance + 1;
 		}
 		else {
-			while (cursor < end && tokens[cursor].type != Token::SEMICOLON)
+			while (cursor < end && tokens[cursor].type != Parser::Token::SEMICOLON)
 				cursor++;
 			if (cursor < end)
 				cursor++;

@@ -1,10 +1,11 @@
 #pragma once
+#include <sys/stat.h>
+#include <errno.h>
+
 #include "core.hpp"
 #include "Buffer.hpp"
 #include "VirtualServer.hpp"
 #include "Request.hpp"
-#include "Connection_helpers.ipp"
-#include <sys/stat.h>
 
 #define CONNECTION_INL(ret_type) ret_type inline Connection::
 

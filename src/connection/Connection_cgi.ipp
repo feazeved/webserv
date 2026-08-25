@@ -12,20 +12,6 @@
 extern time_t g_timeNow;
 extern Environment g_fakeEnv;
 
-
-static inline
-bool s_set_noblock(int fd)
-{
-	int flags = fcntl(fd, F_GETFL, 0);
-	if (flags == -1)
-		return false;
-
-	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
-		return false;
-
-	return true;
-}
-
 static inline
 void s_exec_script(u8 cgiType, const char *scriptPath, int fdIn[2], int fdOut[2]) {
 	static const char *cgiPath[] = {"/usr/bin/python3", "/usr/bin/other"};
@@ -92,7 +78,7 @@ CONNECTION_INL
 		goto Error;
 	if (pipe(fdOut) == -1)
 		goto ErrorCloseInput;
-	if (s_set_noblock(fdOut[0]) == false || s_set_noblock(fdIn[1]) == false)
+	if (VirtualServer::s_set_nonblocking(fdOut[0]) || VirtualServer::s_set_nonblocking(fdIn[1]))
 		goto ErrorCloseOutput;
 
 	s_append_env(recvBuffer.data, request);

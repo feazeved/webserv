@@ -1,10 +1,4 @@
 #pragma once
-#include <sys/socket.h>
-#include <sys/epoll.h>
-#include <netinet/in.h>
-#include <cerrno>
-#include <unistd.h>
-
 #include "Server.hpp"
 
 SERVER_INL
@@ -25,6 +19,11 @@ SERVER_INL
 SERVER_INL
 (void) remove_from_epoll(int fd) {
 	(void) epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
+}
+
+static inline
+u64 s_epoll_connection_key(usize index) {
+	return (u64) index << 1;
 }
 
 SERVER_INL
@@ -49,7 +48,7 @@ SERVER_INL
 			return;
 		PERR_RETURN((void)0, "Error: Failed to accept connection");
 	}
-	if (s_set_socket_nonblocking(clientFd)) {
+	if (VirtualServer::s_set_nonblocking(clientFd)) {
 		close(clientFd);
 		PERR_RETURN((void)0, "Error: Failed to make client socket non-blocking");
 	}

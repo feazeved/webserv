@@ -11,8 +11,6 @@
 #include <dirent.h>
 #include <sys/types.h>
 
-
-
 static inline
 void	s_append_html_escaped(Cursor& dst, const std::string& str) {
 	for (usize i = 0; i < str.size(); i++) {

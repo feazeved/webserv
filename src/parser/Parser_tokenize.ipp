@@ -38,24 +38,24 @@ usize s_get_next_word(char* &ostr) {
 }
 
 static inline 
-Token s_match_delimiter(char *ptr, usize delimPos, isize &braces) {
-	Token token;
+Parser::Token s_match_delimiter(char *ptr, usize delimPos, isize &braces) {
+	Parser::Token token;
 	char delimiter = ptr[delimPos];
 
 	token.value = StringView32(1, (u32)(ptr + delimPos - (char*)Arena::pool.A));
 	switch (delimiter) {
 		case '{' :
-			token.type = Token::OPEN_BRACKET;
+			token.type = Parser::Token::OPEN_BRACKET;
 			braces++;
 			break;
 		case '}' :
-			token.type = Token::CLOSE_BRACKET;
+			token.type = Parser::Token::CLOSE_BRACKET;
 			braces--;
 			if (braces < 0)
 				PERR_EXIT(1, "Error: Extraneous closing brace ('}')");
 			break;
 		case ';' :
-			token.type = Token::SEMICOLON;
+			token.type = Parser::Token::SEMICOLON;
 			break;
 		default:
 			PERR_EXIT(1, "Error: Invalid delimiter");
@@ -115,7 +115,7 @@ void s_strip_comments(char *ptr, usize fileSize) {
 
 
 PARSER_INL
-(Array32<Token>) tokenize() {
+(Array32<Parser::Token>) tokenize() {
 	Array32<Token> tokArray;
 	Token token;
 	usize length;

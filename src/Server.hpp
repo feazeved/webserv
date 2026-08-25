@@ -1,12 +1,15 @@
 #pragma once
 #include <sys/epoll.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <errno.h>
+#include <unistd.h>
 
 #include "core.hpp"
 #include "webserv.hpp"
 #include "ConnectionPool.hpp"
 #include "VirtualServer.hpp"
 #include "Parser.hpp"
-#include "Server_helpers.ipp"
 
 #define SERVER_INL(ret_type) ret_type inline Server::
 

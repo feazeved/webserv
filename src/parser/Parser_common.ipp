@@ -1,10 +1,6 @@
 #pragma once
 #include "Parser.hpp"
 
-
-#include "core.hpp"
-#include "webserv.hpp"
-
 static inline
 bool s_is_config_delimiter(char value) {
 	return value == '{' || value == '}' || value == ';';
@@ -72,7 +68,7 @@ PARSER_INL
 }
 
 PARSER_INL
-(Directive) s_build_directive(const Array32<Token> &tokens, usize &cursor, usize end) {
+(Parser::Directive) s_build_directive(const Array32<Token> &tokens, usize &cursor, usize end) {
 	Directive dir;
 	if (cursor == end || tokens[cursor].type != Token::WORD)
 		PERR_EXIT(1, "Error: Unexpected token");

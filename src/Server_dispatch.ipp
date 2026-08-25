@@ -1,11 +1,10 @@
 #pragma once
-#include <sys/socket.h>
-#include <sys/epoll.h>
-#include <netinet/in.h>
-#include <cerrno>
-#include <unistd.h>
-
 #include "Server.hpp"
+
+static inline
+u64 s_epoll_server_key(usize index) {
+	return ((u64) index << 1) | 1;
+}
 
 SERVER_INL
 (void) run() {
@@ -23,6 +22,16 @@ SERVER_INL
 		for (int index = 0; index < eventCount; index++)
 			dispatch_epoll_event(events[index]);
 	}
+}
+
+static inline
+usize s_epoll_key_index(u64 key) {
+	return (usize)(key >> 1);
+}
+
+static inline
+bool s_epoll_key_is_server(u64 key) {
+	return (key & 1) != 0;
 }
 
 SERVER_INL
