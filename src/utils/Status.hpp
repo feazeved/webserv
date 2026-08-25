@@ -1,4 +1,5 @@
 #pragma once
+
 #include "core.hpp"
 #include "core_builtins.ipp"
 #include "status_codes.hpp"
@@ -253,7 +254,7 @@ public:
 };
 
 #ifdef MAIN_FILE
-	char *const Status::startPtr = (char*) Arena::poolB;
+	char *const Status::startPtr = (char*) Arena::pool.B;
 #endif
 
 STATIC_ASSERT(sizeof(HTTP_STATUS_STRINGS) <= UINT16_MAX);

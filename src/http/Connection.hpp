@@ -1,16 +1,15 @@
 #pragma once
-#include "core.hpp"
-#include <unistd.h>
-#include <sys/epoll.h>
-#include <ctime>
-#include "HTTP.hpp"
-#include <fcntl.h>
-#include <cstring>
-#include <sys/stat.h>
+// #include <unistd.h>
+// #include <sys/epoll.h>
+// #include <ctime>
+// #include <fcntl.h>
+// #include <cstring>
+// #include <sys/stat.h>
 
+#include "core.hpp"
+#include "HTTP.hpp"
 #include "Buffer.hpp"
 #include "VirtualServer.hpp"
-
 #include "Request.hpp"
 
 #define CONNECTION_INL(ret_type) ret_type inline HTTP::Connection::
@@ -83,7 +82,9 @@ public:
 	}
 
 	// TODO
-	isize clear();
+	isize clear() {
+		
+	}
 
 	// Game
 	i32 handle_game_request();

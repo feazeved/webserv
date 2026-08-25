@@ -2,8 +2,10 @@
 NAME = webserv
 VPATH = src test src/http src/utils src/game
 MAIN_SRC = main.cpp
-CORE_SRC = State.cpp
-TEST_SRC = test_main.cpp test_parse_config.cpp
+CORE_SRC =
+TEST_SRC =
+# CORE_SRC = State.cpp
+# TEST_SRC = test_main.cpp test_parse_config.cpp
 LDLIBS =
 ARG = config/default.conf
 

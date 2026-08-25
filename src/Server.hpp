@@ -4,7 +4,6 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 #include "HTTP.hpp"
-#include "State.hpp"
 #include "Connection.hpp"
 #include "core.hpp"
 #include "Server_helpers.ipp"

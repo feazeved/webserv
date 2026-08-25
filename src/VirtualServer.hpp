@@ -1,14 +1,13 @@
 #pragma once
 
 #include <unistd.h>
-#include "HTTP.hpp"
-#include "State.hpp"
-#include "core.hpp"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <fcntl.h>
 #include <netdb.h>
 
+#include "HTTP.hpp"
+#include "core.hpp"
 #include "VirtualServer_helpers.ipp"
 
 namespace HTTP {
@@ -23,7 +22,7 @@ public:
 	Array32<Location>	locations;
 	usize				port;
 	usize				maxBodySize;
-	Game::State			*gameState;
+	void*				gameState;
 	i32 				listenFd;
 
 	VirtualServer()

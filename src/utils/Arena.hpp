@@ -20,7 +20,7 @@
 // STATIC_ASSERT(sizeof())
 
 struct Arena {
-	union {
+	union Pool {
 		struct {
 			u8 A[CONNECTION_POOL_SIZE] ALIGNED(4096);
 			u8 B[CONFIG_POOL_SIZE] ALIGNED(4096);	
@@ -67,8 +67,15 @@ STATIC_ASSERT(sizeof(HTTP_ARENA_STATIC_STRINGS) <= UINT16_MAX);
 // STATIC_ASSERT(arena.pool.BStaticSize <= sizeof(arena.pool.B));
 
 #ifdef MAIN_FILE
-	u8 Arena::pool.A[ARENA_SIZE] ALIGNED(4096);
-	u8 Arena::pool.B[ARENA_SIZE] ALIGNED(4096) = HTTP_ARENA_STATIC_STRINGS;
+	Arena::Pool Arena::pool = {
+		{
+			{ 0 },
+			HTTP_ARENA_STATIC_STRINGS
+		}
+	};
 	usize Arena::sizeA = 0;
-	usize Arena::sizeB = Arena::pool.BStaticSize;
+	usize Arena::sizeB = Arena::poolBStaticSize;
 #endif
+
+// Arena::u_pool Arena::pool.A[ARENA_SIZE] ALIGNED(4096);
+// Arena::u_pool Arena::pool.B[ARENA_SIZE] ALIGNED(4096) = HTTP_ARENA_STATIC_STRINGS;
