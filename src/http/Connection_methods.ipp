@@ -77,29 +77,35 @@ CONNECTION_INL
 	if (bytesRead == 0) {
 		close(readFd);
 		readFd = -1;
-		mode = Mode::FLUSHING;
+		bool keepAlive = !!(request.options & Options::CONNECTION_TYPE);
+		mode = keepAlive ? Mode::FLUSH : Mode::CLOSE;
 	}
 	else if (bytesRead == -1) {
 		close(readFd);
 		readFd = -1;
 		mode = Mode::CLOSE;
-		return -1;
+		return error_path();
 	}
-	if (write_to_client(events) == -1)
-		return -1;
-	return bytesRead;
+	return write_to_client(events);
 }
 
 CONNECTION_INL
-(isize) download_file() {
+(isize) download_file(u32 events) {
 	isize bytesWritten;
 
 	if (request.options & Options::CHUNKED_LENGTH)
-		bytesWritten = decode();
+		bytesWritten = recvBuffer.decode(writeFd, request.chunkSize, request.bodySize);
 	else {
 		bytesWritten = recvBuffer.write(writeFd, request.bodySize);
 		if (bytesWritten > 0)
 			request.bodySize -= (usize) bytesWritten;
+	}
+
+	if (bytesWritten == -1) {
+		close(writeFd);
+		writeFd = -1;
+		request.status = Status::i500;
+		return error_path();
 	}
 
 	if (!request.status.is_set() && request.bodySize == 0) {	// Must guarantee that bodySize is 0
@@ -107,10 +113,10 @@ CONNECTION_INL
 		writeFd = -1;	// Finished reading
 		request.status = Status::i201;
 		build_header();
-		mode = Mode::FLUSHING;
+		bool keepAlive = !!(request.options & Options::CONNECTION_TYPE);
+		mode = keepAlive ? Mode::FLUSH : Mode::CLOSE;
 	}
-
-	return bytesWritten;
+	return write_to_client(events);
 }
 
 // HTTP namespace

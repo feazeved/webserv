@@ -47,13 +47,13 @@ struct Location {
 // These are exclusive states
 namespace Mode {
 	enum e_http_mode {
-		PARSING = 0,
+		PARSE = 0,
 		GET = 1 << 0,
 		POST = 1 << 1,
-		FLUSHING = 1 << 2,	// Is done, streaming header
+		FLUSH = 1 << 2,	// Streams header, then parses again
 		CGI = 1 << 3,
 		SSE = 1 << 4,
-		CLOSE = 1 << 5		// Also done, streaming header, will close
+		CLOSE = 1 << 5		// Streams header, then closes
 	};
 }
 

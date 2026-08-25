@@ -6,6 +6,7 @@ namespace HTTP {
 /*	Header is built in stack memory while parsing the header from client output
 	When the header is built, it then appends part of the CGI body to tmp buffer
 	up to how many bytes will fit in a single write */
+// What do i get out of the header??
 CONNECTION_INL
 (isize) build_cgi_header() {
 	Buffer<HTTP_BUFFERSIZE> tmpBuffer;
@@ -33,7 +34,7 @@ CONNECTION_INL
 	else {
 		sendBuffer.append_inline<3>(str.ptr, 3);
 		sendBuffer.append("OK\r\n");
-		mode = Mode::FLUSHING;
+		mode = Mode::FLUSH;
 	}
 
 	sendBuffer.append("Content-Type: ");

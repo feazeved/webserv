@@ -27,8 +27,23 @@ public:
 	}
 
 	ALWAYS_INLINE
+	usize size() const {
+		return writePtr - readPtr;
+	}
+
+	ALWAYS_INLINE
 	usize bytes_free() const {
 		return data + sizeof(data) - writePtr;
+	}
+
+	void reset() {
+		readPtr = data;
+		writePtr = data;
+		scanPtr = data;
+	}
+
+	bool is_full() {
+		return writePtr >= get_end();
 	}
 
 	usize compact() {
@@ -67,16 +82,6 @@ public:
 		return bytesWritten;
 	}
 
-	void reset() {
-		readPtr = data;
-		writePtr = data;
-		scanPtr = data;
-	}
-
-	bool is_full() {
-		return writePtr >= get_end();
-	}
-
 	// HTTP
 	isize dechunk(HTTP_Buffer& tmp, usize &chunkSize, usize &bodySize);
 	isize decode(int writeFd, usize &chunkSize, usize &bodySize);
@@ -100,7 +105,7 @@ public:
 	bool skip_spaces();
 
 	// Appends and Prepends
-	template <usize N> void append(const char (&string)[N]);			// Implicit
+	template <usize N> void append(const char (&string)[N]);				// Implicit
 	template <usize N> void append_inline(const char* ptr, usize length);	// Explicit
 	void append(const char* ptr, usize length);
 

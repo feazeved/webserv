@@ -89,34 +89,30 @@ public:
 	int handle_game_request();
 
 	// Configuration
-	isize parse();
-	isize configure();
+	isize parse(u32 events);
 	isize error_path();
-	void  build_header();
+	void build_header();
 	isize build_cgi_header();
 	void build_path(char* buffer, const char* ptr, usize length);
 
 	// HTTP Methods
-	isize del_method();
 	isize upload_file(u32 events);
-	isize download_file();
+	isize download_file(u32 events);
+
 	isize cgi_method();
 	isize sse_method();
+	
 	isize get_directory(struct stat *st);
-
 	isize del_first_run();
-	isize get_autoindex();
 	isize get_first_run();
 	isize post_first_run();
 	isize cgi_first_run();
+	isize get_autoindex();
 
-	// Common
-	isize read_from_server();
-	isize write_to_server();
 	isize write_to_client(u32 events);
 	isize read_from_client(u32 events);
 
-	isize decode();
+	isize close_connection();
 
 	// ======== Constructors ====================
 	// Connection() :
