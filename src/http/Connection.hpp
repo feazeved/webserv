@@ -38,7 +38,6 @@ public:
 
 	time_t startTime;
 	u8 bonusTime; // Value ranging from -30s to 30s
-	u8 state;
 	Mode::e_http_mode mode;
 
 	pid_t processId;
@@ -48,41 +47,38 @@ public:
 
 	isize dispatch(u32 events);
 
-	// TODO
-	isize init(int f, VirtualServer* c) {
-		(void)f;
+	isize init(int fd, VirtualServer* c) {
+		ASSERT(clientFd != -1, "Assigned a connection already in use");
+		request.reset();
+		clientFd = fd;
 		cfg = c;
+		readFd = -1;
+		writeFd = -1;
+		processId = -1;
+		mode = Mode::PARSE;
+		recvBuffer.clear();
+		sendBuffer.clear();
+		startTime = 0;
+		bonusTime = 0;
 		return 1;
 	}
 
-	bool check_timeout(time_t curTime, time_t maxTime) {
-		const time_t elapsed = curTime - startTime;
-
-		if (elapsed > maxTime + bonusTime) {
-			// TODO: Cull child here
-			return true;
-		}
-		return false;
-	}
-
-	void reset() {
+	void clear() {
 		if (readFd >= 0)
 			close(readFd);
 		if (writeFd >= 0)
 			close(writeFd);
-		writeFd = -1;
-		readFd = -1;
-		clientFd = -1;	// If its not closed here we're in big trouble
-		processId = -1;
-		bonusTime = 0;
-		startTime = 0;
-		cfg = NULL;
-		request.reset();
+		clientFd = -1;
 	}
 
-	// TODO
-	isize clear() {
-		
+	bool check_timeout(time_t curTime) {
+		const time_t elapsed = curTime - startTime;
+
+		if (elapsed > CONNECTION_TIMEOUT + bonusTime) {
+			// TODO: Cull child here
+			return true;
+		}
+		return false;
 	}
 
 	// Game
@@ -111,15 +107,9 @@ public:
 
 	isize write_to_client(u32 events);
 	isize read_from_client(u32 events);
-
 	isize close_connection();
 
-	// ======== Constructors ====================
-	// Connection() :
-	// 	gameState(NULL),
-	// 	isSSE(false),
-	// 	headerParsed(false) {
-	// }
+	Connection() : clientFd(-1) {}
 };
 
 // namespace HTTP

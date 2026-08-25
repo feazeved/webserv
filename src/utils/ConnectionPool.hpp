@@ -29,23 +29,39 @@ public:
 		return connections + linearIndex;
 	}
 
-	void clear_block(usize blockIndex) {
-		Bitmap &block = elementBitmap[blockIndex];
-		usize elementIndex;
-		Connection *base = connections + blockIndex * 64;
-
-		while ((elementIndex = block.find_first_set()) != SIZE_MAX) {
-			base[elementIndex].clear();
-			block.bitclr(elementIndex);
+	void check_timeout(time_t curTime) {
+		for (usize blockIndex = 0; blockIndex < blockCount; blockIndex++) {
+			Bitmap &elementBlock = elementBitmap[blockIndex];
+			if (elementBlock.bitmap == 0)
+				continue;
+			
+			Connection *base = connections + blockIndex * 64;
+			usize elementIndex = blockIndex;
+			while ((elementIndex = elementBlock.find_first_set()) != SIZE_MAX) {
+				if (base[elementIndex].check_timeout(curTime) == false)
+					continue;
+				// TODO: Update clock here, check_timeout might have lagged
+				base[elementIndex].clear();
+				elementBlock.bitclr(elementIndex);
+			}
+			blockBitmap.bitclr(blockIndex);
 		}
 	}
 
 	void clear() {
 		for (usize blockIndex = 0; blockIndex < blockCount; blockIndex++) {
-			if (elementBitmap[blockIndex].bitmap != 0)
-				clear_block(blockIndex);
+			Bitmap &elementBlock = elementBitmap[blockIndex];
+			if (elementBlock.bitmap == 0)
+				continue;
+
+			Connection *base = connections + blockIndex * 64;
+			usize elementIndex = blockIndex;
+			while ((elementIndex = elementBlock.find_first_set()) != SIZE_MAX) {
+				base[elementIndex].clear();
+				elementBlock.bitclr(elementIndex);
+			}
+			blockBitmap.bitclr(blockIndex);
 		}
-		blockBitmap.clear();
 	}
 
 	usize get_slot() {

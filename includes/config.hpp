@@ -4,6 +4,7 @@
 // Server configuration
 #define HTTP_BUFFERSIZE 8192
 #define MAX_VIRTUAL_SERVERS (64)	// TODO: This isn't really configurable yet
+#define CONNECTION_TIMEOUT 60
 
 #define MAX_SERVER_BLOCK_SIZE UINT16_MAX
 #define MAX_LOCATION_BLOCK_SIZE INT16_MAX

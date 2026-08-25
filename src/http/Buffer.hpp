@@ -36,7 +36,7 @@ public:
 		return data + sizeof(data) - writePtr;
 	}
 
-	void reset() {
+	void clear() {
 		readPtr = data;
 		writePtr = data;
 		scanPtr = data;

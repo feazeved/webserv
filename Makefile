@@ -26,7 +26,7 @@ CPPFLAGS = $(addprefix -I,$(INC_PATH))
 CXXFLAGS = -Wall -Wextra -std=c++98
 CXXFLAGS_TEST = -Wall -Wextra -std=c++11 -g
 LDFLAGS =
-DEBUG = -g -Wpedantic -Wcast-qual -Wfloat-equal -Wswitch-default -Wsign-conversion
+DEBUG = -g -Wpedantic -Wcast-qual -Wfloat-equal -Wswitch-default -Wsign-conversion -DDEBUG_MODE
 ASAN = -fsanitize=address,undefined,leak -fno-omit-frame-pointer
 TSAN = -fsanitize=thread -fno-omit-frame-pointer
 FAST = -march=native -O3 -ffast-math -fstrict-aliasing

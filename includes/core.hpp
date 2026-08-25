@@ -37,10 +37,9 @@ typedef unsigned long		ulong;
 
 #define STATIC_ASSERT_JOIN2(a, b) a##b
 #define STATIC_ASSERT_JOIN(a, b) STATIC_ASSERT_JOIN2(a, b)
-
 #define STATIC_ASSERT(expr) typedef char STATIC_ASSERT_JOIN(static_assert_failed_, __LINE__)[(expr) ? 1 : -1]
 
-#ifndef NDEBUG
+#ifdef DEBUG_MODE
 	#define ON_DEBUG(x) (x)
 	#define ASSERT(x, str) ((x) != 0 ? (void)0 : PRINT_LN(2, str))
 #else
