@@ -59,7 +59,7 @@ CONNECTION_INL
 	if (S_ISDIR(st.st_mode))
 		return get_directory(&st);
 
-	i32	rawFd = open(pathBuffer, O_RDONLY);
+	int	rawFd = open(pathBuffer, O_RDONLY);
 	if (rawFd == -1)
 		return s_get_status(request.status);
 

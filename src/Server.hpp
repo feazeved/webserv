@@ -23,7 +23,7 @@ public:
 	VirtualServer servers[MAX_VIRTUAL_SERVERS];
 	Parser parser;
 	ConnectionPool connections;
-	i32 epollFd;
+	int epollFd;
 
 	Server(const char *filePath)
 		: parser(filePath, servers), epollFd(-1) {
@@ -56,8 +56,8 @@ public:
 	// Execution
 	void run();
 	void mark_connection_writable(usize connectionIndex);
-	void add_to_epoll(i32 fd, u32 events, u64 key);
-	void remove_from_epoll(i32 fd);
+	void add_to_epoll(int fd, u32 events, u64 key);
+	void remove_from_epoll(int fd);
 	void modify_epoll_event(usize connectionIndex, u32 events);
 	void dispatch_epoll_event(const struct epoll_event& event);
 	void dispatch_connection_event(usize index, u32 events);

@@ -8,9 +8,6 @@
 
 namespace HTTP {
 
-class VirtualServer;
-
-
 class ConnectionPool {
 public:
 	static const usize blockSize = sizeof(Connection) * 64;
@@ -64,7 +61,7 @@ public:
 		return blockIndex * 64 + elementIndex;
 	}
 
-	usize acquire_slot(i32 clientFd, VirtualServer *server) {
+	usize acquire_slot(int clientFd, VirtualServer *server) {
 		const usize index = get_slot();
 		if (index != SIZE_MAX)
 			connections[index].init(clientFd, server);

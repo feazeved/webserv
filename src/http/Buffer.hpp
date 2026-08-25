@@ -41,7 +41,7 @@ public:
 		return (usize)(get_end() - writePtr);
 	}
 
-	isize read(i32 fd, usize bytes) {
+	isize read(int fd, usize bytes) {
 		usize bytesFree = (usize)(get_end() - writePtr);
 
 		if (bytesFree < bytes) {
@@ -57,7 +57,7 @@ public:
 		return bytesRead;
 	}
 
-	isize write(i32 fd, usize bytes) {
+	isize write(int fd, usize bytes) {
 		usize bytesCapped = MIN(bytes, (usize)(writePtr - readPtr));
 		isize bytesWritten = ::write(fd, readPtr, bytesCapped);
 

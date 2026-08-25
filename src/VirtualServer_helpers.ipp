@@ -4,8 +4,8 @@
 
 namespace HTTP {
 
-static bool s_set_socket_nonblocking(i32 fd) {
-	i32 flags = fcntl(fd, F_GETFL, 0);
+static bool s_set_socket_nonblocking(int fd) {
+	int flags = fcntl(fd, F_GETFL, 0);
 	return flags == -1 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1;
 }
 
@@ -17,7 +17,7 @@ static bool s_resolve_host_and_port(const HTTP::StringView32& host, usize port, 
 	hints.ai_flags = 0;
 
 	addrinfo* result = NULL;
-	i32 status = getaddrinfo(host.kptr(), NULL, &hints, &result);
+	int status = getaddrinfo(host.kptr(), NULL, &hints, &result);
 	if (status != 0 || result == NULL)
 		return true;
 

@@ -27,7 +27,7 @@ namespace HTTP {
 class Connection {
 public:
 	static const usize metadataSize = sizeof(VirtualServer*) + sizeof(Request) 
-		+ sizeof(time_t) + 2 * sizeof(u8) + sizeof(pid_t) + 3 * sizeof(i32);
+		+ sizeof(time_t) + 2 * sizeof(u8) + sizeof(pid_t) + 3 * sizeof(int);
 	static const usize metasizeAlign = ALIGN_UP(metadataSize / 2, 8ul);
 	static const usize bytesFree = 2 * metasizeAlign - metadataSize;	// Debug only
 	static const usize bufferSize = HTTP_BUFFERSIZE - metasizeAlign;
@@ -50,7 +50,7 @@ public:
 	isize dispatch(u32 events);
 
 	// TODO
-	isize init(i32 f, VirtualServer* c) {
+	isize init(int f, VirtualServer* c) {
 		(void)f;
 		cfg = c;
 		return 1;
@@ -87,7 +87,7 @@ public:
 	}
 
 	// Game
-	i32 handle_game_request();
+	int handle_game_request();
 
 	// Configuration
 	isize parse();

@@ -15,13 +15,13 @@ SERVER_INL
 
 	struct epoll_event events[s_maxEvents];
 	while (true) {
-		i32 eventCount = epoll_wait(epollFd, events, s_maxEvents, -1);
+		int eventCount = epoll_wait(epollFd, events, s_maxEvents, -1);
 		if (eventCount == -1) {
 			if (errno == EINTR)
 				continue;
 			PERR_EXIT(clear(), "Error: epoll_wait failed");
 		}
-		for (i32 index = 0; index < eventCount; index++)
+		for (int index = 0; index < eventCount; index++)
 			dispatch_epoll_event(events[index]);
 	}
 }

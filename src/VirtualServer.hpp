@@ -16,14 +16,14 @@ namespace HTTP {
 
 class VirtualServer {
 public:
-	StringView32			serverRoot;
-	StringView32			errorPages[Status::errorPageCount];
-	StringView32			host;
+	StringView32		serverRoot;
+	StringView32		errorPages[Status::errorPageCount];
+	StringView32		host;
 	Array32<Location>	locations;
 	usize				port;
 	usize				maxBodySize;
 	void*				gameState;
-	i32 				listenFd;
+	int 				listenFd;
 
 	VirtualServer()
 		: serverRoot(), host(), locations(), port(SIZE_MAX),
@@ -53,7 +53,7 @@ public:
 		if (listenFd == -1)
 			PERR_EXIT(clear(), "Error: Failed to create listening socket");
 
-		i32 reuseAddress = 1;
+		int reuseAddress = 1;
 		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR,
 			&reuseAddress, sizeof(reuseAddress)) == -1)
 			PERR_EXIT(clear(), "Error: Failed to configure listening socket");

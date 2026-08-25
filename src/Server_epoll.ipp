@@ -13,7 +13,7 @@ SERVER_INL
 }
 
 SERVER_INL
-(void) add_to_epoll(i32 fd, u32 events, u64 key) {
+(void) add_to_epoll(int fd, u32 events, u64 key) {
 	struct epoll_event event;
 	MEMSET_INLINE(&event, 0, sizeof(event));
 	event.events = events;
@@ -23,7 +23,7 @@ SERVER_INL
 }
 
 SERVER_INL
-(void) remove_from_epoll(i32 fd) {
+(void) remove_from_epoll(int fd) {
 	(void) epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
 }
 
@@ -42,7 +42,7 @@ SERVER_INL
 (void) add_connection(VirtualServer* server) {
 	sockaddr_in clientAddress;
 	socklen_t clientLength = sizeof(clientAddress);
-	i32 clientFd = accept(server->listenFd, (sockaddr*) &clientAddress,
+	int clientFd = accept(server->listenFd, (sockaddr*) &clientAddress,
 		&clientLength);
 	if (clientFd == -1) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
