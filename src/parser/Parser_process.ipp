@@ -1,5 +1,4 @@
 #pragma once
-#include "core.hpp"
 #include "Parser.hpp"
 
 static inline

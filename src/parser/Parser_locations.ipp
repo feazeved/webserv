@@ -1,8 +1,5 @@
 #pragma once
-
-#include "core.hpp"
 #include "Parser.hpp"
-#include "Parser_helpers.ipp"
 
 static inline
 void s_set_methods(Array32<StringView32> &methods, Location &location) {
@@ -21,7 +18,7 @@ void s_set_methods(Array32<StringView32> &methods, Location &location) {
 
 static inline 
 void s_parse_location_directive(Location &location, const Array32<Token> &tokens, usize &cursor, usize end) {
-	Directive dir = s_build_directive(tokens, cursor, end);
+	Directive dir = Parser::s_build_directive(tokens, cursor, end);
 	u32 length = 1;
 
 	if (dir.name == "root") {

@@ -1,6 +1,4 @@
 #pragma once
-#include <sys/stat.h>
-
 #include "Connection.hpp"
 
 CONNECTION_INL

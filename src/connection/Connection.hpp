@@ -4,6 +4,7 @@
 #include "VirtualServer.hpp"
 #include "Request.hpp"
 #include "Connection_helpers.ipp"
+#include <sys/stat.h>
 
 #define CONNECTION_INL(ret_type) ret_type inline Connection::
 
@@ -95,3 +96,8 @@ public:
 
 	Connection() : clientFd(-1) {}
 };
+
+#include "Connection_common.ipp"
+#include "Connection_dispatch.ipp"
+#include "Connection_methods.ipp"
+#include "Connection_response.ipp"

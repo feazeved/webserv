@@ -64,6 +64,56 @@ Token s_match_delimiter(char *ptr, usize delimPos, isize &braces) {
 	return token;
 }
 
+static inline
+usize s_count_servers(const char *str, usize length) {
+	const char *ostr;
+	const char *end = str + length;
+	usize serverCount = 0;
+	isize pdepth = 0;
+
+	while (str < end) {
+		while (IS_SPACE(*str))
+			str++;
+		if (MEMCMP_INLINE(str, "server") != 0) {
+			if (*str == 0)
+				return serverCount;
+			return SIZE_MAX;
+		}
+		str += 6;
+		while (IS_SPACE(*str))
+			str++;
+		pdepth = (*str == '{') ? 1 : -1;
+		str++;
+		ostr = str;
+		for (; str < end && pdepth > 0; str++) {
+			for (; *str != '}'; str++)
+				pdepth += *str == '{';
+			if (str < end)
+				pdepth--;
+		}
+		if (pdepth != 0)
+			return SIZE_MAX;
+		if (str - ostr > MAX_SERVER_BLOCK_SIZE)
+			return SIZE_MAX;
+		serverCount++;
+	}
+	return serverCount;
+}
+
+static inline
+void s_strip_comments(char *ptr, usize fileSize) {
+	static const char sentinels[] = "\0{};localhost";	// Also appends sentinels to the string
+
+	for (usize index = 0; index < fileSize; index++) {
+		if (ptr[index] == '#') {
+			while (index < fileSize && ptr[index] != '\n')
+				ptr[index++] = ' ';
+		}
+	}
+	MEMCPY_INLINE(ptr + fileSize, sentinels, sizeof(sentinels));
+}
+
+
 PARSER_INL
 (Array32<Token>) tokenize() {
 	Array32<Token> tokArray;

@@ -1,7 +1,5 @@
 #pragma once
-#include "core.hpp"
 #include "Parser.hpp"
-#include "Parser_helpers.ipp"
 
 static inline
 void s_directive_error_page(Directive &dir, VirtualServer &server) {
@@ -71,7 +69,7 @@ void s_directive_body_size(const StringView32 &value, usize &bodySize, VirtualSe
 
 static inline
 void s_parse_server_directive(VirtualServer &server, const Array32<Token> &tokens, usize &cursor, usize end) {
-	Directive dir = s_build_directive(tokens, cursor, end);
+	Directive dir = Parser::s_build_directive(tokens, cursor, end);
 
 	if (dir.name == "error_page")
 		return s_directive_error_page(dir, server);
@@ -87,6 +85,32 @@ void s_parse_server_directive(VirtualServer &server, const Array32<Token> &token
 		server.serverRoot = dir.args[0];
 	else
 		PERR_EXIT(1, "Error: Invalid server directive");
+}
+
+static inline
+usize s_count_locations(const Array32<Token> &tokens, usize cursor, usize end) {
+	usize locationCount = 0;
+	usize locationSize;
+
+	while (cursor < end) {
+		if (tokens[cursor].value == "location") {
+			usize distance = Parser::s_find_scope_end(tokens, cursor, end);
+			locationSize = tokens[cursor + distance].value.offset - tokens[cursor].value.offset + 1;
+			if (locationSize > MAX_LOCATION_BLOCK_SIZE)
+				PERR_EXIT(1, "Error: Location block exceeds maximum size");
+			locationCount++;
+			cursor += distance + 1;
+		}
+		else {
+			while (cursor < end && tokens[cursor].type != Token::SEMICOLON)
+				cursor++;
+			if (cursor < end)
+				cursor++;
+		}
+	}
+	if (locationCount >= UINT16_MAX)
+		PERR_EXIT(1, "Error: More than 65535 locations");
+	return locationCount;
 }
 
 PARSER_INL

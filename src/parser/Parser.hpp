@@ -1,9 +1,11 @@
 #pragma once
+#include <fcntl.h>
+#include <sys/stat.h>
+
 #include "core.hpp"
 #include "webserv.hpp"
 #include "Array.hpp"
 #include "VirtualServer.hpp"
-#include "Parser_helpers.ipp"
 
 #define PARSER_INL(ret_type) ret_type inline Parser::
 
@@ -15,7 +17,7 @@ public:
 	usize serverCount;
 
 	Parser(const char *filePath, VirtualServer (&servers)[MAX_VIRTUAL_SERVERS]) {
-		if (s_read_whole_file(filePath, fileSize, fileOffset, 63))
+		if (s_read_whole_file(filePath, fileOffset, fileSize, 63))
 			_exit(1);
 		Array32<Token> tokArray = tokenize();
 		usize cursor = 0;
@@ -45,8 +47,13 @@ public:
 	void process_cgi_block(VirtualServer &server);
 	isize parse_location(const Array32<Token> &tokens, usize &cursor, usize end, Location &loc);
 	isize parse_server(const Array32<Token> &tokens, usize cursor, usize end, VirtualServer &server);
+
+	static Directive s_build_directive(const Array32<Token> &tokens, usize &cursor, usize end);
+	static bool s_read_whole_file(const char *filePath, usize &fileOffset, usize &fileSize, usize padSize);
+	static usize s_find_scope_end(const Array32<Token> &tokens, usize begin, usize end);
 };
 
+#include "Parser_common.ipp"
 #include "Parser_locations.ipp"
 #include "Parser_server.ipp"
 #include "Parser_tokenize.ipp"
