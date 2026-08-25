@@ -1,8 +1,6 @@
 #pragma once
 #include "core.hpp"
 
-
-
 // Needed for cookies and queries
 class Environment {
 private:

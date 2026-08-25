@@ -1,10 +1,10 @@
 #pragma once
-
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <netinet/in.h>
 #include <cerrno>
 #include <unistd.h>
+
 #include "Server.hpp"
 
 SERVER_INL

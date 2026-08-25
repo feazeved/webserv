@@ -1,10 +1,5 @@
 #pragma once
-#include <sys/stat.h>
-
 #include "Connection.hpp"
-#include "Connection_helpers.ipp"
-
-
 
 // Check epoll, see if can write, if not, set to write and return 0
 CONNECTION_INL

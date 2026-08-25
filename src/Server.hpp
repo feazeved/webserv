@@ -1,16 +1,12 @@
 #pragma once
-
-#include <sys/socket.h>
 #include <sys/epoll.h>
-#include <unistd.h>
 
-#include "Connection.hpp"
 #include "core.hpp"
 #include "webserv.hpp"
-#include "Server_helpers.ipp"
 #include "ConnectionPool.hpp"
 #include "VirtualServer.hpp"
 #include "Parser.hpp"
+#include "Server_helpers.ipp"
 
 #define SERVER_INL(ret_type) ret_type inline Server::
 
@@ -18,7 +14,6 @@ class Server {
 public:
 	static const usize s_maxEvents = 16;
 
-public:
 	VirtualServer servers[MAX_VIRTUAL_SERVERS];
 	Parser parser;
 	ConnectionPool connections;

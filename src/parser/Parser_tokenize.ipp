@@ -1,6 +1,4 @@
 #pragma once
-#include <sys/stat.h>
-
 #include "Parser.hpp"
 
 static inline

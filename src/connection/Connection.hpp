@@ -1,20 +1,11 @@
 #pragma once
-
 #include "core.hpp"
-
 #include "Buffer.hpp"
 #include "VirtualServer.hpp"
 #include "Request.hpp"
+#include "Connection_helpers.ipp"
 
 #define CONNECTION_INL(ret_type) ret_type inline Connection::
-
-// For epoll conformity, cgi should be an object of Connection, 
-// and it gets added and removed to epoll
-/*
-	Transaction Context: bonusTime, time, cfg, state
-
-	Execution Context: clientFd, writeFd, readFd, processId
-*/
 
 class Connection {
 public:

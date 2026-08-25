@@ -1,6 +1,5 @@
 #pragma once
 #include "core.hpp"
-
 #include "Parser.hpp"
 #include "Parser_helpers.ipp"
 

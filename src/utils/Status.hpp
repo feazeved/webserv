@@ -3,9 +3,6 @@
 #include "core.hpp"
 #include "tables.hpp"
 #include "StringView.hpp"
-
-
-
 /*
 	Status stores a u16 offset to a status string in Arena::poolB.  Every
 	status record is length-prefixed and NUL-terminated.  Error records append

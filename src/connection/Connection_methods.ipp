@@ -2,7 +2,6 @@
 #include <sys/stat.h>
 
 #include "Connection.hpp"
-#include "Connection_helpers.ipp"
 
 CONNECTION_INL
 (isize) del_first_run() {

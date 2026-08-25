@@ -1,9 +1,8 @@
 #pragma once
-#include <sys/stat.h>
 #include <errno.h>
 
-#include "Buffer.hpp"
 #include "core.hpp"
+#include "Status.hpp"
 
 static inline
 isize s_get_status(Status &status) {

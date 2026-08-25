@@ -1,7 +1,6 @@
 #pragma once
 #include "core.hpp"
 
-
 /*
 	Remember the part about allocations being aligned, you can use the bits to index
 	a bigger range than possible by considering blocks instead of bytes.

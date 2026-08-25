@@ -1,12 +1,8 @@
 #pragma once
-#include <unistd.h>
-
 #include "core.hpp"
 #include "Arena.hpp"
 #include "Bitmap.hpp"
 #include "Connection.hpp"
-
-
 
 class ConnectionPool {
 public:

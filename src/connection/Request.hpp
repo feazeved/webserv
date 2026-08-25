@@ -1,12 +1,7 @@
 #pragma once
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/epoll.h>
-
 #include "core.hpp"
 #include "Status.hpp"
 #include "Buffer.hpp"
-
 #include "VirtualServer.hpp"
 #include "Span.hpp"
 
