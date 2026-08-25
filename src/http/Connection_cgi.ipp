@@ -67,7 +67,7 @@ void s_append_env(u8* buffer, Request &request) {
 	static const u8 methods[3][8] = {"GET", "POST", "DELETE"};
 
 	g_fakeEnv.reset();
-	MEMCPY(scriptName + 12, buffer + request.path.index, request.path.size + 1);
+	MEMCPY(scriptName + 12, buffer + request.path.index, request.path.length + 1);
 	MEMCPY_INLINE(requestMethod + 15, methods[(request.mode & 7) - 1], 8);			// TODO: triple check the enums
 
 	u8* query = (buffer + request.query.index) - 13;	// Inplace changes query, overrides path

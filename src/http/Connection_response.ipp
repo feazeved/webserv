@@ -28,10 +28,12 @@ CONNECTION_INL
 	if (request.status.is_error()) {
 		sendBuffer.append(str.ptr, str.length);
 		sendBuffer.append("\r\n");
+		mode = Mode::CLOSE;
 	}
 	else {
 		sendBuffer.append_inline<3>(str.ptr, 3);
 		sendBuffer.append("OK\r\n");
+		mode = Mode::FLUSHING;
 	}
 
 	sendBuffer.append("Content-Type: ");

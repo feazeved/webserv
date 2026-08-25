@@ -32,14 +32,14 @@ CONNECTION_INL
 	std::string	relative;
 	std::string	dirPath;
 	const char*	reqPath = (const char*)recvBuffer.data + request.path.index;
-	std::string	urlPath(reqPath, request.path.size);
+	std::string	urlPath(reqPath, request.path.length);
 
 	DIR* dir = opendir(dirPath.c_str());
 	if (dir == NULL) {
 		request.status = Status::i403;
 		return -1;
 	}
-	if (urlPath.empty() || urlPath[urlPath.size() - 1] != '/')
+	if (urlPath.empty() || urlPath[urlpath.length() - 1] != '/')
 		urlPath += '/';
 
 	std::vector<std::string>	entries;
@@ -70,7 +70,7 @@ CONNECTION_INL
 
 	for (usize i = 0; i < entries.size(); i++) {
 		std::string	entryFullPath = dirPath;
-		if (!entryFullPath.empty() && entryFullPath[entryFullPath.size() - 1] != '/')
+		if (!entryFullPath.empty() && entryFullPath[entryFullpath.length() - 1] != '/')
 			entryFullPath += '/';
 		entryFullPath += entries[i];
 
@@ -121,7 +121,7 @@ CONNECTION_INL
 	bool resolvedIndex = false;
 	if (!location->index.empty()) {
 		std::string	indexPath = fullpath;
-		if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
+		if (!indexPath.empty() && indexPath[indexpath.length() - 1] != '/')
 			indexPath += '/';
 		indexPath += location->index;
 

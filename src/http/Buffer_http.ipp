@@ -63,3 +63,33 @@ BUFFER_INL
 
 	return bytesWritten;
 }
+
+BUFFER_INL
+(isize) check_target(Span16 &path, Span16 &query) {
+	u8 *const lineStart = readPtr;
+
+	if (*readPtr != '/')
+		return -1;
+	query.index = 0;
+	path.length = 0;
+	path.index = 0;
+	path.length = scanPtr - readPtr;
+	while (readPtr < scanPtr) {
+		if (g_asciiLut[*readPtr] > ASCII_RFC_SYMBOLS) {
+			if (*readPtr != '?')
+				return -1;
+			path.length = readPtr - lineStart;
+			readPtr++;
+			query.index = readPtr - data;
+			path.length = scanPtr - readPtr;
+			break;
+		}
+		if (*readPtr == '%') {
+			if (!(g_asciiLut[readPtr[1]] <= ASCII_HEX && g_asciiLut[readPtr[2]] <= ASCII_HEX))
+				return -1;
+			readPtr += 2;
+		}
+		readPtr++;
+	}
+	return 0;
+}

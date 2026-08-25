@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include "core.hpp"
 #include "HTTP.hpp"
+#include "Span.hpp"
 
 #define BUFFER_INL(ret_type) template <usize bufferSize> ret_type inline HTTP::Buffer<bufferSize>::
 
@@ -85,6 +86,7 @@ public:
 	usize find_header_end();
 	isize match_field();
 	isize match_mime();
+	isize check_target(Span16 &path, Span16 &query);
 
 	// String
 	usize itoa10(usize number, char *bufferEnd);

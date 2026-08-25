@@ -26,6 +26,8 @@ struct Directive {
 	Array32<StringView32> args;
 };
 
+// TODO: create a Location struct inside VirtualServers with specific logic
+// TODO: store 2 byte starts for each path here, then MEMCMP 12 bytes to get indexes that match, and only compare those indices
 struct Location {
 	StringView32 url;
 	StringView32 root;

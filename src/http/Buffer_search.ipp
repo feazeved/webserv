@@ -91,4 +91,3 @@ BUFFER_INL
 	readPtr++;
 	return s_match(readPtr, 5, ltable);
 }
-

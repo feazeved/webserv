@@ -8,6 +8,7 @@
 #include "Buffer.hpp"
 #include "HTTP.hpp"
 #include "VirtualServer.hpp"
+#include "Span.hpp"
 
 namespace HTTP {
 
@@ -17,12 +18,10 @@ class Request {
 public:
 
 	// TODO: keeping track of size might not be necessary
-	struct Span16 {
-		u16 index;
-		u16 size;
-	}	path, query, cookies;
+	Span16 path, query, cookies;
 
 	u16 locationIndex;
+	u16 interpreterIndex;
 	usize bodySize, chunkSize;
 	Status status;
 	u8 options;
@@ -30,11 +29,11 @@ public:
 
 	void reset() {
 		path.index = 0;
-		path.size = 0;
+		path.length = 0;
 		query.index = 0;
-		query.size = 0;
+		path.length = 0;
 		cookies.index = 0;
-		cookies.size = 0;
+		path.length = 0;
 		locationIndex = 0;
 		bodySize = 0;
 		chunkSize = 0;
@@ -44,7 +43,7 @@ public:
 	}
 
 	// Parsing
-	isize parse_target(HTTP_Buffer &src, VirtualServer* cfg);
+	isize validate_target(HTTP_Buffer &src, VirtualServer* cfg);
 	isize parse_first_line(HTTP_Buffer &src, VirtualServer* cfg, usize lineLength);
 	isize parse_line(HTTP_Buffer &src, VirtualServer* cfg, usize lineLength);
 	isize parse_cgi_line(HTTP_Buffer &src, HTTP_Buffer &dst);
@@ -53,6 +52,5 @@ public:
 };
 }
 
-#include "Request_first.ipp"
 #include "Request_parse.ipp"
 #include "Request_validate.ipp"

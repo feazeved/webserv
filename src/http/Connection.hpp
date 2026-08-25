@@ -11,7 +11,6 @@
 #include "Buffer.hpp"
 #include "VirtualServer.hpp"
 #include "Request.hpp"
-
 #define CONNECTION_INL(ret_type) ret_type inline HTTP::Connection::
 
 // For epoll conformity, cgi should be an object of Connection, 

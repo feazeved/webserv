@@ -4,6 +4,37 @@
 namespace HTTP {
 
 REQUEST_INL
+(isize) parse_first_line(HTTP_Buffer &src, VirtualServer* cfg, usize lineLength) {
+	if (lineLength < 14 || lineLength >= 8000) {
+		status = lineLength < 14 ? Status::i400 : Status::i431;
+		return -1;	// ERROR: Bad request "GET / HTTP/1.1" shortest possible
+	}
+	u8 *const lineEnd = src.readPtr + lineLength;
+
+	if (src.strcmp("GET "))
+		options |= Options::GET;
+	else if (src.strcmp("POST "))
+		options |= Options::POST;
+	else if (src.strcmp("DELETE "))
+		options |= Options::DELETE;
+	else {
+		status = Status::i501;
+		return -1;
+	}
+
+	if (MEMCMP(lineEnd - 9, " HTTP/1.1", 9) != 0) {
+		status = Status::i505;
+		return -1;
+	}
+	*(lineEnd - 9) = 0;
+	const isize result = validate_target(src, cfg);
+	if (result < 0 && !status.is_set())
+		status = Status::i400;
+	src.readPtr = src.scanPtr;	// TODO: add skip spaces
+	return result;
+}
+
+REQUEST_INL
 (isize) parse_line(HTTP_Buffer &src, VirtualServer* cfg, usize lineLength) {
 	if (lineLength < 2 || lineLength >= 8000) {
 		status = lineLength < 2 ? Status::i400 : Status::i431;
@@ -52,7 +83,7 @@ REQUEST_INL
 			while ((lineEnd[-1] == ' ' || lineEnd[-1] == '\t'))
 				lineEnd--;
 			cookies.index = (u16)(src.readPtr - src.data);
-			cookies.size = (u16)(lineEnd - src.readPtr);
+			path.length = (u16)(lineEnd - src.readPtr);
 			break;
 	}
 
@@ -100,5 +131,4 @@ REQUEST_INL
 	src.readPtr = src.scanPtr;
 	return fieldIndex;
 }
-
 }

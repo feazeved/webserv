@@ -1,6 +1,11 @@
 #pragma once
 #include "core.hpp"
 
+
+// To add:
+// Bitcasts, next pow
+
+
 // === Builtin extensions =====================================
 #define MEMFIND(dst, str, dstSize) \
 ({ \

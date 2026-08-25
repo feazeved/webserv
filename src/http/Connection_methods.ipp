@@ -10,15 +10,16 @@ CONNECTION_INL
 (isize) del_first_run() {
 	char pathBuffer[8192];
 	char* ptr = request.path.index + (char*) recvBuffer.data;
+	Location &loc = cfg->locations[request.locationIndex];
 
-	build_path(pathBuffer, ptr, request.path.size);
+	s_build_path(pathBuffer, ptr, request.path.length, loc.root);
 
-	static struct stat st;
+	struct stat st;
 	if (stat(pathBuffer, &st) == -1)
 		return s_get_status(request.status);
 
 	if (S_ISDIR(st.st_mode))
-		return s_get_status(request.status);
+		return s_get_status(request.status);	// Forbids deleting directories
 
 	if (unlink(pathBuffer) == -1)
 		return s_get_status(request.status);
@@ -50,7 +51,7 @@ CONNECTION_INL
 	char* ptr = request.path.index + (char*) recvBuffer.data;
 	Location &loc = cfg->locations[request.locationIndex];
 
-	s_build_path(pathBuffer, ptr, request.path.size, loc.root);
+	s_build_path(pathBuffer, ptr, request.path.length, loc.root);
 
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)

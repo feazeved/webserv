@@ -15,7 +15,7 @@ namespace {
 CONNECTION_INL
 (i32) handle_game_request() {
     const char* path = reinterpret_cast<const char*>(recvBuffer.data + request.path.index);
-    usize path_len = request.path.size;
+    usize path_len = request.path.length;
 
     if ((request.mode & Mode::GET) && isPath(path, path_len, "/events", 7)) {
         std::string headers =
@@ -52,7 +52,7 @@ CONNECTION_INL
         i32 playerId = 0;
         f64 x = 0.0, y = 0.0;
         const char* q = reinterpret_cast<const char*>(recvBuffer.data + request.query.index);
-        usize q_len = request.query.size;
+        usize q_len = request.path.length;
         if (q_len > 0) {
             std::string query(q, q_len);
             size_t pos = query.find("playerId=");
