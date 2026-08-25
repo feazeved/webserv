@@ -3,17 +3,16 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <unistd.h>
-#include "HTTP.hpp"
+
 #include "Connection.hpp"
 #include "core.hpp"
+#include "webserv.hpp"
 #include "Server_helpers.ipp"
 #include "ConnectionPool.hpp"
 #include "VirtualServer.hpp"
 #include "Parser.hpp"
 
-#define SERVER_INL(ret_type) ret_type inline HTTP::Server::
-
-namespace HTTP {
+#define SERVER_INL(ret_type) ret_type inline Server::
 
 class Server {
 public:
@@ -64,8 +63,6 @@ public:
 	void add_connection(VirtualServer* server);
 	void close_connection(usize connectionIndex);
 };
-
-}
 
 #include "Server_epoll.ipp"
 #include "Server_dispatch.ipp"

@@ -1,8 +1,6 @@
 #pragma once
 #include "Request.hpp"
 
-namespace HTTP {
-
 REQUEST_INL
 (isize) parse_first_line(HTTP_Buffer &src, VirtualServer* cfg, usize lineLength) {
 	if (lineLength < 14 || lineLength >= 8000) {
@@ -130,5 +128,4 @@ REQUEST_INL
 	dst.append(field, totalLength);
 	src.readPtr = src.scanPtr;
 	return fieldIndex;
-}
 }

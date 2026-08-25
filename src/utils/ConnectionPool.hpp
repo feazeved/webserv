@@ -6,7 +6,7 @@
 #include "Bitmap.hpp"
 #include "Connection.hpp"
 
-namespace HTTP {
+
 
 class ConnectionPool {
 public:
@@ -97,4 +97,3 @@ public:
 		return connections[index];
 	}
 };
-}

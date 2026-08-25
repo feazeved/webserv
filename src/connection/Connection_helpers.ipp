@@ -4,9 +4,6 @@
 
 #include "Buffer.hpp"
 #include "core.hpp"
-#include "HTTP.hpp"
-
-namespace HTTP {
 
 static inline
 isize s_get_status(Status &status) {
@@ -34,6 +31,4 @@ void s_build_path(char* buffer, const char *ptr, usize length, StringView32& roo
 	buffer += root.length;
 	MEMCPY(buffer, ptr, length);
 	buffer[length] = 0;
-}
-
 }

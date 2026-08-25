@@ -1,6 +1,5 @@
 #pragma once
 #include "Buffer.hpp"
-#include "HTTP.hpp"
 
 BUFFER_INL
 (usize) find_line_end() {

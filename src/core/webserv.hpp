@@ -1,15 +1,7 @@
 #pragma once
-
-#include <unistd.h>
-
-#include "core.hpp"
-#include "config.hpp"
-#include "Arena.hpp"
 #include "Array.hpp"
 #include "StringView.hpp"
 #include "Status.hpp"
-
-namespace HTTP {
 
 struct Token {
 	enum Type {
@@ -42,8 +34,6 @@ struct Location {
 	Location() : methods(0), autoindex(false) {}
 };
 
-// Switch (no read, read, read chunked, can read)
-
 // These are exclusive states
 namespace Mode {
 	enum e_http_mode {
@@ -56,15 +46,6 @@ namespace Mode {
 		CLOSE = 1 << 5		// Streams header, then closes
 	};
 }
-
-// namespace State {
-// 	enum e_http_state {
-// 		READING_FROM_CLIENT = 1,
-// 		WRITING_TO_CLIENT = 2,
-// 		READING_FROM_SERVER = 4,
-// 		WRITING_TO_SERVER = 8
-// 	};
-// }
 
 namespace Options {
 	enum e_http_options {
@@ -82,7 +63,7 @@ namespace Options {
 
 #define FIELD_TABLE {"status", "location", "transfer-encoding", \
 	"content-length", "content-type", "host", "connection", \
-	"accept", "cookie"}	// TODO: add sse
+	"accept", "cookie"}
 
 namespace Field {
 	enum e_http_field {
@@ -100,8 +81,7 @@ namespace Field {
 	};
 }
 
-#define MIME_TABLE {"html", "htm", "css", "json", \
-	"js", "png", "jpg", "jpeg", "gif", "txt"}
+#define MIME_TABLE {"html", "htm", "css", "json", "js", "png", "jpg", "jpeg", "gif", "txt"}
 
 #define MIME_STRINGS {"\x18" "application/octet-stream", "\x09" "text/html", "\x09" "text/html",\
 	"\x08" "text/css", "\x10" "application/json", "\x16" "application/javascript",\
@@ -109,7 +89,7 @@ namespace Field {
 	"\x09" "image/gif", "\x0A" "text/plain"}
 
 namespace Mime {
-	enum e_mime_type {
+	enum e_http_mime_type {
 		OCTET_STREAM = 0,
 		HTML,
 		HTM,
@@ -124,4 +104,15 @@ namespace Mime {
 		COUNT
 	};
 }
-}
+
+enum e_ascii {
+	ASCII_DIGITS      = 9,   // value <= digits
+	ASCII_HEX         = 15,  // value <= hex
+	ASCII_LETTERS     = 35,  // A-Z / a-z map to 10-35
+	ASCII_IDENT       = 36,  // _
+	ASCII_RFC_SYMBOLS = 37,  // RFC 3986 path symbols
+	ASCII_SYMBOLS     = 38,  // other symbols
+	ASCII_SPACE       = 39,
+	ASCII_CONTROL     = 40,
+	ASCII_INVALID     = 255
+};

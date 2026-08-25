@@ -1,9 +1,10 @@
 #pragma once
 
-#include "core.hpp"
 #include <unistd.h>
+
+#include "core.hpp"
 #include "config.hpp"
-#include "status_codes.hpp"
+#include "tables.hpp"
 
 /*
 	Arena has two pools, A that belongs to the connection pool and B
@@ -64,7 +65,6 @@ struct Arena {
 
 STATIC_ASSERT(sizeof(Arena::pool.A) + sizeof(Arena::pool.B) <= UINT32_MAX);
 STATIC_ASSERT(sizeof(HTTP_ARENA_STATIC_STRINGS) <= UINT16_MAX);
-// STATIC_ASSERT(arena.pool.BStaticSize <= sizeof(arena.pool.B));
 
 #ifdef MAIN_FILE
 	Arena::Pool Arena::pool = {
@@ -76,6 +76,3 @@ STATIC_ASSERT(sizeof(HTTP_ARENA_STATIC_STRINGS) <= UINT16_MAX);
 	usize Arena::sizeA = 0;
 	usize Arena::sizeB = Arena::poolBStaticSize;
 #endif
-
-// Arena::u_pool Arena::pool.A[ARENA_SIZE] ALIGNED(4096);
-// Arena::u_pool Arena::pool.B[ARENA_SIZE] ALIGNED(4096) = HTTP_ARENA_STATIC_STRINGS;

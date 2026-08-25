@@ -1,11 +1,10 @@
 #pragma once
 
 #include "core.hpp"
-#include "core_builtins.ipp"
-#include "status_codes.hpp"
+#include "tables.hpp"
 #include "StringView.hpp"
 
-namespace HTTP {
+
 
 /*
 	Status stores a u16 offset to a status string in Arena::poolB.  Every
@@ -299,4 +298,3 @@ STATIC_ASSERT(sizeof(Status) == sizeof(u16));
 	#pragma pop_macro("ADDP")
 	#pragma pop_macro("ADDS")
 */
-}

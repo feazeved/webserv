@@ -19,8 +19,8 @@ void tokenizer_dump(std::vector<Token> &tokens) {
 	}
 }
 
-void config_dump(std::vector<HTTP::ServerConfig> &config) {
-	std::vector<HTTP::ServerConfig>::iterator it =  config.begin();
+void config_dump(std::vector<ServerConfig> &config) {
+	std::vector<ServerConfig>::iterator it =  config.begin();
 	std::cout << "---Print Config---\n\n";
 	for (; it != config.end(); it++)
 	{
@@ -30,7 +30,7 @@ void config_dump(std::vector<HTTP::ServerConfig> &config) {
 		std::cout << "\tmax_body_size: " << (*it).maxBodySize << "\n";
 		std::cout << "\n";
 
-		std::vector<HTTP::Location>::iterator itl =  (*it).locations.begin();
+		std::vector<Location>::iterator itl =  (*it).locations.begin();
 		for (; itl != (*it).locations.end(); itl++)
 		{
 			std::cout << "\tLOCATION " << (*itl).path << "\n";

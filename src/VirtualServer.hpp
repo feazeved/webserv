@@ -6,13 +6,14 @@
 #include <fcntl.h>
 #include <netdb.h>
 
-#include "HTTP.hpp"
 #include "core.hpp"
+#include "webserv.hpp"
+#include "StringView.hpp"
+#include "Status.hpp"
+#include "Array.hpp"
 #include "VirtualServer_helpers.ipp"
 
-namespace HTTP {
-
-#define VIRTUALSERVER_INL(ret_type) ret_type inline HTTP::VirtualServer::
+#define VIRTUALSERVER_INL(ret_type) ret_type inline VirtualServer::
 
 class VirtualServer {
 public:
@@ -69,5 +70,3 @@ public:
 			PERR_EXIT(clear(), "Error: Failed to make listening socket non-blocking");
 	}
 };
-
-}

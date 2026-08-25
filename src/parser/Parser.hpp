@@ -4,15 +4,15 @@
 #include <unistd.h>
 
 #include "core.hpp"
-#include "HTTP.hpp"
+#include "webserv.hpp"
+#include "Array.hpp"
 #include "VirtualServer.hpp"
 #include "Parser_helpers.ipp"
 
-#define PARSER_INL(ret_type) ret_type inline HTTP::Parser::
-
-namespace HTTP {
+#define PARSER_INL(ret_type) ret_type inline Parser::
 
 class Parser {
+
 public:
 	usize fileOffset;
 	usize fileSize;
@@ -47,10 +47,9 @@ public:
 	Array32<Token> tokenize();
 	void cache_error_pages(VirtualServer &server);
 	void process_cgi_block(VirtualServer &server);
-	isize parse_location(const Array32<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc);
+	isize parse_location(const Array32<Token> &tokens, usize &cursor, usize end, Location &loc);
 	isize parse_server(const Array32<Token> &tokens, usize cursor, usize end, VirtualServer &server);
 };
-}
 
 #include "Parser_locations.ipp"
 #include "Parser_server.ipp"

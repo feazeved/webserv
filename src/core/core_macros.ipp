@@ -1,7 +1,6 @@
 #pragma once
 #include "core.hpp"
 
-
 // To add:
 // Bitcasts, next pow
 

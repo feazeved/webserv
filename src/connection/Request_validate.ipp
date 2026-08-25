@@ -1,9 +1,6 @@
 #pragma once
 #include "Request.hpp"
 
-namespace HTTP {
-//
-
 static inline 
 u16 s_check_location(u8 *ptr, usize length, VirtualServer* cfg, Request &request) {
 	Array32<Location> &locations = cfg->locations;
@@ -95,7 +92,4 @@ REQUEST_INL
 		bodySize = cfg->maxBodySize;
 
 	return (Mode::e_http_mode) (options & 0x0F);
-}
-
-// HTTP NAMESPACE END
 }

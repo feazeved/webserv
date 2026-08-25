@@ -3,10 +3,7 @@
 #include <sys/stat.h>
 
 #include "core.hpp"
-#include "HTTP.hpp"
-#include "StringView.hpp"
-
-namespace HTTP {
+#include "webserv.hpp"
 
 static inline
 bool s_read_whole_file(const char *filePath, usize &fileSize, usize &fileOffset, usize padSize) {
@@ -192,6 +189,4 @@ usize s_count_servers(const char *str, usize length) {
 static inline
 bool s_length_check(u32 length) {
 	return length == 0 || length >= MAX_PATH_SIZE;
-}
-
 }

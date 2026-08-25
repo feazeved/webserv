@@ -1,8 +1,6 @@
 #pragma once
 #include "Connection.hpp"
 
-namespace HTTP {
-
 CONNECTION_INL
 (isize) error_path() {
 	if (readFd >= 0) {
@@ -69,7 +67,5 @@ CONNECTION_INL
 		case Mode::SSE:		return sse_method(); break;
 		default: return -1;
 	}
-
-}
 
 }

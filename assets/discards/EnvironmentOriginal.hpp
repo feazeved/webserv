@@ -1,6 +1,6 @@
 #include "core.hpp"
 
-namespace HTTP {
+
 
 // Needed for cookies and queries
 class Environment {

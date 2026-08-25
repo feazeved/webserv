@@ -4,8 +4,6 @@
 #include "Connection.hpp"
 #include "Connection_helpers.ipp"
 
-namespace HTTP {
-
 CONNECTION_INL
 (isize) del_first_run() {
 	char pathBuffer[8192];
@@ -117,7 +115,4 @@ CONNECTION_INL
 		mode = keepAlive ? Mode::FLUSH : Mode::CLOSE;
 	}
 	return write_to_client(events);
-}
-
-// HTTP namespace
 }

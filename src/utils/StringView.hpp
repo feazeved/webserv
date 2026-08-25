@@ -3,8 +3,6 @@
 #include "core.hpp"
 #include "Arena.hpp"
 
-namespace HTTP {
-
 class StringView32 {
 public:
 	u32 offset;
@@ -40,5 +38,3 @@ public:
 		return length == size - 1 && MEMCMP_INLINE(ptr, literal) == 0;
 	}
 };
-
-}

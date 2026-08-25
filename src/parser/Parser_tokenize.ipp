@@ -1,11 +1,7 @@
 #pragma once
-
-#include "HTTP.hpp"
 #include <sys/stat.h>
-#include "Parser.hpp"
 
-namespace HTTP {
-//
+#include "Parser.hpp"
 
 static inline
 usize s_count_tokens(const char *str) {
@@ -114,6 +110,3 @@ PARSER_INL
 	}
 	return tokArray;
 }
-
-//
-}	// Namespace HTTP

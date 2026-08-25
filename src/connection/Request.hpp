@@ -6,13 +6,11 @@
 #include "core.hpp"
 #include "Status.hpp"
 #include "Buffer.hpp"
-#include "HTTP.hpp"
+
 #include "VirtualServer.hpp"
 #include "Span.hpp"
 
-namespace HTTP {
-
-#define REQUEST_INL(ret_type) ret_type inline HTTP::Request::
+#define REQUEST_INL(ret_type) ret_type inline Request::
 
 class Request {
 public:
@@ -50,7 +48,6 @@ public:
 	Mode::e_http_mode validate_header(HTTP_Buffer &src, VirtualServer* cfg);
 
 };
-}
 
 #include "Request_parse.ipp"
 #include "Request_validate.ipp"

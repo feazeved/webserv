@@ -2,14 +2,12 @@
 #include "core.hpp"
 #include "VirtualServer.hpp"
 
-namespace HTTP {
-
 static bool s_set_socket_nonblocking(int fd) {
 	int flags = fcntl(fd, F_GETFL, 0);
 	return flags == -1 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1;
 }
 
-static bool s_resolve_host_and_port(const HTTP::StringView32& host, usize port, sockaddr_in& address) {
+static bool s_resolve_host_and_port(const StringView32& host, usize port, sockaddr_in& address) {
 	addrinfo hints;
 	MEMSET_INLINE(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -29,5 +27,4 @@ static bool s_resolve_host_and_port(const HTTP::StringView32& host, usize port, 
 	}
 	freeaddrinfo(result);
 	return invalid;
-}
 }

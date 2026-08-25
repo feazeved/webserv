@@ -1,8 +1,6 @@
 #pragma once
 #include "Connection.hpp"
 
-namespace HTTP {
-
 /*	Header is built in stack memory while parsing the header from client output
 	When the header is built, it then appends part of the CGI body to tmp buffer
 	up to how many bytes will fit in a single write */
@@ -40,6 +38,4 @@ CONNECTION_INL
 	sendBuffer.append("Content-Type: ");
 	sendBuffer.append_mime(request.contentType);
 	sendBuffer.append("\r\n\r\n");
-}
-// Namespace HTTP
 }

@@ -2,12 +2,12 @@
 #include <vector>
 #include <iostream>
 #include "parse_config.hpp"
-#include "HTTP.hpp"
+
 
 
 TEST_CASE("config file parsing basics", "[parser]") {
 
-	std::vector<HTTP::ServerConfig> servers = parse_config("config/default.conf");
+	std::vector<ServerConfig> servers = parse_config("config/default.conf");
 
 
 	int	port = servers.at(0).port;

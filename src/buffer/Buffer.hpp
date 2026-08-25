@@ -1,12 +1,10 @@
 #pragma once
 #include <unistd.h>
 #include "core.hpp"
-#include "HTTP.hpp"
+#include "webserv.hpp"
 #include "Span.hpp"
 
-#define BUFFER_INL(ret_type) template <usize bufferSize> ret_type inline HTTP::Buffer<bufferSize>::
-
-namespace HTTP {
+#define BUFFER_INL(ret_type) template <usize bufferSize> ret_type inline Buffer<bufferSize>::
 
 template <usize bufferSize>
 class Buffer {
@@ -126,7 +124,6 @@ public:
 	}
 };
 typedef Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;
-}
 
 #include "Buffer_add.ipp"
 #include "Buffer_search.ipp"

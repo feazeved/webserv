@@ -4,7 +4,7 @@
 #include "Connection.hpp"
 #include "Connection_helpers.ipp"
 
-namespace HTTP {
+
 
 // Check epoll, see if can write, if not, set to write and return 0
 CONNECTION_INL
@@ -32,7 +32,4 @@ CONNECTION_INL
 	if (bytesRead <= 0)
 		return close_connection();
 	return bytesRead;
-}
-
-// HTTP namespace
 }

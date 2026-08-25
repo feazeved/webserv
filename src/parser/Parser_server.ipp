@@ -1,11 +1,8 @@
 #pragma once
 #include "core.hpp"
-#include "HTTP.hpp"
+
 #include "Parser.hpp"
 #include "Parser_helpers.ipp"
-
-namespace HTTP {
-//
 
 static inline
 void s_directive_error_page(Directive &dir, VirtualServer &server) {
@@ -111,7 +108,7 @@ PARSER_INL
 	usize locationIndex = 0;
 	while (cursor != end) {
 		if (tokens[cursor].value == "location") {
-			HTTP::Location loc;
+			Location loc;
 			parse_location(tokens, cursor, end, loc);
 			for (usize index = 0; index < locationIndex; index++) {
 				const StringView32 &path = server.locations[index].url;
@@ -133,6 +130,3 @@ PARSER_INL
 		server.host = StringView32(sizeof("localhost") - 1, (u32)(fileOffset + fileSize + 4));
 	return 0;
 }
-
-//
-}	// Namespace HTTP

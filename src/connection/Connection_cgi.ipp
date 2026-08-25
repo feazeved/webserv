@@ -10,9 +10,9 @@
 #include "Environment.hpp"
 
 extern time_t g_timeNow;
-extern HTTP::Environment g_fakeEnv;
+extern Environment g_fakeEnv;
 
-namespace HTTP {
+
 static inline
 bool s_set_noblock(int fd)
 {
@@ -160,5 +160,4 @@ CONNECTION_INL
 		build_cgi_header();
 	}
 	return bytesRead;
-}
 }

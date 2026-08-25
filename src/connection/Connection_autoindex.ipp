@@ -1,6 +1,6 @@
 #pragma once
 #include "Connection.hpp"
-#include "HTTP.hpp"
+
 #include <cerrno>
 #include <cstdio>
 #include <ctime>
@@ -11,7 +11,7 @@
 #include <dirent.h>
 #include <sys/types.h>
 
-namespace HTTP {
+
 
 static inline
 void	s_append_html_escaped(Cursor& dst, const std::string& str) {
@@ -140,5 +140,3 @@ CONNECTION_INL
 	}
 }
 
-// namespace HTTP
-}

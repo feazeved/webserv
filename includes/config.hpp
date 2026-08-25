@@ -1,5 +1,4 @@
 #pragma once
-#include "core.hpp"
 
 // Server configuration
 #define HTTP_BUFFERSIZE 8192
@@ -27,6 +26,3 @@
 		#define ATOMIC_IOSIZE 512
 	#endif
 #endif
-
-
-STATIC_ASSERT(MAX_LOCATION_BLOCK_SIZE < UINT16_MAX);

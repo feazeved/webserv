@@ -1,17 +1,12 @@
 #pragma once
-// #include <unistd.h>
-// #include <sys/epoll.h>
-// #include <ctime>
-// #include <fcntl.h>
-// #include <cstring>
-// #include <sys/stat.h>
 
 #include "core.hpp"
-#include "HTTP.hpp"
+
 #include "Buffer.hpp"
 #include "VirtualServer.hpp"
 #include "Request.hpp"
-#define CONNECTION_INL(ret_type) ret_type inline HTTP::Connection::
+
+#define CONNECTION_INL(ret_type) ret_type inline Connection::
 
 // For epoll conformity, cgi should be an object of Connection, 
 // and it gets added and removed to epoll
@@ -20,8 +15,6 @@
 
 	Execution Context: clientFd, writeFd, readFd, processId
 */
-
-namespace HTTP {
 
 class Connection {
 public:
@@ -111,6 +104,3 @@ public:
 
 	Connection() : clientFd(-1) {}
 };
-
-// namespace HTTP
-}

@@ -3,12 +3,8 @@
 #include <unistd.h>
 
 #include "core.hpp"
-#include "HTTP.hpp"
 #include "Parser.hpp"
 #include "Parser_helpers.ipp"
-
-namespace HTTP {
-//
 
 static inline
 void s_set_methods(Array32<StringView32> &methods, Location &location) {
@@ -120,7 +116,7 @@ void s_parse_cgi(const Array32<Token> &tokens, usize &cursor, usize end, Locatio
 }
 
 PARSER_INL
-(isize) parse_location(const Array32<Token> &tokens, usize &cursor, usize end, HTTP::Location &loc) {
+(isize) parse_location(const Array32<Token> &tokens, usize &cursor, usize end, Location &loc) {
 	if (cursor == end || tokens[cursor].type != Token::WORD || !(tokens[cursor].value == "location"))
 		PERR_EXIT(1, "Error: Unexpected token");
 	cursor++;
@@ -152,6 +148,3 @@ PARSER_INL
 		PERR_EXIT(1, "Error: Unexpected token");
 	return 0;
 }
-
-//
-}	// Namespace HTTP

@@ -7,8 +7,6 @@
 #include "core.hpp"
 #include "Parser.hpp"
 
-namespace HTTP {
-
 static inline
 void s_build_error_page_path(char *out, const StringView32 &root, const StringView32 &path) {
 	usize length = 0;
@@ -119,5 +117,4 @@ PARSER_INL
 		MEMCPY(Arena::mptr(block.offset), buffer, packSize);
 		block.length = (u32)packSize;
 	}
-}
 }
