@@ -4,10 +4,8 @@
 CONNECTION_INL
 (isize) del_first_run() {
 	Buffer16 pathBuffer;
-	Location &loc = cfg->locations[request.locationIndex];
-	Span path = request.path.extract((char*)recvBuffer.data);
 
-	s_build_path(pathBuffer, path, loc.root);
+	s_build_path(pathBuffer, request.path, request.location->root);
 
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)
@@ -27,9 +25,8 @@ CONNECTION_INL
 CONNECTION_INL
 (isize) post_first_run() {
 	Buffer16 pathBuffer;
-	Location &loc = cfg->locations[request.locationIndex];
-	Span storePath = loc.uploadStore.extract();
-	s_build_path(pathBuffer, storePath, loc.root);
+	Span storePath = request.location->uploadStore.extract();
+	s_build_path(pathBuffer, storePath, request.location->root);
 
 	writeFd = open(pathBuffer, O_WRONLY | O_CREAT | O_EXCL, 0644);
 	if (writeFd == -1) {
@@ -42,10 +39,8 @@ CONNECTION_INL
 CONNECTION_INL
 (isize) get_first_run() {
 	Buffer16 pathBuffer;
-	Location &loc = cfg->locations[request.locationIndex];
-	Span path = request.path.extract((char*)recvBuffer.data);
 
-	s_build_path(pathBuffer, path, loc.root);
+	s_build_path(pathBuffer, request.path, request.location->root);
 
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)

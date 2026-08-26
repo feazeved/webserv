@@ -9,29 +9,18 @@
 
 class Request {
 public:
-
-	// TODO: keeping track of size might not be necessary
-	Span16 path, query, cookies, interpreter;
-
-	u16 locationIndex;
+	Span path, query, cookies, interpreter;
+	Span contentTypeHeader, contentSize;
+	Location* location;
 	usize bodySize, chunkSize;
 	Status status;
 	u8 options;
 	u8 contentType;
 
 	void reset() {
-		path.index = 0;
-		path.length = 0;
-		query.index = 0;
-		path.length = 0;
-		cookies.index = 0;
-		path.length = 0;
-		locationIndex = 0;
-		bodySize = 0;
-		chunkSize = 0;
+		MEMSET_INLINE(this, 0, sizeof(*this));
 		status.reset();
-		options = 0;
-		contentType = Mime::OCTET_STREAM;
+		// contentType = Mime::OCTET_STREAM;
 	}
 
 	// Parsing

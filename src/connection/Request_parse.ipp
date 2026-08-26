@@ -80,8 +80,8 @@ REQUEST_INL
 		case Field::COOKIES:
 			while ((lineEnd[-1] == ' ' || lineEnd[-1] == '\t'))
 				lineEnd--;
-			cookies.index = (u16)(src.readPtr - src.data);
-			path.length = (u16)(lineEnd - src.readPtr);
+			cookies.ptr = (char*) src.readPtr;
+			cookies.length = (usize) (lineEnd - src.readPtr);
 			break;
 	}
 
@@ -120,8 +120,7 @@ REQUEST_INL
 		isize rvalue = status.is_valid() == true ? 0 : -1;
 		if (rvalue == -1)
 			status = Status::i500;	// CGI output an invalid status, should be server error
-		Span str = status.status_str();
-		dst.prepend(str.ptr, str.length);
+		dst.prepend(status.status_str());
 		return rvalue;
 	}
 

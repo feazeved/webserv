@@ -65,14 +65,14 @@ BUFFER_INL
 }
 
 BUFFER_INL
-(isize) check_target(Span16 &path, Span16 &query) {
+(isize) check_target(Span &path, Span &query) {
 	u8 *const lineStart = readPtr;
 
 	if (*readPtr != '/')
 		return -1;
-	query.index = 0;
+	query.ptr = (char*) readPtr;
 	path.length = 0;
-	path.index = 0;
+	path.ptr = (char*) readPtr;
 	path.length = scanPtr - readPtr;
 	while (readPtr < scanPtr) {
 		if (g_asciiLut[*readPtr] > ASCII_RFC_SYMBOLS) {
@@ -80,7 +80,7 @@ BUFFER_INL
 				return -1;
 			path.length = readPtr - lineStart;
 			readPtr++;
-			query.index = readPtr - data;
+			query.ptr = (char*)readPtr;
 			path.length = scanPtr - readPtr;
 			break;
 		}

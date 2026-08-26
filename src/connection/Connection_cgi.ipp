@@ -36,22 +36,17 @@ CONNECTION_INL
 	const usize methodIndex = (request.options & 7) / 2;
 
 	s_fakeEnv.reset();
-	Location &loc = cfg->locations[request.locationIndex];
-	Span interpreterSpan = request.interpreter.extract(loc.cgiBlock.mptr());
-	Span pathSpan = request.path.extract((char*) recvBuffer.data);
-	Span querySpan = request.query.extract((char*) recvBuffer.data);
-	Span cookieSpan = request.cookies.extract((char*) recvBuffer.data);
 
-	argv[0] = buffer.append(loc.root.kptr(), loc.root.length);
-	buffer.append(interpreterSpan);
+	argv[0] = buffer.append(request.location->root.extract());
+	buffer.append(request.interpreter);
 	buffer.append("\0");
 	char* scriptName = buffer.append("SCRIPT_NAME=");
-	argv[1] = buffer.append(pathSpan);
+	argv[1] = buffer.append(request.path);
 	buffer.append("\0");
 	argv[2] = NULL;
 
-	querySpan.ptr = STRPREP(querySpan.ptr, "QUERY_STRING="); // Totally safe dont worry about it
-	cookieSpan.ptr = STRPREP(cookieSpan.ptr, "HTTP_COOKIE="); // Worst case scenario overwrites HTTP/1.1\r\n
+	request.query.ptr = STRPREP(request.query.ptr, "QUERY_STRING="); // Totally safe dont worry about it
+	request.cookies.ptr = STRPREP(request.cookies.ptr, "HTTP_COOKIE="); // Worst case scenario overwrites HTTP/1.1\r\n
 
 	if (request.options & Options::FIXED_LENGTH) {
 		char* lengthStr = buffer.append("HTTP_CONTENT_LENGTH=");
@@ -61,8 +56,8 @@ CONNECTION_INL
 	}
 	s_fakeEnv.append(requestMethod[methodIndex]);
 	s_fakeEnv.append(scriptName);
-	s_fakeEnv.append(querySpan.ptr);
-	s_fakeEnv.append(cookieSpan.ptr);
+	s_fakeEnv.append(request.query.ptr);
+	s_fakeEnv.append(request.cookies.ptr);
 }
 
 CONNECTION_INL
@@ -137,7 +132,7 @@ CONNECTION_INL
 	}
 
 	isize delta = ((bytesWritten < 0 || bytesRead < 0) ? -1 : 1);
-	bonusTime = CLAMP(bonusTime + delta, 0, 30);
+	// bonusTime = CLAMP(bonusTime + delta, 0, 30);
 
 	if (!request.status.is_set()) {
 		if (sendBuffer.find_header_end() != SIZE_MAX) {

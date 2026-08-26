@@ -94,7 +94,7 @@ public:
 	usize find_header_end();
 	isize match_field();
 	isize match_mime();
-	isize check_target(Span16 &path, Span16 &query);
+	isize check_target(Span &path, Span &query);
 
 	// String
 	static usize s_itoa10(usize number, char *bufferEnd);
@@ -132,9 +132,9 @@ public:
 		MEMCPY(data, other.readPtr, bytesUsed);
 	}
 
-    operator char*() {
-        return (char*)readPtr;
-    }
+	operator char*() {
+		return (char*)readPtr;
+	}
 };
 
 typedef Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;

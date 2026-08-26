@@ -26,16 +26,13 @@ public:
 	static Environment s_fakeEnv;
 	VirtualServer* cfg;
 	HTTP_Buffer recvBuffer, sendBuffer;
-	Request request;
 
-	time_t startTime;
-	u8 bonusTime; // Value ranging from -30s to 30s
+	Request request;
+	u32 startTime;
 	Mode::e_http_mode mode;
 
 	pid_t processId;
-	int clientFd;	// Duplex FD
-	int writeFd;	// CGI Input or POST
-	int readFd;		// CGI Output or GET/DEL
+	int clientFd, readFd, writeFd;
 
 	isize init(int fd, VirtualServer* c) {
 		ASSERT(clientFd != -1, "Assigned a connection already in use");
@@ -49,7 +46,6 @@ public:
 		recvBuffer.clear();
 		sendBuffer.clear();
 		startTime = Clock::time_elapsed();
-		bonusTime = 0;
 		return 1;
 	}
 
@@ -64,7 +60,7 @@ public:
 	bool check_timeout(time_t curTime) {
 		const time_t elapsed = curTime - startTime;
 
-		if (elapsed > CONNECTION_TIMEOUT + bonusTime) {
+		if (elapsed > CONNECTION_TIMEOUT) {
 			// TODO: Cull child here
 			return true;
 		}
