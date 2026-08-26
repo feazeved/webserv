@@ -42,6 +42,14 @@
 struct Span {
 	char* ptr;
 	usize length;
+
+	Span() : ptr(0), length(0) {}
+	Span(char* srcPtr, usize srcLength) : ptr(srcPtr), length(srcLength) {}
+
+	template <usize size>
+	bool operator==(const char (&literal)[size]) const {
+		return length == size - 1 && STRCMP(ptr, literal) == 0;
+	}
 };
 
 struct Span32 {

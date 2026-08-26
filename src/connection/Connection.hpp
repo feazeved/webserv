@@ -1,8 +1,9 @@
 #pragma once
-#include <sys/stat.h>
-#include <errno.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <fcntl.h>
+#include <dirent.h>
+#include <errno.h>
 
 #include "core.hpp"
 #include "Clock.hpp"
@@ -96,8 +97,8 @@ public:
 	isize get_first_run();
 	isize post_first_run();
 	isize cgi_first_run();
-	isize get_autoindex();
-	isize get_directory(struct stat *st);
+	isize get_autoindex(struct stat &st, Buffer16 &pathBuffer);
+	isize get_directory(struct stat &st, Buffer16 &pathBuffer);
 
 	Connection() : clientFd(-1) {}
 };
@@ -106,3 +107,4 @@ public:
 #include "Connection_dispatch.ipp"
 #include "Connection_methods.ipp"
 #include "Connection_response.ipp"
+#include "Connection_autoindex.ipp"

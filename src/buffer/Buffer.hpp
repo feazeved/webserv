@@ -131,6 +131,10 @@ public:
 		scanPtr = data;
 		MEMCPY(data, other.readPtr, bytesUsed);
 	}
+
+    operator char*() {
+        return (char*)readPtr;
+    }
 };
 
 typedef Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;

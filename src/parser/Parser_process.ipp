@@ -63,7 +63,7 @@ PARSER_INL
 }
 
 static inline
-bool s_next_cgi_word(char *&cursor, char *end, StringView &word) {
+bool s_next_cgi_word(char *&cursor, char *end, Span &word) {
 	while (cursor != end && ((u8)*cursor <= 32 || s_is_config_delimiter(*cursor)))
 		cursor++;
 	if (cursor == end)
@@ -92,7 +92,7 @@ PARSER_INL
 		char *cursor = block.mptr();
 		char *const end = cursor + block.length;
 		usize packSize = 0;
-		StringView extension, interpreter;
+		Span extension, interpreter;
 
 		while (s_next_cgi_word(cursor, end, extension)) {
 			s_next_cgi_word(cursor, end, interpreter);

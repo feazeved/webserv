@@ -1,6 +1,7 @@
 #pragma once
 #include "core.hpp"
 #include "Arena.hpp"
+#include "Span.hpp"
 
 class StringView32 {
 public:
@@ -18,22 +19,16 @@ public:
 		return (char*)Arena::mptr(offset);
 	}
 
+	Span extract() {
+		Span result;
+		result.ptr = (char*)Arena::mptr(offset);
+		result.length = length;
+		return result;
+	}
+
 	template <usize size>
 	bool operator==(const char (&literal)[size]) const {
 		return length == size - 1 && STRCMP(kptr(), literal) == 0;
 	}
 };
 
-class StringView {
-public:
-	char *ptr;
-	usize length;
-
-	StringView() : ptr(0), length(0) {}
-	StringView(char* newPtr, u32 length) : ptr(newPtr), length(length) {}
-
-	template <usize size>
-	bool operator==(const char (&literal)[size]) const {
-		return length == size - 1 && STRCMP(ptr, literal) == 0;
-	}
-};

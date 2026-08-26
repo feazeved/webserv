@@ -121,16 +121,16 @@ STATIC_ASSERT(i100 == 9);
 	}
 
 	ALWAYS_INLINE
-	StringView status_str() const {
-		StringView result;
+	Span status_str() const {
+		Span result;
 		result.ptr = startPtr + (usize) index;
 		result.length = (u8) result.ptr[-1];
 		return result;
 	}
 
 	ALWAYS_INLINE
-	StringView error_str() const {
-		StringView result;
+	Span error_str() const {
+		Span result;
 		result.ptr = startPtr + (usize) index;
 		result.length = (u8) result.ptr[-1];
 	
@@ -142,7 +142,7 @@ STATIC_ASSERT(i100 == 9);
 	ALWAYS_INLINE
 	static StringView32 s_error_str(usize number) {
 		usize offset = s_index(number >= 500, number % 32);
-		StringView tmp;
+		Span tmp;
 		tmp.ptr = startPtr + (usize) offset;
 		tmp.length = (u8) tmp.ptr[-1];
 		tmp.ptr += tmp.length + 2;

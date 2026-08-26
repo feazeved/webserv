@@ -3,11 +3,11 @@
 
 CONNECTION_INL
 (isize) del_first_run() {
-	char pathBuffer[8192];
-	char* ptr = request.path.index + (char*) recvBuffer.data;
+	Buffer16 pathBuffer;
 	Location &loc = cfg->locations[request.locationIndex];
+	Span path = request.path.extract((char*)recvBuffer.data);
 
-	s_build_path(pathBuffer, ptr, request.path.length, loc.root);
+	s_build_path(pathBuffer, path, loc.root);
 
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)
@@ -26,13 +26,12 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) post_first_run() {
-	char pathBuffer[8192];
+	Buffer16 pathBuffer;
 	Location &loc = cfg->locations[request.locationIndex];
-	const StringView32 &storePath = loc.uploadStore;
+	Span storePath = loc.uploadStore.extract();
+	s_build_path(pathBuffer, storePath, loc.root);
 
-	s_build_path(pathBuffer, storePath.kptr(), storePath.length, loc.root);
-
-	writeFd = open(storePath.kptr(), O_WRONLY | O_CREAT | O_EXCL, 0644);
+	writeFd = open(pathBuffer, O_WRONLY | O_CREAT | O_EXCL, 0644);
 	if (writeFd == -1) {
 		mode = Mode::CLOSE;
 		return s_get_status(request.status);
@@ -42,18 +41,18 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) get_first_run() {
-	char pathBuffer[8192];
-	char* ptr = request.path.index + (char*) recvBuffer.data;
+	Buffer16 pathBuffer;
 	Location &loc = cfg->locations[request.locationIndex];
+	Span path = request.path.extract((char*)recvBuffer.data);
 
-	s_build_path(pathBuffer, ptr, request.path.length, loc.root);
+	s_build_path(pathBuffer, path, loc.root);
 
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)
 		return s_get_status(request.status);
 
 	if (S_ISDIR(st.st_mode))
-		return get_directory(&st);
+		return get_directory(st, pathBuffer);
 
 	int	rawFd = open(pathBuffer, O_RDONLY);
 	if (rawFd == -1)

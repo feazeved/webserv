@@ -25,7 +25,7 @@ u16 s_check_location(u8 *ptr, usize length, VirtualServer* cfg, Request &request
 }
 
 static inline
-Span16 s_check_cgi(Location *loc, StringView refExt) {
+Span16 s_check_cgi(Location *loc, Span refExt) {
 	const char *basePtr = loc->cgiBlock.kptr();
 	usize blockLength = loc->cgiBlock.length;
 	u16 lengths[2];
@@ -54,7 +54,7 @@ REQUEST_INL
 	locationIndex = s_check_location(lineStart, path.length, cfg, *this);
 	if (locationIndex == UINT16_MAX)
 		return -1;
-	StringView pathStr (path.index + (char*)src.data, path.length);
+	Span pathStr (path.index + (char*)src.data, path.length);
 	interpreter = s_check_cgi(&cfg->locations[locationIndex], pathStr);
 	if (interpreter.index == UINT16_MAX)
 		contentType = src.match_mime();	// TODO: Is CGI a mime or octet stream?

@@ -22,11 +22,10 @@ isize s_get_status(Status &status) {
 }
 
 static inline
-void s_build_path(char* buffer, const char *ptr, usize length, StringView32& root) {
-	MEMCPY(buffer, root.kptr(), root.length);
-	buffer += root.length;
-	MEMCPY(buffer, ptr, length);
-	buffer[length] = 0;
+void s_build_path(Buffer16 &buffer, Span &span, StringView32& root) {
+	buffer.append(root.kptr(), root.length);
+	buffer.append(span);
+	buffer.append("\0");
 }
 
 // Check epoll, see if can write, if not, set to write and return 0

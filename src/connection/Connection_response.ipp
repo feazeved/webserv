@@ -21,7 +21,7 @@ CONNECTION_INL
 
 CONNECTION_INL
 (void) build_header() {
-	StringView str = request.status.status_str();
+	Span str = request.status.status_str();
 
 	sendBuffer.append("HTTP/1.1 ");
 	if (request.status.is_error()) {

@@ -120,7 +120,7 @@ REQUEST_INL
 		isize rvalue = status.is_valid() == true ? 0 : -1;
 		if (rvalue == -1)
 			status = Status::i500;	// CGI output an invalid status, should be server error
-		StringView str = status.status_str();
+		Span str = status.status_str();
 		dst.prepend(str.ptr, str.length);
 		return rvalue;
 	}
