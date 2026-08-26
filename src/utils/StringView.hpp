@@ -20,7 +20,7 @@ public:
 
 	template <usize size>
 	bool operator==(const char (&literal)[size]) const {
-		return length == size - 1 && MEMCMP_INLINE(kptr(), literal) == 0;
+		return length == size - 1 && STRCMP(kptr(), literal) == 0;
 	}
 };
 
@@ -34,6 +34,6 @@ public:
 
 	template <usize size>
 	bool operator==(const char (&literal)[size]) const {
-		return length == size - 1 && MEMCMP_INLINE(ptr, literal) == 0;
+		return length == size - 1 && STRCMP(ptr, literal) == 0;
 	}
 };

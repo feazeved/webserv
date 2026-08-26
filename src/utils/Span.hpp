@@ -37,7 +37,6 @@
 
 	Literally 1kb expansion, u8 indexing 256kb
 
-
 */
 
 struct Span {

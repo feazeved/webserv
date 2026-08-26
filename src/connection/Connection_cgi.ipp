@@ -2,23 +2,21 @@
 #include "Connection.hpp"
 
 CONNECTION_INL
-(void) exec_script(char* cgiPath, char* scriptPath, int fdIn[2], int fdOut[2]) {
-	char *const argv[3] = {cgiPath, scriptPath, NULL};
-
+(pid_t) exec_script(char *const argv[3], int fdIn[2], int fdOut[2]) {
 	bool fail = dup2(STDOUT_FILENO, fdOut[1]) == -1 || 
 				dup2(STDIN_FILENO, fdIn[0]) == -1;
 
 	close(fdOut[0]);	// Child Read End
 	close(fdOut[1]);	// Parent Write End
-	close(fdIn[0]);	// Child Read End
-	close(fdIn[1]);	// Parent Write End
+	close(fdIn[0]);		// Child Read End
+	close(fdIn[1]);		// Parent Write End
 	if (fail) {
 		close(STDOUT_FILENO);
 		close(STDIN_FILENO);
 		_exit(1);	// TODO: Appropriate return
 	}
 
-	execve(cgiPath, (char* const*) argv, g_fakeEnv.envp);
+	execve(argv[0], argv, s_fakeEnv.envp);
 	if (errno != ENOENT && errno != ENOTDIR)
 		_exit(126);
 	_exit(127);
@@ -26,42 +24,40 @@ CONNECTION_INL
 
 /*
 	Doing this before forking avoids Copy on Write. Fake env is good for that!
-	REQUEST_METHOD=POST
-	SCRIPT_NAME=/cgi/test.py
-	QUERY_STRING=a=1
-	CONTENT_LENGTH=42
-	CONTENT_TYPE=application/x-www-form-urlencoded
-
-	HTTP_HOST=example.com:8080
-	HTTP_COOKIE=session=xyz
+	REQUEST_METHOD=POST, SCRIPT_NAME=/cgi/test.py
+	QUERY_STRING=a=1, CONTENT_LENGTH=42, CONTENT_TYPE=application/x-www-form-urlencoded
+	HTTP_HOST=example.com:8080, HTTP_COOKIE=session=xyz
 */
 
 CONNECTION_INL
-(void) append_env(char* scriptName) {
-	static char contentLength[48] = "HTTP_CONTENT_LENGTH=";
+(void) append_env(Buffer64 &buffer, char* argv[3]) {
 	static const char requestMethod[3][24] = 
 		{"REQUEST_METHOD=GET", "REQUEST_METHOD=POST", "REQUEST_METHOD=DELETE"};
 	const usize methodIndex = (request.options & 7) / 2;
 
+	s_fakeEnv.reset();
+	Location &loc = cfg->locations[request.locationIndex];
+	Span interpreterSpan = request.interpreter.extract(loc.cgiBlock.mptr());
 	Span pathSpan = request.path.extract((char*) recvBuffer.data);
 	Span querySpan = request.query.extract((char*) recvBuffer.data);
 	Span cookieSpan = request.cookies.extract((char*) recvBuffer.data);
-	
-	g_fakeEnv.reset();
-	MEMCPY(scriptName + 12, pathSpan.ptr, pathSpan.length);
-	scriptName[12 + pathSpan.length] = 0;
 
-	querySpan.ptr -= 13;	// Inplace changes query, overrides path
-	MEMCPY_INLINE(querySpan.ptr, "QUERY_STRING=", 13); // Totally safe dont worry about it
+	argv[0] = buffer.append(loc.root.kptr(), loc.root.length);
+	buffer.append(interpreterSpan);
+	buffer.append("\0");
+	char* scriptName = buffer.append("SCRIPT_NAME=");
+	argv[1] = buffer.append(pathSpan);
+	buffer.append("\0");
+	argv[2] = NULL;
 
-	cookieSpan.ptr -= 12;
-	MEMCPY_INLINE(cookieSpan.ptr, "HTTP_COOKIE=", 12); // Worst case scenario overrides HTTP/1.1\r\n
+	querySpan.ptr = STRPREP(querySpan.ptr, "QUERY_STRING="); // Totally safe dont worry about it
+	cookieSpan.ptr = STRPREP(cookieSpan.ptr, "HTTP_COOKIE="); // Worst case scenario overwrites HTTP/1.1\r\n
 
 	if (request.options & Options::FIXED_LENGTH) {
-		char buffer[48];
-		// itoa
-		// MEMCMP_INLINE(contentLength + 20, );
-		s_fakeEnv.append(contentLength);
+		char* lengthStr = buffer.append("HTTP_CONTENT_LENGTH=");
+		buffer.append_digit10(request.bodySize);
+		buffer.append("\0");	// TODO: Check if append null terminates
+		s_fakeEnv.append(lengthStr);
 	}
 	s_fakeEnv.append(requestMethod[methodIndex]);
 	s_fakeEnv.append(scriptName);
@@ -69,17 +65,11 @@ CONNECTION_INL
 	s_fakeEnv.append(cookieSpan.ptr);
 }
 
-// TODO: parsing needs to build the path for the script
 CONNECTION_INL
 (isize) cgi_first_run() {
-	char pathBuffer[8192];
-	char scriptName[8192] = "SCRIPT_NAME=";
-	char* ptr = request.path.index + (char*) recvBuffer.data;
-	Location &loc = cfg->locations[request.locationIndex];
-	Span interpSpan = request.interpreter.extract(loc.cgiBlock.mptr());
-
-	int fdIn[2];
-	int fdOut[2];
+	char *argv[3];
+	Buffer64 buffer;
+	int fdIn[2], fdOut[2];
 
 	if (pipe(fdIn) == -1)
 		goto Error;
@@ -88,19 +78,17 @@ CONNECTION_INL
 	if (VirtualServer::s_set_nonblocking(fdOut[0]) || VirtualServer::s_set_nonblocking(fdIn[1]))
 		goto ErrorCloseOutput;
 
-	s_build_path(pathBuffer, ptr, request.path.length, loc.root);
-	append_env(scriptName);
+	append_env(buffer, argv);
 	processId = fork();
 	if (processId < 0)
 		goto ErrorCloseOutput;
 	if (processId == 0)
-		exec_script(pathBuffer, interpSpan.ptr, fdIn, fdOut);
+		exec_script(argv, fdIn, fdOut);
 
 	close(fdIn[0]);
 	close(fdOut[1]);
 	readFd = fdOut[0];
 	writeFd = fdIn[1];
-	// cgiStartTime = g_timeNow;
 	return 0;
 
 	ErrorCloseOutput:

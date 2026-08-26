@@ -4,7 +4,7 @@
 // Needed for cookies and queries
 class Environment {
 private:
-	static const usize envSize = 4096 - 2;		// To align
+	static const usize envSize = 1024 - 2;		// To align
 	static const usize minElements = 64;
 
 public:

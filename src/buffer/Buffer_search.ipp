@@ -90,3 +90,14 @@ BUFFER_INL
 	readPtr++;
 	return s_match(readPtr, 5, ltable);
 }
+
+BUFFER_INL
+(char*) append_mime(u8 mimeIndex) {
+	static const u8 mimeStrings[][32] = MIME_STRINGS;
+
+	const u8 *str = mimeStrings[mimeIndex];
+	const usize length = *str;
+	MEMCPY_INLINE(writePtr, str + 1, 24);
+	writePtr += length;
+	return (char*) writePtr - length;
+}

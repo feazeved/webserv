@@ -5,12 +5,11 @@
 #include <fcntl.h>
 
 #include "core.hpp"
+#include "Clock.hpp"
 #include "Buffer.hpp"
 #include "VirtualServer.hpp"
 #include "Request.hpp"
 #include "Environment.hpp"
-
-extern Environment g_fakeEnv;
 
 #define CONNECTION_INL(ret_type) ret_type inline Connection::
 
@@ -48,7 +47,7 @@ public:
 		mode = Mode::PARSE;
 		recvBuffer.clear();
 		sendBuffer.clear();
-		startTime = 0;
+		startTime = Clock::time_elapsed();
 		bonusTime = 0;
 		return 1;
 	}
@@ -71,8 +70,8 @@ public:
 		return false;
 	}
 
-	void append_env(char *pathBuffer);
-	void exec_script(char* cgiPath, char* scriptPath, int fdIn[2], int fdOut[2]);
+	void append_env(Buffer64 &buffer, char* argv[3]);
+	pid_t exec_script(char *const argv[3], int fdIn[2], int fdOut[2]);
 	
 	// Configuration
 	isize dispatch(u32 events);
@@ -99,7 +98,6 @@ public:
 	isize cgi_first_run();
 	isize get_autoindex();
 	isize get_directory(struct stat *st);
-
 
 	Connection() : clientFd(-1) {}
 };

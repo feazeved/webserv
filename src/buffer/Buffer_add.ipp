@@ -2,48 +2,86 @@
 #include "Buffer.hpp"
 
 BUFFER_INL
-(void) prepend(const char* ptr, usize length) {
+(char*) prepend(const Span &span) {
+	readPtr -= span.length;
+	MEMCPY(readPtr, span.ptr, span.length);
+	return (char*) readPtr;
+}
+
+BUFFER_INL
+(char*) prepend(const char* ptr, usize length) {
 	readPtr -= length;
 	MEMCPY(readPtr, ptr, length);
+	return (char*) readPtr;
 }
 
-BUFFER_INL
-(template <usize N> void) prepend(const char (&string)[N]) {
-	readPtr -= N;
-	MEMCPY(readPtr, string, N);
+BUFFER_INL_T
+(usize N, char*) prepend(const char (&string)[N]) {
+	readPtr -= (N - 1);
+	MEMCPY_INLINE(readPtr, string, (N - 1));
+	return (char*) readPtr;
 }
 
-BUFFER_INL
-(template <usize N> void) prepend_inline(const char* ptr, usize length) {
+BUFFER_INL_T
+(usize N, char*) prepend_inline(const char* ptr, usize length) {
 	readPtr -= length;
-	MEMCPY_INLINE(writePtr, ptr, N);
+	MEMCPY_INLINE(readPtr, ptr, (N - 1));
+	return (char*) readPtr;
 }
 
 BUFFER_INL
-(void) append(const char* ptr, usize length) {
+(char*) append(const char* ptr, usize length) {
 	MEMCPY(writePtr, ptr, length);
 	writePtr += length;
+	return (char*) writePtr - length;
 }
 
 BUFFER_INL
-(template <usize N> void) append(const char (&string)[N]) {
-	MEMCPY_INLINE(writePtr, string, N - 1);
-	writePtr += N - 1;
+(char*) append(const Span &span) {
+	MEMCPY(writePtr, span.ptr, span.length);
+	writePtr += span.length;
+	return (char*) writePtr - span.length;
 }
 
-BUFFER_INL
-(template <usize N> void) append_inline(const char* ptr, usize length) {
+BUFFER_INL_T
+(usize N, char*) append(const char (&string)[N]) {
+	const usize length = N - 1;
+	MEMCPY_INLINE(writePtr, string, length);
+	writePtr += length;
+	return (char*) writePtr - length;
+}
+
+BUFFER_INL_T
+(usize N, char*) append_inline(const char* ptr, usize length) {
 	MEMCPY_INLINE(writePtr, ptr, N);
 	writePtr += length;
+	return (char*) writePtr - length;
 }
 
 BUFFER_INL
-(void) append_mime(u8 mimeIndex) {
-	static const u8 mimeStrings[][32] = MIME_STRINGS;
+(char*) append_digit10(usize number) {
+	const usize maxLengthAligned = 24;
+	char buffer[maxLengthAligned * 2];
+	char *digitEnd = buffer + maxLengthAligned;
+	usize digitLength = s_itoa10(number, digitEnd);
 
-	const u8 *str = mimeStrings[mimeIndex];
-	MEMCPY_INLINE(writePtr, str + 1, 24);
-	writePtr += *str;
+	char* digitStart = digitEnd - digitLength;
+	MEMCPY_INLINE(writePtr, digitStart, maxLengthAligned);
+	writePtr += digitLength;
+	return (char*) writePtr - digitLength;
+}
+
+BUFFER_INL
+(char*) append_digit16(usize number) {
+	const usize maxLengthAligned = 16;
+	char buffer[maxLengthAligned * 2];
+	char *digitEnd = buffer + maxLengthAligned;
+	usize digitLength = s_itoa16(number, digitEnd);
+
+	char* digitStart = digitEnd - digitLength;
+	MEMCPY_INLINE(writePtr, digitStart, maxLengthAligned);
+	writePtr += digitLength;
+	return (char*) writePtr - digitLength;
 }
 
 // Should be impossible for dst buffer to not fit
@@ -58,20 +96,4 @@ BUFFER_INL
 	src.readPtr += appendLength;
 	writePtr += appendLength;
 	return appendLength;
-}
-
-// TODO: No length checks
-// TODO: separate functions
-BUFFER_INL
-(void) append_digit10(usize number) {
-	char buffer[48];
-	char *mid = buffer + 24;
-	usize digitLength = itoa10(number, mid);
-	char *digitStart = buffer + 24 - digitLength;
-
-	*mid++ = '\r';
-	*mid = '\n';
-
-	MEMCPY_INLINE(writePtr, digitStart, 24);
-	writePtr += digitLength + 2;
 }

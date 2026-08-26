@@ -5,7 +5,11 @@
 #include "webserv.hpp"
 #include "Span.hpp"
 
-#define BUFFER_INL(ret_type) template <usize bufferSize> ret_type inline Buffer<bufferSize>::
+#define BUFFER_INL(ret_type) \
+	template <usize bufferSize> inline ret_type Buffer<bufferSize>::
+
+#define BUFFER_INL_T(tmpl_param, ret_type) \
+	template <usize bufferSize> template <tmpl_param> inline ret_type Buffer<bufferSize>::
 
 template <usize bufferSize>
 class Buffer {
@@ -93,8 +97,8 @@ public:
 	isize check_target(Span16 &path, Span16 &query);
 
 	// String
-	usize itoa10(usize number, char *bufferEnd);
-	usize itoa16(usize number, char *bufferEnd);
+	static usize s_itoa10(usize number, char *bufferEnd);
+	static usize s_itoa16(usize number, char *bufferEnd);
 	usize strtol10();
 	usize strtol16();
 
@@ -104,17 +108,21 @@ public:
 	bool skip_spaces();
 
 	// Appends and Prepends
-	template <usize N> void append(const char (&string)[N]);				// Implicit
-	template <usize N> void append_inline(const char* ptr, usize length);	// Explicit
-	void append(const char* ptr, usize length);
+	template <usize N> char* append(const char (&string)[N]);				// Implicit
+	template <usize N> char* append_inline(const char* ptr, usize length);	// Explicit
+	char* append(const char* ptr, usize length);
+	char* append(const Span &span);	// TODO: Is it better to have const ref or normal
 
-	template <usize N> void prepend(const char (&string)[N]);
-	template <usize N> void prepend_inline(const char* ptr, usize length);
-	void prepend(const char* ptr, usize length);
+	template <usize N> char* prepend(const char (&string)[N]);
+	template <usize N> char* prepend_inline(const char* ptr, usize length);
+	char* prepend(const char* ptr, usize length);
+	char* prepend(const Span &span);
 	
 	usize append_buffer(Buffer &src, usize length);
-	void append_mime(u8 mimeIndex);
-	void append_digit10(usize number);
+	char* append_mime(u8 mimeIndex);
+
+	char* append_digit10(usize number);
+	char* append_digit16(usize number);
 
 	Buffer& operator=(const Buffer& other) {
 		const usize bytesUsed = (usize)(other.writePtr - other.readPtr);
@@ -124,7 +132,10 @@ public:
 		MEMCPY(data, other.readPtr, bytesUsed);
 	}
 };
+
 typedef Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;
+typedef Buffer<16 * 1024> Buffer16;
+typedef Buffer<64 * 1024> Buffer64;
 
 #include "Buffer_add.ipp"
 #include "Buffer_search.ipp"

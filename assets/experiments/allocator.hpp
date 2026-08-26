@@ -10,6 +10,8 @@
 	Pages:		  4	KB										64 lines
 	Chapter:	256 KB						64 pages		4096 lines
 	Book:		 16	MB		64 chapters		4096 pages		262144 lines
+
+	Volume? Collection? Sigil? rune? link
 ============================================================================ */
 
 /*

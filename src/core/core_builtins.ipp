@@ -31,10 +31,18 @@
 #define MEMCPY(dst, src, n)		__builtin_memcpy(dst, src, n)
 #define MEMMOVE(dst, src, n)	__builtin_memmove(dst, src, n)
 #define MEMSET(dst, val, n)		__builtin_memset(dst, val, n)
-#define STRLEN(str) 			__builtin_strlen(str)
 #define MEMCHR(src, val, n)		__builtin_memchr(src, val, n)
 #define MEMCMP(s1, s2, n)		__builtin_memcmp(s1, s2, n)
-#define MEMCMP_INLINE(s1, s2)	__builtin_memcmp(s1, s2, sizeof(s2) - 1)
+
+#define STRLEN(str) 			__builtin_strlen(str)
+#define STRCMP(s1, s2)			__builtin_memcmp(s1, s2, sizeof(s2) - 1)
+#define STRCPY(dst, src)		__builtin_memcpy(dst, src, sizeof(src) - 1)
+
+// TODO: find better names
+#define MEMPREP(s1, s2, n)	(__builtin_memcpy(s1 - n, s2, n))
+#define STRPREP(s1, s2)		((char*)__builtin_memcpy(s1 - (sizeof(s2) - 1), s2, (sizeof(s2) - 1)))
+#define MEMAPP(s1, s2, n)	((n) + __builtin_memcpy(s1, s2, n))
+#define STRAPP(s1, s2)		((char*)((sizeof(s2) - 1) + __builtin_memcpy(s1, s2, (sizeof(s2) - 1))))
 
 #if defined(__clang__) && __has_builtin(__builtin_memcpy_inline)
 	#define MEMCPY_INLINE(dst, src, n)	__builtin_memcpy_inline(dst, src, n)
