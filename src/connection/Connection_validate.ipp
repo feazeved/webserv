@@ -1,26 +1,26 @@
 #pragma once
-#include "Request.hpp"
+#include "Connection.hpp"
 
-static inline 
-Location* s_check_location(const Span &path, VirtualServer* cfg, Request &request) {
+CONNECTION_INL
+(Location*) check_location() {
 	Array32<Location> &locations = cfg->locations;
 	bool match = false;
 	usize cmpLength = 1;
-	while (cmpLength < path.length && path.ptr[cmpLength] != '/')
+	while (cmpLength < req.path.length && req.path.ptr[cmpLength] != '/')
 		cmpLength++;
 
 	for (usize i = 0; i < locations.count; i++) {
-		if (MEMCMP(path.ptr, locations[i].url.kptr(), cmpLength) == 0) {
+		if (MEMCMP(req.path.ptr, locations[i].url.kptr(), cmpLength) == 0) {
 			match = true;
-			if ((locations[i].methods & (request.options & 7)) != 0) {
+			if ((locations[i].methods & (options & 7)) != 0) {
 				return &locations[i];
 			}
 		}
 	}
 	if (match == true)
-		request.status = Status::i403;
+		status = Status::i403;
 	else
-		request.status = Status::i404;
+		status = Status::i404;
 	return NULL;
 }
 
@@ -29,7 +29,7 @@ Span s_check_cgi(Location *loc, Span refExt) {
 	Span cgi = loc->cgiBlock.extract();
 	char *cgiEnd = cgi.end();
 	u16 lengths[2];
-	Span result(0, 0);
+	Span result = {0, 0};
 
 	while (cgi.ptr < cgiEnd) {
 		MEMCPY_INLINE(lengths, cgi.ptr, sizeof(lengths));
@@ -44,24 +44,23 @@ Span s_check_cgi(Location *loc, Span refExt) {
 	return result;
 }
 
-REQUEST_INL
-(isize) validate_target(HTTP_Buffer &src, VirtualServer* cfg) {
-	if (src.check_target(path, query) == -1)
+CONNECTION_INL
+(isize) validate_target() {
+	if (recvBuffer.check_target(req.path, req.query) == -1)
 		return -1;
-	location = s_check_location(path, cfg, *this);
-	if (location == NULL)
+	req.location = check_location();
+	if (req.location == NULL)
 		return -1;
-	interpreter = s_check_cgi(location, path);
-	if (interpreter.ptr == NULL)
-		contentType = src.match_mime();	// TODO: Is CGI a mime or octet stream?
+	req.interpreter = s_check_cgi(req.location, req.path);
+	if (req.interpreter.ptr == NULL)
+		contentType = recvBuffer.match_mime();	// TODO: Is CGI a mime or octet stream?
 	else
 		options |= Options::CGI;
 	return 0;
 }
 
-REQUEST_INL
-(Mode::e_http_mode) validate_header(HTTP_Buffer &src, VirtualServer* cfg) {
-	(void)src;
+CONNECTION_INL
+(Mode::e_http_mode) validate_header() {
 	const bool isBodyMethod = options & (Options::POST | Options::CGI);
 	const bool encodingSet = options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH);
 

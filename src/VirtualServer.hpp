@@ -10,11 +10,13 @@
 #include "StringView.hpp"
 #include "Status.hpp"
 #include "Array.hpp"
+#include "Environment.hpp"
 
 #define VIRTUALSERVER_INL(ret_type) ret_type inline VirtualServer::
 
 class VirtualServer {
 public:
+	static Environment	s_fakeEnv;
 	StringView32		serverRoot;
 	StringView32		errorPages[Status::errorPageCount];
 	StringView32		host;

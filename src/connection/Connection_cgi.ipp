@@ -16,7 +16,7 @@ CONNECTION_INL
 		_exit(1);	// TODO: Appropriate return
 	}
 
-	execve(argv[0], argv, s_fakeEnv.envp);
+	execve(argv[0], argv, cfg->s_fakeEnv.envp);
 	if (errno != ENOENT && errno != ENOTDIR)
 		_exit(126);
 	_exit(127);
@@ -33,31 +33,31 @@ CONNECTION_INL
 (void) append_env(Buffer64 &buffer, char* argv[3]) {
 	static const char requestMethod[3][24] = 
 		{"REQUEST_METHOD=GET", "REQUEST_METHOD=POST", "REQUEST_METHOD=DELETE"};
-	const usize methodIndex = (request.options & 7) / 2;
+	const usize methodIndex = (options & 7) / 2;
 
-	s_fakeEnv.reset();
+	cfg->s_fakeEnv.reset();
 
-	argv[0] = buffer.append(request.location->root.extract());
-	buffer.append(request.interpreter);
+	argv[0] = buffer.append(req.location->root.extract());
+	buffer.append(req.interpreter);
 	buffer.append("\0");
 	char* scriptName = buffer.append("SCRIPT_NAME=");
-	argv[1] = buffer.append(request.path);
+	argv[1] = buffer.append(req.path);
 	buffer.append("\0");
 	argv[2] = NULL;
 
-	request.query.ptr = STRPREP(request.query.ptr, "QUERY_STRING="); // Totally safe dont worry about it
-	request.cookies.ptr = STRPREP(request.cookies.ptr, "HTTP_COOKIE="); // Worst case scenario overwrites HTTP/1.1\r\n
+	req.query.ptr = STRPREP(req.query.ptr, "QUERY_STRING="); // Totally safe dont worry about it
+	req.cookies.ptr = STRPREP(req.cookies.ptr, "HTTP_COOKIE="); // Worst case scenario overwrites HTTP/1.1\r\n
 
-	if (request.options & Options::FIXED_LENGTH) {
+	if (options & Options::FIXED_LENGTH) {
 		char* lengthStr = buffer.append("HTTP_CONTENT_LENGTH=");
-		buffer.append_digit10(request.bodySize);
+		buffer.append_digit10(bodySize);
 		buffer.append("\0");	// TODO: Check if append null terminates
-		s_fakeEnv.append(lengthStr);
+		cfg->s_fakeEnv.append(lengthStr);
 	}
-	s_fakeEnv.append(requestMethod[methodIndex]);
-	s_fakeEnv.append(scriptName);
-	s_fakeEnv.append(request.query.ptr);
-	s_fakeEnv.append(request.cookies.ptr);
+	cfg->s_fakeEnv.append(requestMethod[methodIndex]);
+	cfg->s_fakeEnv.append(scriptName);
+	cfg->s_fakeEnv.append(req.query.ptr);
+	cfg->s_fakeEnv.append(req.cookies.ptr);
 }
 
 CONNECTION_INL
@@ -105,22 +105,22 @@ CONNECTION_INL
 (isize) cgi_method() {
 	isize bytesWritten, bytesRead;
 
-	if (request.options & Options::CHUNKED_LENGTH)
-		bytesWritten = recvBuffer.decode(writeFd, request.chunkSize, request.bodySize);
+	if (options & Options::CHUNKED_LENGTH)
+		bytesWritten = recvBuffer.decode(writeFd, chunkSize, bodySize);
 	else {
-		bytesWritten = recvBuffer.write(writeFd, request.bodySize);
+		bytesWritten = recvBuffer.write(writeFd, bodySize);
 		if (bytesWritten > 0)
-			request.bodySize -= (usize) bytesWritten;
+			bodySize -= (usize) bytesWritten;
 	}
 
 	if (bytesWritten == -1) {
 		close(writeFd);
 		writeFd = -1;
-		request.status = Status::i500;
+		status = Status::i500;
 		return error_path();
 	}
 
-	if (request.bodySize == 0) {	// Must guarantee that bodySize is 0
+	if (bodySize == 0) {	// Must guarantee that bodySize is 0
 		close(writeFd);
 		writeFd = -1;	// Finished reading
 	}
@@ -134,7 +134,7 @@ CONNECTION_INL
 	isize delta = ((bytesWritten < 0 || bytesRead < 0) ? -1 : 1);
 	// bonusTime = CLAMP(bonusTime + delta, 0, 30);
 
-	if (!request.status.is_set()) {
+	if (!status.is_set()) {
 		if (sendBuffer.find_header_end() != SIZE_MAX) {
 			if (sendBuffer.is_full())
 				return -1;

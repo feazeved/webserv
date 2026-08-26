@@ -124,7 +124,7 @@ public:
 	char* append_digit10(usize number);
 	char* append_digit16(usize number);
 
-	Buffer& operator=(const Buffer& other) {
+	void bufcpy(const Buffer& other) {
 		const usize bytesUsed = (usize)(other.writePtr - other.readPtr);
 		writePtr = data + bytesUsed;
 		readPtr = data;

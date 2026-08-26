@@ -29,12 +29,12 @@ CONNECTION_INL
 	Location*	location = NULL;
 	std::string	relative;
 	std::string	dirPath;
-	const char*	reqPath = (const char*)recvBuffer.data + request.path.index;
-	std::string	urlPath(reqPath, request.path.length);
+	const char*	reqPath = (const char*)recvBuffer.data + path.index;
+	std::string	urlPath(reqPath, path.length);
 
 	DIR* dir = opendir(dirPath.c_str());
 	if (dir == NULL) {
-		request.status = Status::i403;
+		status = Status::i403;
 		return -1;
 	}
 	if (urlPath.empty() || urlPath[urlpath.length() - 1] != '/')
@@ -101,11 +101,11 @@ CONNECTION_INL
 	}
 	body.append("<tr><td colspan=\"3\"><hr></td></tr>\n</table>\n</body>\n</html>\n");
 
-	request.bodySize = (usize)(body.writePtr - body.data);
-	request.status = Status::i200;
-	request.contentType = Mime::HTML;
+	bodySize = (usize)(body.writePtr - body.data);
+	status = Status::i200;
+	contentType = Mime::HTML;
 	build_header();
-	sendBuffer.append(body, request.bodySize);
+	sendBuffer.append(body, bodySize);
 
 	readFd = -1;
 	writeFd = -1;
@@ -133,7 +133,7 @@ CONNECTION_INL
 	if (!resolvedIndex) {
 		if (location->autoindex)
 			return get_autoindex();
-		request.status = Status::i403;
+		status = Status::i403;
 		return -1;
 	}
 }

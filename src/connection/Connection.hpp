@@ -9,36 +9,48 @@
 #include "Clock.hpp"
 #include "Buffer.hpp"
 #include "VirtualServer.hpp"
-#include "Request.hpp"
 #include "Environment.hpp"
 
-#define CONNECTION_INL(ret_type) ret_type inline Connection::
+#define CONNECTION_INL(ret_type) inline ret_type Connection::
 
 class Connection {
 public:
-	static const usize metadataSize = sizeof(VirtualServer*) + sizeof(Request) 
-		+ sizeof(time_t) + 2 * sizeof(u8) + sizeof(pid_t) + 3 * sizeof(int);
+	struct Request {
+		Span path, query, cookies, interpreter;
+		Span contentTypeHeader, contentSize;
+		Location* location;
+
+		void reset() {
+			MEMSET_INLINE(this, 0, sizeof(*this));
+		}
+	};
+
+	static const usize metadataSize = 160;	// TODO: adjust size on final pass
 	static const usize metasizeAlign = ALIGN_UP(metadataSize / 2, 8ul);
 	static const usize bytesFree = 2 * metasizeAlign - metadataSize;	// Debug only
 	static const usize bufferSize = HTTP_BUFFERSIZE - metasizeAlign;
 
 public:
-	static Environment s_fakeEnv;
+	HTTP_Buffer recvBuffer;
+	union {
+		HTTP_Buffer sendBuffer;	// Request shares memory with sendBuffer
+		Request req;	// Req values are not needed during execution
+	};
+
 	VirtualServer* cfg;
-	HTTP_Buffer recvBuffer, sendBuffer;
-
-	Request request;
-	u32 startTime;
+	Status status;
+	usize bodySize, chunkSize;
+	u8 options;
+	u8 contentType;
 	Mode::e_http_mode mode;
-
-	pid_t processId;
 	int clientFd, readFd, writeFd;
+	pid_t processId;
+	u32 startTime;
 
-	isize init(int fd, VirtualServer* c) {
+	isize init(int fd, VirtualServer* serverConfig) {
 		ASSERT(clientFd != -1, "Assigned a connection already in use");
-		request.reset();
 		clientFd = fd;
-		cfg = c;
+		cfg = serverConfig;
 		readFd = -1;
 		writeFd = -1;
 		processId = -1;
@@ -69,7 +81,14 @@ public:
 
 	void append_env(Buffer64 &buffer, char* argv[3]);
 	pid_t exec_script(char *const argv[3], int fdIn[2], int fdOut[2]);
-	
+	Location* check_location();
+	// Parsing
+	isize validate_target();
+	isize parse_first_line(usize lineLength);
+	isize parse_line(usize lineLength);
+	isize parse_cgi_line(Buffer16 &tmpBuffer);
+	Mode::e_http_mode validate_header();
+
 	// Configuration
 	isize dispatch(u32 events);
 	isize parse(u32 events);
@@ -103,4 +122,5 @@ public:
 #include "Connection_dispatch.ipp"
 #include "Connection_methods.ipp"
 #include "Connection_response.ipp"
+#include "Connection_cgi.ipp"
 #include "Connection_autoindex.ipp"

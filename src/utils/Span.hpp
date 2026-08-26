@@ -43,9 +43,6 @@ struct Span {
 	char* ptr;
 	usize length;
 
-	Span() : ptr(0), length(0) {}
-	Span(char* srcPtr, usize srcLength) : ptr(srcPtr), length(srcLength) {}
-
 	char* end() const {
 		return ptr + length;
 	}

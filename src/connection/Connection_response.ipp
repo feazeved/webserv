@@ -7,13 +7,13 @@
 // What do i get out of the header??
 CONNECTION_INL
 (isize) build_cgi_header() {
-	Buffer<HTTP_BUFFERSIZE> tmpBuffer;
+	Buffer16 tmpBuffer;
 
 	tmpBuffer.writePtr += 256;
 	tmpBuffer.readPtr += 256;
 
 	while (sendBuffer.find_line_end() == 1) {
-		if (request.parse_cgi_line(sendBuffer, tmpBuffer) == -1) {
+		if (parse_cgi_line(tmpBuffer) == -1) {
 			return error_path();
 		}
 	}
@@ -21,10 +21,10 @@ CONNECTION_INL
 
 CONNECTION_INL
 (void) build_header() {
-	Span str = request.status.status_str();
+	Span str = status.status_str();
 
 	sendBuffer.append("HTTP/1.1 ");
-	if (request.status.is_error()) {
+	if (status.is_error()) {
 		sendBuffer.append(str.ptr, str.length);
 		sendBuffer.append("\r\n");
 		mode = Mode::CLOSE;
@@ -36,6 +36,6 @@ CONNECTION_INL
 	}
 
 	sendBuffer.append("Content-Type: ");
-	sendBuffer.append_mime(request.contentType);
+	sendBuffer.append_mime(contentType);
 	sendBuffer.append("\r\n\r\n");
 }

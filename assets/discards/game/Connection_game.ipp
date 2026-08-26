@@ -14,10 +14,10 @@ namespace {
 
 CONNECTION_INL
 (i32) handle_game_request() {
-    const char* path = reinterpret_cast<const char*>(recvBuffer.data + request.path.index);
-    usize path_len = request.path.length;
+    const char* path = reinterpret_cast<const char*>(recvBuffer.data + path.index);
+    usize path_len = path.length;
 
-    if ((request.mode & Mode::GET) && isPath(path, path_len, "/events", 7)) {
+    if ((mode & Mode::GET) && isPath(path, path_len, "/events", 7)) {
         std::string headers =
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: text/event-stream\r\n"
@@ -30,7 +30,7 @@ CONNECTION_INL
         return 2;
     }
 
-    if ((request.mode & Mode::POST) && isPath(path, path_len, "/join", 5)) {
+    if ((mode & Mode::POST) && isPath(path, path_len, "/join", 5)) {
         i32 id = cfg->gameState->addPlayer();
 
         std::ostringstream body;
@@ -48,11 +48,11 @@ CONNECTION_INL
         return 0;
     }
 
-    if ((request.mode & Mode::POST) && isPath(path, path_len, "/move", 5)) {
+    if ((mode & Mode::POST) && isPath(path, path_len, "/move", 5)) {
         i32 playerId = 0;
         f64 x = 0.0, y = 0.0;
-        const char* q = reinterpret_cast<const char*>(recvBuffer.data + request.query.index);
-        usize q_len = request.path.length;
+        const char* q = reinterpret_cast<const char*>(recvBuffer.data + query.index);
+        usize q_len = path.length;
         if (q_len > 0) {
             std::string query(q, q_len);
             size_t pos = query.find("playerId=");

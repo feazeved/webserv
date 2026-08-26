@@ -28,7 +28,7 @@ CONNECTION_INL
 	while ((lineLength = recvBuffer.find_line_end()) != SIZE_MAX) {
 		if (lineLength == 0) {
 			recvBuffer.readPtr = recvBuffer.scanPtr;
-			mode = request.validate_header(recvBuffer, cfg);
+			mode = validate_header();
 			if (mode == Mode::CLOSE)
 				return error_path();
 			if (mode == Mode::CGI)
@@ -39,16 +39,16 @@ CONNECTION_INL
 				return get_first_run();
 			return del_first_run();
 		}
-		if ((request.options & 7) == 0)	// Methods are not set
-			rvalue = request.parse_first_line(recvBuffer, cfg, lineLength);
+		if ((options & 7) == 0)	// Methods are not set
+			rvalue = parse_first_line(lineLength);
 		else
-			rvalue = request.parse_line(recvBuffer, cfg, lineLength);
+			rvalue = parse_line(lineLength);
 		if (rvalue == -1)
 			return error_path();
 	}
 
 	if (recvBuffer.bytes_free() < recvBuffer.minReadSize) {
-		request.status = Status::i431;	// Couldnt read from client, buffer is full
+		status = Status::i431;	// Couldnt read from client, buffer is full
 		return error_path();
 	}
 	return 0;
