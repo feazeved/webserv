@@ -5,12 +5,15 @@ CONNECTION_INL
 (Location*) check_location() {
 	Array32<Location> &locations = cfg->locations;
 	bool match = false;
-	usize cmpLength = 1;
+	usize cmpLength = *req.path.ptr == '/';
 	while (cmpLength < req.path.length && req.path.ptr[cmpLength] != '/')
 		cmpLength++;
 
 	for (usize i = 0; i < locations.count; i++) {
-		if (MEMCMP(req.path.ptr, locations[i].url.kptr(), cmpLength) == 0) {
+		Span srcUri = locations[i].uri.extract();
+		if (cmpLength != srcUri.length)
+			continue;
+		if (MEMCMP(req.path.ptr, srcUri.ptr, cmpLength) == 0) {
 			match = true;
 			if ((locations[i].methods & (options & 7)) != 0) {
 				return &locations[i];
@@ -60,35 +63,46 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(Mode::e_http_mode) validate_header() {
+(isize) validate_header() {
 	const bool isBodyMethod = options & (Options::POST | Options::CGI);
 	const bool encodingSet = options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH);
 
 	if (status.is_set())
-		return Mode::CLOSE;	// An error caused early interruption
+		return error_path();	// An error caused early interruption
 
 	if ((options & 0xF) == 0) {
 		status = Status::i400;
-		return Mode::CLOSE;	// TODO: Method not set, should be impossible. Remove in future
+		mode = Mode::CLOSE;
+		return error_path();	// TODO: Method not set, should be impossible. Remove in future
 	}
 
 	if ((options & Options::HOST) == 0) {
 		status = Status::i400;
-		return Mode::CLOSE;	// Host not set
+		mode = Mode::CLOSE;
+		return error_path();	// Host not set
 	}
 
 	if (isBodyMethod && !encodingSet) {
 		status = Status::i411;
-		return Mode::CLOSE;	// Transfer encoding not set
+		mode = Mode::CLOSE;	// TODO: Should be useless to set it here
+		return error_path();	// Transfer encoding not set
 	}
 
 	if (!isBodyMethod && encodingSet) {
 		status = Status::i400;
-		return Mode::CLOSE;	// Encoding set for non-body methods
+		mode = Mode::CLOSE;
+		return error_path();	// Encoding set for non-body methods
 	}
 
 	if (options & Options::CHUNKED_LENGTH)
 		bodySize = cfg->maxBodySize;
 
-	return (Mode::e_http_mode) (options & 0x0F);
+	mode = (Mode::e_http_mode)(options & 0x0F);
+	if (mode == Mode::GET)
+		return get_first_run();
+	if (mode == Mode::POST)
+		return post_first_run();
+	if (mode == Mode::CGI)
+		return cgi_first_run();
+	return del_first_run();
 }

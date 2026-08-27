@@ -4,8 +4,9 @@
 CONNECTION_INL
 (isize) del_first_run() {
 	Buffer16 pathBuffer;
-
-	s_build_path(pathBuffer, req.path, req.location->root);
+	pathBuffer.append(req.location->root.extract());
+	pathBuffer.append(req.path);
+	pathBuffer.append("\0");
 
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)
@@ -25,8 +26,9 @@ CONNECTION_INL
 CONNECTION_INL
 (isize) post_first_run() {
 	Buffer16 pathBuffer;
-	Span storePath = req.location->uploadStore.extract();
-	s_build_path(pathBuffer, storePath, req.location->root);
+	pathBuffer.append(req.location->root.extract());
+	pathBuffer.append(req.location->uploadStore.extract());
+	pathBuffer.append("\0");
 
 	writeFd = open(pathBuffer, O_WRONLY | O_CREAT | O_EXCL, 0644);
 	if (writeFd == -1) {
@@ -38,25 +40,34 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) get_first_run() {
-	Buffer16 pathBuffer;
-
-	s_build_path(pathBuffer, req.path, req.location->root);
+	Buffer8 pathBuffer;
+	pathBuffer.append(req.location->root.extract());
+	pathBuffer.append(req.path);
+	pathBuffer.append("\0");
 
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)
 		return s_get_status(status);
 
-	if (S_ISDIR(st.st_mode))
-		return get_directory(st, pathBuffer);
-
-	int	rawFd = open(pathBuffer, O_RDONLY);
-	if (rawFd == -1)
+	if (S_ISDIR(st.st_mode)) {
+		pathBuffer.append("index.html");
+		readFd = open(pathBuffer, O_RDONLY);
+		if (readFd == -1 && req.location->autoindex == true) {
+			pathBuffer.writePtr -= sizeof("index.html");
+			*pathBuffer = 0;
+			return get_directory(st, pathBuffer);
+		}
+		else
+			return error_path();
+	}
+	else
+		readFd = open(pathBuffer, O_RDONLY);
+	if (readFd == -1)
 		return s_get_status(status);
-
-	readFd = rawFd;
 	status = Status::i200;
 	bodySize = (usize)st.st_size;
 	build_header();
+	// Attempt a read here
 	return 0;
 }
 

@@ -4,7 +4,6 @@
 // To add:
 // Bitcasts, next pow
 
-
 // === Builtin extensions =====================================
 #define MEMFIND(dst, str, dstSize) \
 ({ \

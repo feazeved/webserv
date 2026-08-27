@@ -134,8 +134,8 @@ PARSER_INL
 			Location loc;
 			parse_location(tokens, cursor, end, loc);
 			for (usize index = 0; index < locationIndex; index++) {
-				const StringView32 &path = server.locations[index].url;
-				if (path.length == loc.url.length && MEMCMP(path.kptr(), loc.url.kptr(), path.length) == 0)
+				const StringView32 &path = server.locations[index].uri;
+				if (path.length == loc.uri.length && MEMCMP(path.kptr(), loc.uri.kptr(), path.length) == 0)
 					PERR_EXIT(1, "Error: Duplicate location");
 			}
 			server.locations[locationIndex] = loc;

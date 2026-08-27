@@ -6,7 +6,7 @@
 // TODO: create a Location struct inside VirtualServers with specific logic
 // TODO: store 2 byte starts for each path here, then MEMCMP 12 bytes to get indexes that match, and only compare those indices
 struct Location {
-	StringView32 url;
+	StringView32 uri;
 	StringView32 root;
 	StringView32 index;			// If this is specified, its a file
 	StringView32 uploadStore;
@@ -28,9 +28,13 @@ namespace Mode {
 		FLUSH = 1 << 2,	// Streams header, then parses again
 		CGI = 1 << 3,
 		SSE = 1 << 4,
-		CLOSE = 1 << 5		// Streams header, then closes
+		CLOSE = 1 << 5,		// Streams header, then closes
+		AUTOINDEX = 1 << 6
 	};
 }
+
+// TODO: is it not better to have more defined states, like POST_CHUNKED
+// POST_CHUNKED, POST_REGULAR, GET, GET_AUTOINDEX, DEL, CGI, CGI_CHUNKED
 
 namespace Options {
 	enum e_http_options {

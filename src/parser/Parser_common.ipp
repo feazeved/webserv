@@ -32,17 +32,36 @@ usize s_strtol10(const char *str, usize length) {
 	return value;
 }
 
+// PARSER_INL
+// (bool) s_read_whole_file2(char *ptr, const char *filePath, usize fileSize) {
+// 	int fd = open(filePath, O_RDONLY);
+// 	if (fd == -1)
+// 		PERR_RETURN(1, "Error: Failed to open file");
+
+// 	usize curBytes = 0;
+// 	while (curBytes < fileSize) {
+// 		usize bytesRemaining = fileSize - curBytes;
+// 		isize bytesRead = read(fd, ptr + curBytes, MIN(bytesRemaining, ATOMIC_IOSIZE));
+// 		if (bytesRead <= 0) {
+// 			close(fd);
+// 			PERR_RETURN(1, "Error: Read failure");
+// 		}
+// 		curBytes += (usize) bytesRead;
+// 	}
+// 	close(fd);
+// 	ptr[fileSize] = '\0';
+// 	return 0;
+// }
+
 PARSER_INL
 (bool) s_read_whole_file(const char *filePath, usize &fileOffset, usize &fileSize, usize padSize) {
+	struct stat st;
+	if (stat(filePath, &st) == -1 || st.st_size < 16 || st.st_size >= UINT32_MAX)
+		PERR_RETURN(1, "Error: Invalid file");
+
 	int fd = open(filePath, O_RDONLY);
 	if (fd == -1)
 		PERR_RETURN(1, "Error: Failed to open file");
-
-	struct stat st;
-	if (fstat(fd, &st) == -1 || st.st_size < 16 || st.st_size >= UINT32_MAX) {
-		close(fd);
-		PERR_RETURN(1, "Error: Invalid file");
-	}
 
 	fileSize = (usize) st.st_size;
 	fileOffset = Arena::alloc_b(fileSize + 1 + padSize);

@@ -43,8 +43,14 @@ public:
 	u8 options;
 	u8 contentType;
 	Mode::e_http_mode mode;
-	int clientFd, readFd, writeFd;
+	i32 clientFd;
 	pid_t processId;
+
+	union {
+		struct { i32 readFd, writeFd; };
+		DIR* directory;
+	};
+
 	u32 startTime;
 
 	isize init(int fd, VirtualServer* serverConfig) {
@@ -82,12 +88,13 @@ public:
 	void append_env(Buffer64 &buffer, char* argv[3]);
 	pid_t exec_script(char *const argv[3], int fdIn[2], int fdOut[2]);
 	Location* check_location();
+
 	// Parsing
 	isize validate_target();
 	isize parse_first_line(usize lineLength);
 	isize parse_line(usize lineLength);
 	isize parse_cgi_line(Buffer16 &tmpBuffer);
-	Mode::e_http_mode validate_header();
+	isize validate_header();
 
 	// Configuration
 	isize dispatch(u32 events);
@@ -107,13 +114,14 @@ public:
 	isize cgi_method();
 	isize sse_method();
 
-	// First Run
+	// First Run (rename to setup)
 	isize del_first_run();
 	isize get_first_run();
 	isize post_first_run();
 	isize cgi_first_run();
-	isize get_autoindex(struct stat &st, Buffer16 &pathBuffer);
-	isize get_directory(struct stat &st, Buffer16 &pathBuffer);
+	
+	isize get_autoindex(struct stat &st, Buffer8 &pathBuffer);
+	isize get_directory(struct stat &st, Buffer8 &pathBuffer);
 
 	Connection() : clientFd(-1) {}
 };
@@ -124,3 +132,5 @@ public:
 #include "Connection_response.ipp"
 #include "Connection_cgi.ipp"
 #include "Connection_autoindex.ipp"
+#include "Connection_validate.ipp"
+#include "Connection_parse.ipp"

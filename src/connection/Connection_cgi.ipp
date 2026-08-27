@@ -62,8 +62,9 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) cgi_first_run() {
+	Buffer64 pathBuffer;
+
 	char *argv[3];
-	Buffer64 buffer;
 	int fdIn[2], fdOut[2];
 
 	if (pipe(fdIn) == -1)
@@ -73,7 +74,7 @@ CONNECTION_INL
 	if (VirtualServer::s_set_nonblocking(fdOut[0]) || VirtualServer::s_set_nonblocking(fdIn[1]))
 		goto ErrorCloseOutput;
 
-	append_env(buffer, argv);
+	append_env(pathBuffer, argv);
 	processId = fork();
 	if (processId < 0)
 		goto ErrorCloseOutput;

@@ -1,6 +1,14 @@
 #pragma once
 #include "Buffer.hpp"
 
+// TODO: remove this function and just do it inside each function
+static inline
+char* s_original_ptr(u8* &ptr, usize delta) {
+	char *optr = (char*) ptr;
+	ptr += delta;
+	return optr;
+}
+
 BUFFER_INL
 (char*) prepend(const Span &span) {
 	readPtr -= span.length;
@@ -32,23 +40,19 @@ BUFFER_INL_T
 BUFFER_INL
 (char*) append(const char* ptr, usize length) {
 	MEMCPY(writePtr, ptr, length);
-	writePtr += length;
-	return (char*) writePtr - length;
+	return s_original_ptr(writePtr, length);
 }
 
 BUFFER_INL
 (char*) append(const Span &span) {
 	MEMCPY(writePtr, span.ptr, span.length);
-	writePtr += span.length;
-	return (char*) writePtr - span.length;
+	return s_original_ptr(writePtr, span.length);
 }
 
 BUFFER_INL_T
 (usize N, char*) append(const char (&string)[N]) {
-	const usize length = N - 1;
-	MEMCPY_INLINE(writePtr, string, length);
-	writePtr += length;
-	return (char*) writePtr - length;
+	MEMCPY_INLINE(writePtr, string, N);	// Copies null terminator, but only 
+	return s_original_ptr(writePtr, (N - 1));
 }
 
 BUFFER_INL_T
@@ -67,8 +71,7 @@ BUFFER_INL
 
 	char* digitStart = digitEnd - digitLength;
 	MEMCPY_INLINE(writePtr, digitStart, maxLengthAligned);
-	writePtr += digitLength;
-	return (char*) writePtr - digitLength;
+	return s_original_ptr(writePtr, (isize)digitLength);
 }
 
 BUFFER_INL

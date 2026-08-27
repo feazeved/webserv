@@ -117,10 +117,10 @@ PARSER_INL
 	cursor++;
 	if (cursor == end || tokens[cursor].type != Token::WORD)
 		PERR_EXIT(1, "Error: Expected location");
-	loc.url = tokens[cursor].value;
-	if (loc.url.length == 0 || loc.url.kptr()[0] != '/')
+	loc.uri = tokens[cursor].value;
+	if (loc.uri.length == 0 || loc.uri.kptr()[0] != '/')
 		PERR_EXIT(1, "Error: Invalid location path");
-	if (s_length_check(loc.url.length))
+	if (s_length_check(loc.uri.length))
 		PERR_EXIT(1, "Error: Path size is too large");
 	cursor++;
 	if (cursor == end || tokens[cursor].type != Token::OPEN_BRACKET)

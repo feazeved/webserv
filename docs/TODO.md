@@ -13,3 +13,5 @@
 7. Make multi-level bitarray (see how to do specializations)
 
 8. Null terminate CGI Blocks
+
+9. Maybe reduce the allocation alignment to 16 bytes, cache locality might be hurt

@@ -35,6 +35,11 @@ public:
 	}
 
 	ALWAYS_INLINE
+	usize capacity() const {
+		return sizeof(data);
+	}
+
+	ALWAYS_INLINE
 	usize bytes_free() const {
 		return data + sizeof(data) - writePtr;
 	}
@@ -135,9 +140,14 @@ public:
 	operator char*() {
 		return (char*)readPtr;
 	}
+
+	u8& operator*() {
+		return *writePtr;
+	}
 };
 
 typedef Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;
+typedef Buffer<8 * 1024> Buffer8;
 typedef Buffer<16 * 1024> Buffer16;
 typedef Buffer<64 * 1024> Buffer64;
 
