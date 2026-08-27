@@ -19,20 +19,33 @@
 #define HTTP_INDEX_PERMISSION "<a href=\"\">Privileged access</a>"
 
 static inline
-void s_append_entry(HTTP_Buffer &src, struct dirent* entry) {
-	const usize length = entry->d_reclen;
-
+void s_append_entry(HTTP_Buffer &src, Span &entry, usize bodySize) {
 	struct stat st;
-	if (stat(entry->d_name, &st) == -1) {
+	if (stat(entry.ptr, &st) == -1) {
 		if (errno == EACCES)
 			src.append(HTTP_INDEX_PERMISSION);
 		return;
 	}
 
 	char buf[32];
-	Clock::format_time(u64 nanoseconds, char *buffer)
-	src.append("<a href=\"");
+	Clock::format_time(&st.st_mtim, buf);
 
+	src.append("<a href=\"");
+	src.append(entry);
+	src.append("\">");
+
+	if (entry.length >= 64) {
+		src.append_inline<61>(entry.ptr, 61);
+		src.append("...");
+	}
+	else {
+		src.append(entry);
+		src.memset(' ', 64 - entry.length);
+	}
+	src.memset('\t', 4);
+	src.append_inline<17>(buf, 17);
+	src.memset('\t', 2);
+	src.append_digit10(bodySize);
 }
 
 CONNECTION_INL

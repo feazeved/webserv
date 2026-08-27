@@ -3,6 +3,11 @@
 
 #include "core.hpp"
 
+// static const u8 months[12][10] = {
+// 	"January", "February", "March", "April", "May", "June", "July",
+// 	"August", "September", "October", "November","December"
+// };
+
 class Clock {
 public:
 	static std::time_t timeBegin, timeNow, timeElapsed;
@@ -30,8 +35,13 @@ public:
 		u16 milliseconds, microseconds, nanoseconds;
 	};
 
-	static u8* s_format_time(u64 nanoseconds, u8 buffer[32])
-	{
+	static void format_time(struct timespec *tm, char *buffer) {
+		u64 nanoseconds = (u64)tm->tv_nsec + (u64)(tm->tv_sec) * 1000000000ul;
+		return s_format_time(nanoseconds, (u8*)buffer);	
+	}
+
+	// Howard Hinnant’s civil_from_days algorithm
+	static void s_format_time(u64 nanoseconds, u8 buffer[32]) {
 		static const u8 months[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
 	
 		const u64 totalMinutes = nanoseconds / 60000000000UL;
@@ -39,8 +49,7 @@ public:
 		const u32 minutesInDay = (u32)(totalMinutes % 1440UL);
 		const u32 hour = minutesInDay / 60U;
 		const u32 minute = minutesInDay % 60U;
-	
-		/* Convert days since 1970-01-01 to a Gregorian date. */
+
 		const u64 adjustedDays = days + 719468UL;
 		const u64 era = adjustedDays / 146097UL;
 		const u32 dayOfEra = (u32)(adjustedDays - era * 146097UL);
@@ -65,6 +74,5 @@ public:
 		buffer[13] += (u8)(hour % 10U);
 		buffer[15] += (u8)(minute / 10U);
 		buffer[16] += (u8)(minute % 10U);
-		return buffer;
 	}
 };
