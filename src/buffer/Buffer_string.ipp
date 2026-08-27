@@ -31,17 +31,17 @@ BUFFER_INL
 (usize) strtol16() {
 	usize value = 0;
 	usize digit = 0;
-	const u8 *ostr = readPtr;
+	const usize originalPos = readPos;
 	while (true) {
-		digit = (usize) g_asciiLut[(u8)*readPtr];
+		digit = (usize) g_asciiLut[data[readPos]];
 		if (value >= (SIZE_MAX / 16 - 16))
 			return SIZE_MAX;
 		if (digit > 15)
 			break;
-		readPtr++;
+		readPos++;
 		value = value * 16 + digit;
 	}
-	if (ostr == readPtr)
+	if (originalPos == readPos)
 		return SIZE_MAX;
 	return value;
 }
@@ -50,34 +50,34 @@ BUFFER_INL
 (usize) strtol10() {
 	usize value = 0;
 	usize digit = 0;
-	const u8 *ostr = readPtr;
+	const usize originalPos = readPos;
 	while (true) {
-		digit = (usize) g_asciiLut[(u8)*readPtr];
+		digit = (usize) g_asciiLut[data[readPos]];
 		if (value >= ((SIZE_MAX - 9) / 10))
 			return SIZE_MAX;
 		if (digit > 9)
 			break;
-		readPtr++;
+		readPos++;
 		value = value * 10 + digit;
 	}
-	if (ostr == readPtr)
+	if (originalPos == readPos)
 		return SIZE_MAX;
 	return value;
 }
 
 BUFFER_INL
 (bool) skip_spaces() {
-	while ((*readPtr == ' ' || *readPtr == '\t'))
-		readPtr++;
-	return MEMCMP(readPtr, "\r\n", 2) != 0;
+	while ((data[readPos] == ' ' || data[readPos] == '\t'))
+		readPos++;
+	return MEMCMP(data + readPos, "\r\n", 2) != 0;
 }
 
 // Compares and advances pointer if valid
 BUFFER_INL_T
 (usize N, bool) strcmp(const char (&string)[N]) {
 	const usize strLength = N - 1;
-	bool isMatch = MEMCMP(readPtr, string, strLength) == 0;
-	readPtr += isMatch ? strLength : 0;
+	bool isMatch = MEMCMP(data + readPos, string, strLength) == 0;
+	readPos += isMatch ? strLength : 0;
 	return isMatch;
 }
 
@@ -86,10 +86,10 @@ BUFFER_INL_T
 	u8 buffer[N];
 	const usize strLength = N - 1;
 
-	MEMCPY_INLINE(buffer, readPtr, strLength);
+	MEMCPY_INLINE(buffer, data + readPos, strLength);
 	for (usize i = 0; i < strLength; i++)
 		buffer[i] |= 32;
 	bool isMatch = MEMCMP(buffer, string, strLength) == 0;
-	readPtr += isMatch ? strLength : 0;
+	readPos += isMatch ? strLength : 0;
 	return isMatch;
 }

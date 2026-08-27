@@ -3,32 +3,32 @@
 
 BUFFER_INL
 (usize) find_line_end() {
-	const u8 *const searchEnd = writePtr - data >= 2 ? writePtr - 1 : data;
+	const usize searchEnd = writePos >= 2 ? writePos - 1 : 0;
 
-	while (scanPtr < searchEnd) {
-		if (MEMCMP(scanPtr, "\r\n", 2) == 0) {
-			usize lineEnd = (usize)(scanPtr - readPtr);
-			scanPtr += 2;
+	while (scanPos < searchEnd) {
+		if (MEMCMP(data + scanPos, "\r\n", 2) == 0) {
+			usize lineEnd = scanPos - readPos;
+			scanPos += 2;
 			return lineEnd; // Found line end
 		}
 		else
-			scanPtr++;
+			scanPos++;
 	}
 	return SIZE_MAX;
 }
 
 BUFFER_INL
 (usize) find_header_end() {
-	const u8 *const searchEnd = writePtr - data >= 4 ? writePtr - 3 : data;
+	const usize searchEnd = writePos >= 4 ? writePos - 3 : 0;
 
-	while (scanPtr < searchEnd) {
-		if (MEMCMP(scanPtr, "\r\n\r\n", 4) == 0) {
-			usize lineLength = (usize)(scanPtr - readPtr);
-			scanPtr += 4;
+	while (scanPos < searchEnd) {
+		if (MEMCMP(data + scanPos, "\r\n\r\n", 4) == 0) {
+			usize lineLength = scanPos - readPos;
+			scanPos += 4;
 			return lineLength; // Found header end
 		}
 		else
-			scanPtr++;
+			scanPos++;
 	}
 	return SIZE_MAX;
 }
@@ -65,30 +65,32 @@ BUFFER_INL
 (isize) match_field() {
 	static const u8 ltable[][32] = FIELD_TABLE;
 
-	u8 *optr = readPtr;
+	const usize originalPos = readPos;
 
-	while (readPtr < scanPtr && *readPtr != ':')
-		readPtr++;
-	usize length = (usize)(readPtr - optr);
-	if (length >= sizeof(*ltable) || *readPtr != ':')
-		return (*readPtr != ':') ? -1 : 0;
-	readPtr++;
-	return s_match(optr, length, ltable);
+	while (readPos < scanPos && data[readPos] != ':')
+		readPos++;
+	usize length = readPos - originalPos;
+	if (readPos == scanPos)
+		return -1;
+	if (length >= sizeof(*ltable))
+		return 0;
+	readPos++;
+	return s_match(data + originalPos, length, ltable);
 }
 
 BUFFER_INL
 (isize) match_mime() {
 	static const u8 ltable[][8] = MIME_TABLE;
 
-	const usize minLength = (usize) MAX(0, scanPtr - readPtr - 3);
-	const u8 *searchLength = readPtr + MIN(minLength, 252);
+	const usize minLength = scanPos - readPos > 3 ? scanPos - readPos - 3 : 0;
+	const usize searchEnd = readPos + MIN(minLength, 252);
 
-	while (readPtr < searchLength && *readPtr != '.')
-		readPtr++;
-	if (readPtr >= searchLength)
+	while (readPos < searchEnd && data[readPos] != '.')
+		readPos++;
+	if (readPos >= searchEnd)
 		return -1;
-	readPtr++;
-	return s_match(readPtr, 5, ltable);
+	readPos++;
+	return s_match(data + readPos, 5, ltable);	// TODO: Review 5
 }
 
 BUFFER_INL
@@ -97,7 +99,6 @@ BUFFER_INL
 
 	const u8 *str = mimeStrings[mimeIndex];
 	const usize length = *str;
-	MEMCPY_INLINE(writePtr, str + 1, 24);
-	writePtr += length;
-	return (char*) writePtr - length;
+	MEMCPY_INLINE(data + writePos, str + 1, 24);
+	return s_original_ptr(data, writePos, length);
 }

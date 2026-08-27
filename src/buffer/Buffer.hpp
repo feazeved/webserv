@@ -16,8 +16,8 @@ class Buffer {
 public:
 	typedef Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;
 	static const usize minReadSize = 4;
-	u8 data[bufferSize - 24];	// Last cache line is reserved for unbounded memory loads
-	u8 *readPtr, *scanPtr, *writePtr;
+	u8 data[bufferSize - (3 * sizeof(usize))];	// Trailing storage pads unbounded memory loads
+	usize readPos, scanPos, writePos;
 
 	ALWAYS_INLINE
 	u8* get_end() {	// rename to mptr
@@ -31,7 +31,7 @@ public:
 
 	ALWAYS_INLINE
 	usize size() const {
-		return writePtr - readPtr;
+		return writePos - readPos;
 	}
 
 	ALWAYS_INLINE
@@ -41,32 +41,32 @@ public:
 
 	ALWAYS_INLINE
 	usize bytes_free() const {
-		return data + sizeof(data) - writePtr;
+		return sizeof(data) - writePos;
 	}
 
 	void clear() {
-		readPtr = data;
-		writePtr = data;
-		scanPtr = data;
+		readPos = 0;
+		writePos = 0;
+		scanPos = 0;
 	}
 
 	bool is_full() {
-		return writePtr >= get_end();
+		return writePos >= sizeof(data);
 	}
 
 	usize compact() {
-		const usize bytesUsed = (usize)(writePtr - readPtr);
-		const usize scanOffset = (usize)(scanPtr - readPtr);
+		const usize bytesUsed = writePos - readPos;
+		const usize scanOffset = scanPos - readPos;
 
-		MEMMOVE(data, readPtr, bytesUsed);
-		readPtr = data;
-		scanPtr = data + scanOffset;
-		writePtr = data + bytesUsed;
-		return (usize)(get_end() - writePtr);
+		MEMMOVE(data, data + readPos, bytesUsed);
+		readPos = 0;
+		scanPos = scanOffset;
+		writePos = bytesUsed;
+		return sizeof(data) - writePos;
 	}
 
 	isize read(int fd, usize bytes) {
-		usize bytesFree = (usize)(get_end() - writePtr);
+		usize bytesFree = sizeof(data) - writePos;
 
 		if (bytesFree < bytes) {
 			bytesFree = compact();
@@ -75,18 +75,20 @@ public:
 		}
 
 		const usize bytesCapped = MIN(bytesFree, bytes);
-		isize bytesRead = ::read(fd, writePtr, bytesCapped);
+		isize bytesRead = ::read(fd, data + writePos, bytesCapped);
 		if (bytesRead > 0)
-			writePtr += (usize) bytesRead;
+			writePos += (usize) bytesRead;
 		return bytesRead;
 	}
 
 	isize write(int fd, usize bytes) {
-		usize bytesCapped = MIN(bytes, (usize)(writePtr - readPtr));
-		isize bytesWritten = ::write(fd, readPtr, bytesCapped);
+		usize bytesCapped = MIN(bytes, writePos - readPos);
+		isize bytesWritten = ::write(fd, data + readPos, bytesCapped);
 
-		if (bytesWritten > 0)
-			readPtr += bytesWritten;
+		if (bytesWritten > 0) {
+			readPos += (usize) bytesWritten;
+			scanPos = (scanPos >= readPos) ? scanPos : readPos;
+		}
 		return bytesWritten;
 	}
 
@@ -122,7 +124,7 @@ public:
 	template <usize N> char* prepend_inline(const char* ptr, usize length);
 	char* prepend(const char* ptr, usize length);
 	char* prepend(const Span &span);
-	
+
 	usize append_buffer(Buffer &src, usize length);
 	char* append_mime(u8 mimeIndex);
 
@@ -130,19 +132,19 @@ public:
 	char* append_digit16(usize number);
 
 	void bufcpy(const Buffer& other) {
-		const usize bytesUsed = (usize)(other.writePtr - other.readPtr);
-		writePtr = data + bytesUsed;
-		readPtr = data;
-		scanPtr = data;
-		MEMCPY(data, other.readPtr, bytesUsed);
+		const usize bytesUsed = other.writePos - other.readPos;
+		writePos = bytesUsed;
+		readPos = 0;
+		scanPos = 0;
+		MEMCPY(data, other.data + other.readPos, bytesUsed);
 	}
 
 	operator char*() {
-		return (char*)readPtr;
+		return (char*)(data + readPos);
 	}
 
 	u8& operator*() {
-		return *writePtr;
+		return data[writePos];
 	}
 };
 
@@ -154,3 +156,4 @@ typedef Buffer<64 * 1024> Buffer64;
 #include "Buffer_add.ipp"
 #include "Buffer_search.ipp"
 #include "Buffer_string.ipp"
+#include "Buffer_http.ipp"

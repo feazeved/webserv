@@ -8,8 +8,8 @@ public:
 	u32 offset;
 	u32 length;
 
-	StringView32() : offset(0), length(0) {}
-	StringView32(u32 length, u32 offset) : offset(offset), length(length) {}
+	// StringView32() : offset(0), length(0) {}
+	// StringView32(u32 length, u32 offset) : offset(offset), length(length) {}
 
 	const char *kptr() const {
 		return (const char*)Arena::mptr(offset);

@@ -18,7 +18,7 @@ public:
 	struct Request {
 		Span path, query, cookies, interpreter;
 		Span contentTypeHeader, contentSize;
-		Location* location;
+		Location* location;	// Verify assumption that location is not needed with chunksize
 
 		void reset() {
 			MEMSET_INLINE(this, 0, sizeof(*this));
@@ -39,7 +39,7 @@ public:
 
 	VirtualServer* cfg;
 	Status status;
-	usize bodySize, chunkSize;
+	usize bodySize;
 	u8 options;
 	u8 contentType;
 	Mode::e_http_mode mode;
@@ -47,7 +47,11 @@ public:
 	pid_t processId;
 
 	union {
-		struct { i32 readFd, writeFd; };
+		struct {
+			usize chunkSize; 
+			i32 readFd, writeFd;
+		};
+		StringView32 uri;
 		DIR* directory;
 	};
 
@@ -86,7 +90,6 @@ public:
 	}
 
 	void append_env(Buffer64 &buffer, char* argv[3]);
-	pid_t exec_script(char *const argv[3], int fdIn[2], int fdOut[2]);
 	Location* check_location();
 
 	// Parsing
@@ -121,7 +124,7 @@ public:
 	isize cgi_setup();
 	
 	isize get_autoindex(struct stat &st, Buffer8 &pathBuffer);
-	isize get_directory(struct stat &st, Buffer8 &pathBuffer);
+	isize get_directory();
 
 	Connection() : clientFd(-1) {}
 };

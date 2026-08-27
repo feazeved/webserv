@@ -11,10 +11,8 @@ CONNECTION_INL
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)
 		return s_get_status(status);
-
 	if (S_ISDIR(st.st_mode))
 		return s_get_status(status);	// Forbids deleting directories
-
 	if (unlink(pathBuffer) == -1)
 		return s_get_status(status);
 
@@ -138,12 +136,7 @@ CONNECTION_INL
 	writeFd = fdIn[1];
 	return 0;
 
-	ErrorCloseOutput:
-		close(fdOut[0]);
-		close(fdOut[1]);
-	ErrorCloseInput:
-		close(fdIn[0]);
-		close(fdIn[1]);
-	Error:
-		return -1;
+	ErrorCloseOutput:	close(fdOut[0]); close(fdOut[1]);
+	ErrorCloseInput:	close(fdIn[0]); close(fdIn[1]);
+	Error:				return -1;
 }

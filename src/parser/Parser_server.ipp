@@ -30,7 +30,8 @@ void s_directive_listen(Parser::Directive &dir, VirtualServer &server) {
 		if (hostLength == 0 || hostLength == listen.length - 1
 			|| server.host.length != 0)
 			PERR_EXIT(1, "Error: Invalid listen address");
-		server.host = StringView32((u32)hostLength, listen.offset);
+		server.host.length = (u32)hostLength;
+		server.host.offset = listen.offset;
 		*separator = '\0';
 		port = separator + 1;
 		portLength -= hostLength + 1;
@@ -149,7 +150,9 @@ PARSER_INL
 		PERR_EXIT(1, "Error: Unexpected token");
 	if (server.port == SIZE_MAX)
 		PERR_EXIT(1, "Error: Missing listen directive");
-	if (server.host.length == 0)
-		server.host = StringView32(sizeof("localhost") - 1, (u32)(fileOffset + fileSize + 4));
+	if (server.host.length == 0) {
+		server.host.length = sizeof("localhost") - 1;
+		server.host.offset = (u32)(fileOffset + fileSize + 4);
+	}
 	return 0;
 }

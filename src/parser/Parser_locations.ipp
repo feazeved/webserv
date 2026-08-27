@@ -106,8 +106,10 @@ void s_parse_cgi(const Array32<Parser::Token> &tokens, usize &cursor, usize end,
 	}
 	if (cursor == end || tokens[cursor].type != Parser::Token::CLOSE_BRACKET)
 		PERR_EXIT(1, "Error: Invalid CGI block");
-	if (cursor != definitionStart)
-		loc.cgiBlock = StringView32(tokens[cursor].value.offset - blockOffset + 1, blockOffset);
+	if (cursor != definitionStart) {
+		loc.cgiBlock.length = tokens[cursor].value.offset - blockOffset + 1;
+		loc.cgiBlock.offset = blockOffset;
+	}
 }
 
 PARSER_INL
