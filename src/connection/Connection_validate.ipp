@@ -99,10 +99,10 @@ CONNECTION_INL
 
 	mode = (Mode::e_http_mode)(options & 0x0F);
 	if (mode == Mode::GET)
-		return get_first_run();
+		return get_setup();
 	if (mode == Mode::POST)
-		return post_first_run();
+		return post_setup();
 	if (mode == Mode::CGI)
-		return cgi_first_run();
-	return del_first_run();
+		return cgi_setup();
+	return del_setup();		// TODO: All setup calls should call dispatch again
 }

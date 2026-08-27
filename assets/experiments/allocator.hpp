@@ -85,3 +85,12 @@
 
 	Don't forget the pooling idea as well! Its cost would be like one word per macroblock to assign lifetime
 */
+/*
+	is this finally a good use for a linked list?? allocate different entry tables
+	with a tagged union being the 2 MSB bits!
+	Create a region (arena) where you have composition of the containers you created
+	then everything fucking clicks! each container object contains a reference to the
+	parent arena, no more of this fucking static bullshit!
+
+	anyhow, linked lists were an interetsing idea to be contained within an arena
+*/ 

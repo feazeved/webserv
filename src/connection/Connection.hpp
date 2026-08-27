@@ -115,10 +115,10 @@ public:
 	isize sse_method();
 
 	// First Run (rename to setup)
-	isize del_first_run();
-	isize get_first_run();
-	isize post_first_run();
-	isize cgi_first_run();
+	isize del_setup();
+	isize get_setup();
+	isize post_setup();
+	isize cgi_setup();
 	
 	isize get_autoindex(struct stat &st, Buffer8 &pathBuffer);
 	isize get_directory(struct stat &st, Buffer8 &pathBuffer);
@@ -130,7 +130,7 @@ public:
 #include "Connection_dispatch.ipp"
 #include "Connection_methods.ipp"
 #include "Connection_response.ipp"
-#include "Connection_cgi.ipp"
+#include "Connection_setup.ipp"
 #include "Connection_autoindex.ipp"
 #include "Connection_validate.ipp"
 #include "Connection_parse.ipp"

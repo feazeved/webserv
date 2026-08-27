@@ -22,10 +22,24 @@ isize s_get_status(Status &status) {
 }
 
 static inline
-void s_build_path(Buffer16 &buffer, Span &span, StringView32& root) {
-	buffer.append(root.kptr(), root.length);
-	buffer.append(span);
-	buffer.append("\0");
+pid_t s_exec_script(char *const argv[3], char **envp, int fdIn[2], int fdOut[2]) {
+	bool fail = dup2(STDOUT_FILENO, fdOut[1]) == -1 || 
+				dup2(STDIN_FILENO, fdIn[0]) == -1;
+
+	close(fdOut[0]);	// Child Read End
+	close(fdOut[1]);	// Parent Write End
+	close(fdIn[0]);		// Child Read End
+	close(fdIn[1]);		// Parent Write End
+	if (fail) {
+		close(STDOUT_FILENO);
+		close(STDIN_FILENO);
+		_exit(1);	// TODO: Appropriate return
+	}
+
+	execve(argv[0], argv, envp);
+	if (errno != ENOENT && errno != ENOTDIR)
+		_exit(126);
+	_exit(127);
 }
 
 // Check epoll, see if can write, if not, set to write and return 0
