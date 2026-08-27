@@ -27,7 +27,7 @@ CONNECTION_INL
 		return error_path();
 	while ((lineLength = recvBuffer.find_line_end()) != SIZE_MAX) {
 		if (lineLength == 0) {
-			recvBuffer.readPtr = recvBuffer.scanPtr;	// TODO: see if its not better to have buffer reset it
+			recvBuffer.readPos = recvBuffer.scanPos;	// TODO: see if its not better to have buffer reset it
 			return validate_header();
 		}
 		if ((options & 7) == 0)	// Methods are not set

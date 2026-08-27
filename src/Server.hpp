@@ -17,7 +17,6 @@
 class Server {
 public:
 	static const usize s_maxEvents = 16;
-
 	VirtualServer servers[MAX_VIRTUAL_SERVERS];
 	Parser parser;
 	ConnectionPool connections;
@@ -26,7 +25,7 @@ public:
 	Server(const char *filePath, char **envp)
 		: parser(filePath, servers), epollFd(-1) {
 
-		Connection::s_fakeEnv.init(envp);
+		VirtualServer::s_fakeEnv.init(envp);
 		epollFd = epoll_create(1);
 		if (epollFd == -1)
 			PERR_EXIT(clear(), "Error: Failed to create epoll instance");

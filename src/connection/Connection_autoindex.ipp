@@ -1,13 +1,6 @@
 #pragma once
 #include "Connection.hpp"
 
-struct s_entry {
-	char name[128];
-	u8 nameLength;
-	usize fileSize;
-	u8 date[32];
-};
-
 /*
 <html>
 <head><title>Index of /download/</title></head>
@@ -19,27 +12,30 @@ struct s_entry {
 <a href="nginx-0.1.11.tar.gz">nginx-0.1.11.tar.gz</a>                                02-Dec-2004 18:46              241476
 */
 
+// <a href="filename[256]">filename[64]</a>    02-Dec-2004 18:46    241476
 // Each line has 16 bytes of HTML boilerplate
-// The uri with file name appended
+// The filename (256) + filename display (64)
+
+#define HTTP_INDEX_PERMISSION "<a href=\"\">Privileged access</a>"
+
+static inline
+void s_append_entry(HTTP_Buffer &src, struct dirent* entry) {
+	const usize length = entry->d_reclen;
+
+	struct stat st;
+	if (stat(entry->d_name, &st) == -1) {
+		if (errno == EACCES)
+			src.append(HTTP_INDEX_PERMISSION);
+		return;
+	}
+
+	char buf[32];
+	Clock::format_time(u64 nanoseconds, char *buffer)
+	src.append("<a href=\"");
+
+}
 
 CONNECTION_INL
-(isize) get_directory() {
-	struct dirent* entry;
-	usize totalSize = 0;
-
-	// for (usize i = 0; i < 256; i++) {
-	// 	entry = readdir(directory);
-	// 	if (entry == NULL) {
-	// 		if (errno != 0) {
-	// 			// return and close
-	// 		}
-	// 	}
-	// 	dirBuffer[i].length = STRLEN(entry->d_name);
-	// 	totalSize += dirBuffer[i].length + 1;
-	// 	MEMCPY(dirBuffer[i].data, entry->d_name, dirBuffer[i].length);
-	// }
-
-	const usize maxSize = recvBuffer.capacity() - 64;
-
-	// Check errno
+(isize) get_autoindex() {
+	
 }

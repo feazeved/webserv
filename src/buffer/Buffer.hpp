@@ -139,9 +139,10 @@ public:
 		MEMCPY(data, other.data + other.readPos, bytesUsed);
 	}
 
-	operator char*() {
-		return (char*)(data + readPos);
-	}
+	operator char*() { return (char*)(data + readPos); }
+	char* rptr() { return (char*)(data + readPos); }
+	char* wptr() { return (char*)(data + writePos); }
+	char* sptr() { return (char*)(data + scanPos); }
 
 	u8& operator*() {
 		return data[writePos];

@@ -7,7 +7,7 @@ CONNECTION_INL
 		status = lineLength < 14 ? Status::i400 : Status::i431;
 		return -1;	// ERROR: Bad request "GET / HTTP/1.1" shortest possible
 	}
-	u8 *const lineEnd = recvBuffer.readPtr + lineLength;
+	char *const lineEnd = recvBuffer.rptr() + lineLength;
 
 	if (recvBuffer.strcmp("GET "))
 		options |= Options::GET;
@@ -28,7 +28,7 @@ CONNECTION_INL
 	const isize result = validate_target();
 	if (result < 0 && !status.is_set())
 		status = Status::i400;
-	recvBuffer.readPtr = recvBuffer.scanPtr;	// TODO: add skip spaces
+	// recvBuffer.readPos = recvBuffer.scanPtr;	// TODO: add skip spaces
 	return result;
 }
 
@@ -39,13 +39,13 @@ CONNECTION_INL
 		return -1;
 	}
 
-	u8* lineEnd = recvBuffer.readPtr + lineLength;
+	char* lineEnd = recvBuffer.rptr() + lineLength;
 	const isize fieldIndex = recvBuffer.match_field();
 	if (fieldIndex < 0 || !recvBuffer.skip_spaces())	// Reject empty values
 		goto Error;
 	switch (fieldIndex) {
 		default:
-			recvBuffer.readPtr = lineEnd;
+			recvBuffer.readPos += lineLength;
 			break;
 
 		case Field::TRANSFER_ENCODING:
@@ -80,14 +80,14 @@ CONNECTION_INL
 		case Field::COOKIES:
 			while ((lineEnd[-1] == ' ' || lineEnd[-1] == '\t'))
 				lineEnd--;
-			req.cookies.ptr = (char*) recvBuffer.readPtr;
-			req.cookies.length = (usize) (lineEnd - recvBuffer.readPtr);
+			req.cookies.ptr = (char*) recvBuffer.rptr();
+			req.cookies.length = (usize) (lineEnd - recvBuffer.rptr());
 			break;
 	}
 
 	if (recvBuffer.skip_spaces())
 		goto Error;
-	recvBuffer.readPtr = recvBuffer.scanPtr;
+	// recvBuffer.readPos = recvBuffer.scanPos;
 	return fieldIndex;
 
 Error:
@@ -101,9 +101,9 @@ Error:
 */
 CONNECTION_INL
 (isize) parse_cgi_line(Buffer16 &dst) {
-	const char* const field = (char*)sendBuffer.readPtr;
-	const char* const lineEnd = (char*)sendBuffer.scanPtr - 2;
-	const usize totalLength = (usize)(lineEnd - (char*)sendBuffer.readPtr);
+	const char* const field = (char*)sendBuffer.rptr();
+	const char* const lineEnd = (char*)sendBuffer.sptr() - 2;
+	const usize totalLength = (usize)(lineEnd - (char*)sendBuffer.rptr());
 
 	const isize fieldIndex = sendBuffer.match_field();
 	if (fieldIndex <= 0) {
@@ -111,12 +111,12 @@ CONNECTION_INL
 			status = Status::i500;
 		else
 			dst.append(field, totalLength);
-		sendBuffer.readPtr = sendBuffer.scanPtr;
+		// sendBuffer.rptr() = sendBuffer.sptr();
 		return fieldIndex;
 	}
 
 	if (fieldIndex == Field::STATUS) {
-		status = (char*) sendBuffer.readPtr;
+		status = (char*) sendBuffer.rptr();
 		isize rvalue = status.is_valid() == true ? 0 : -1;
 		if (rvalue == -1)
 			status = Status::i500;	// CGI output an invalid status, should be server error
@@ -125,6 +125,6 @@ CONNECTION_INL
 	}
 
 	dst.append(field, totalLength);
-	sendBuffer.readPtr = sendBuffer.scanPtr;
+	// sendBuffer.rptr() = sendBuffer.sptr();
 	return fieldIndex;
 }

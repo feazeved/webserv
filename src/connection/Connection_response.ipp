@@ -9,8 +9,8 @@ CONNECTION_INL
 (isize) build_cgi_header() {
 	Buffer16 tmpBuffer;
 
-	tmpBuffer.writePtr += 256;
-	tmpBuffer.readPtr += 256;
+	tmpBuffer.writePos += 256;
+	tmpBuffer.readPos += 256;
 
 	while (sendBuffer.find_line_end() == 1) {
 		if (parse_cgi_line(tmpBuffer) == -1) {

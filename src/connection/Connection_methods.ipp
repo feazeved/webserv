@@ -49,8 +49,7 @@ CONNECTION_INL
 	return write_to_client(events);
 }
 
-/*
-	The pipe fds here are configured to be non-blocking and read/write errors are ignored
+/*	The pipe fds here are configured to be non-blocking and read/write errors are ignored
 	Failure conditions for these fds are instead handled by CGI timeouts
 */
 
