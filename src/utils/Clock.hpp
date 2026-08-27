@@ -24,39 +24,16 @@ public:
 		return (u32)timeElapsed;
 	}
 
-	union TimeBuffer {
-		u8 buffer[32];
-		struct {
-			u8 month, day;
-			u8 hour, minute, seconds;
-			u32 year, milliseconds, nanoseconds;
-		};
+	struct TimeBuffer {
+		u32 years;
+		u8 months, days, hours, minutes, seconds;
+		u16 milliseconds, microseconds, nanoseconds;
 	};
 
-	static u8* s_format_time(struct timespec *tm, u8 buffer[32]) {
-		static const u8 months[12][10] = {
-			"January", "February", "March", "April", "May", "June", "July",
-			"August", "September", "October", "November","December"
-		};
-
-		MEMCPY_INLINE(buffer, "00-\0\0\0-0000 00:00\0\0\0\0\0\0", 24);
-		buffer[0] += (u8)(day / 10U);
-		buffer[1] += (u8)(day % 10U);
-		MEMCPY_INLINE(buffer + 3, months, 3);
-		buffer[7] += (u8)(year / 1000U);
-		buffer[8] += (u8)(year / 100U % 10U);
-		buffer[9] += (u8)(year / 10U % 10U);
-		buffer[10] += (u8)(year % 10U);
-		buffer[12] += (u8)(hour / 10U);
-		buffer[13] += (u8)(hour % 10U);
-		buffer[15] += (u8)(minute / 10U);
-		buffer[16] += (u8)(minute % 10U);
-	}
-
-	static void s_get_time(u64 nanoseconds, u8 buffer[32])
+	static u8* s_format_time(u64 nanoseconds, u8 buffer[32])
 	{
-		TimeBuffer &tb = *((TimeBuffer*) buffer);
-
+		static const u8 months[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
+	
 		const u64 totalMinutes = nanoseconds / 60000000000UL;
 		const u64 days = totalMinutes / 1440UL;
 		const u32 minutesInDay = (u32)(totalMinutes % 1440UL);
@@ -73,13 +50,21 @@ public:
 		const u32 day = dayOfYear - (153U * monthPrime + 2U) / 5U + 1U;
 		const u32 month = monthPrime < 10U ? monthPrime + 3U : monthPrime - 9U;
 		const u32 monthOffset = (month - 1U) * 3U;
+	
 		u32 year = yearOfEra + (u32)(era * 400UL);
 		year += month <= 2U ? 1U : 0U;
-
-		tb.day = day;
-		tb.month = month;
-		tb.year = year;
-		tb.minute = minute;
-		tb.seconds = seconds;
+		MEMCPY_INLINE(buffer, "00-\0\0\0-0000 00:00\0\0\0\0\0\0", 24);
+		buffer[0] += (u8)(day / 10U);
+		buffer[1] += (u8)(day % 10U);
+		MEMCPY_INLINE(buffer + 3, months + monthOffset, 3);
+		buffer[7] += (u8)(year / 1000U);
+		buffer[8] += (u8)(year / 100U % 10U);
+		buffer[9] += (u8)(year / 10U % 10U);
+		buffer[10] += (u8)(year % 10U);
+		buffer[12] += (u8)(hour / 10U);
+		buffer[13] += (u8)(hour % 10U);
+		buffer[15] += (u8)(minute / 10U);
+		buffer[16] += (u8)(minute % 10U);
+		return buffer;
 	}
 };
