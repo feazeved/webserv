@@ -7,6 +7,7 @@
 
 #include "core.hpp"
 #include "webserv.hpp"
+#include "Epoll.hpp"
 #include "ConnectionPool.hpp"
 #include "VirtualServer.hpp"
 #include "Parser.hpp"
@@ -20,17 +21,14 @@ public:
 	VirtualServer servers[MAX_VIRTUAL_SERVERS];
 	Parser parser;
 	ConnectionPool connections;
-	int epollFd;
+	Epoll epoll;
 
 	Server(const char *filePath, char **envp)
-		: parser(filePath, servers), epollFd(-1) {
+		: parser(filePath, servers) {
 
 		VirtualServer::s_fakeEnv.init(envp);
-		epollFd = epoll_create(1);
-		if (epollFd == -1)
+		if (epoll.init())
 			PERR_EXIT(clear(), "Error: Failed to create epoll instance");
-		if (VirtualServer::s_set_close_on_exec(epollFd))	// TODO: Check this
-			PERR_EXIT(clear(), "Error: Failed to configure epoll instance");
 
 		for (usize index = 0; index < parser.serverCount; index++)
 			servers[index].init();
@@ -42,10 +40,7 @@ public:
 	}
 
 	int clear() {
-		if (epollFd != -1) {
-			close(epollFd);
-			epollFd = -1;
-		}
+		epoll.clear();
 		connections.clear();
 		for (usize index = 0; index < parser.serverCount; index++)
 			servers[index].clear();
@@ -56,14 +51,11 @@ public:
 
 	// Execution
 	void run();
-	bool add_to_epoll(int fd, u32 events, u64 key);
-	void remove_from_epoll(int fd);
-	void dispatch_epoll_event(const struct epoll_event& event);
-	void dispatch_connection_event(usize index, u32 events);
+	void server_event();
+	void connection_event();
 	void check_timeouts();
-	void add_connection(VirtualServer* server);
-	void close_connection(usize connectionIndex);
+	void add_connection(u32 serverIndex);
+	void close_connection(u32 connectionIndex);
 };
 
-#include "Server_epoll.ipp"
 #include "Server_dispatch.ipp"
