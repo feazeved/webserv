@@ -31,7 +31,7 @@ public:
 
 	Parser(const char *filePath, VirtualServer (&servers)[MAX_VIRTUAL_SERVERS]) {
 		if (s_read_whole_file(filePath, fileOffset, fileSize, 63))
-			_exit(1);
+			std::exit(1);
 		Array32<Token> tokArray = tokenize();
 		usize cursor = 0;
 		usize end = tokArray.count;

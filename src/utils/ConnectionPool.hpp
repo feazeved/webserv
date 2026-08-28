@@ -7,18 +7,22 @@
 class ConnectionPool {
 public:
 	static const usize blockSize = sizeof(Connection) * 64;
-	static const usize blockCount = 64;
+	static const usize blockCount = sizeof(Arena::pool.A) / blockSize;
 
 public:
 	Connection *const connections;
 	Bitmap blockBitmap;
-	Bitmap elementBitmap[64];		// Metadata for each 64 Connection Block
+	Bitmap elementBitmap[blockCount];	// Metadata for each 64 Connection Block
 
 	ConnectionPool() : connections((Connection*) Arena::pool.A) {
+		// for (usize index = 0; index < blockCount * 64; index++)
+		// 	new (connections + index) Connection();
 	}
 
 	~ConnectionPool() {
 		clear();
+		// for (usize index = 0; index < blockCount * 64; index++)
+		// 	connections[index].~Connection();
 	}
 
 	Connection* get_ptr(usize linearIndex) {
@@ -44,6 +48,13 @@ public:
 		}
 	}
 
+	// TODO: Review
+	bool is_active(usize linearIndex) const {
+		if (linearIndex >= blockCount * 64)
+			return false;
+		return elementBitmap[linearIndex / 64].bitread((u8)(linearIndex % 64));
+	}
+
 	void clear() {
 		for (usize blockIndex = 0; blockIndex < blockCount; blockIndex++) {
 			Bitmap &elementBlock = elementBitmap[blockIndex];
@@ -51,7 +62,7 @@ public:
 				continue;
 
 			Connection *base = connections + blockIndex * 64;
-			usize elementIndex = blockIndex;
+			usize elementIndex;
 			while ((elementIndex = elementBlock.find_first_set()) != SIZE_MAX) {
 				base[elementIndex].clear();
 				elementBlock.bitclr(elementIndex);
@@ -62,7 +73,7 @@ public:
 
 	usize get_slot() {
 		usize blockIndex = blockBitmap.find_first_clear();
-		if (blockIndex >= 64)
+		if (blockIndex >= blockCount)
 			return SIZE_MAX;
 
 		usize elementIndex = elementBitmap[blockIndex].find_first_clear();
@@ -93,3 +104,6 @@ public:
 		return connections[index];
 	}
 };
+
+STATIC_ASSERT(ConnectionPool::blockCount > 0);
+STATIC_ASSERT(ConnectionPool::blockCount <= WORD_BITS);

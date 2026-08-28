@@ -95,7 +95,7 @@ BUFFER_INL
 
 	MEMCPY(data + writePos, src.data + src.readPos, appendLength);
 	src.readPos += appendLength;
-	src.scanPos = (scanPos >= readPos) ? scanPos : readPos;
+	src.scanPos = (src.scanPos >= src.readPos) ? src.scanPos : src.readPos;
 	writePos += appendLength;
 	return appendLength;
 }

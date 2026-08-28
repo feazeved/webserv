@@ -117,7 +117,7 @@ STATIC_ASSERT(i100 == 9);
 	usize get_page_index() {
 		if (index < Status::i400)
 			return SIZE_MAX;
-		return s_code_to_index((Code)index) - (32ul * 3);
+		return s_code_to_index((Code)index) - (32ul * 4);
 	}
 
 	ALWAYS_INLINE
@@ -141,7 +141,7 @@ STATIC_ASSERT(i100 == 9);
 
 	ALWAYS_INLINE
 	static StringView32 s_error_str(usize number) {
-		usize offset = s_index(number >= 500, number % 32);
+		usize offset = s_index(3 + (number >= 32), number);
 		Span tmp;
 		tmp.ptr = startPtr + (usize) offset;
 		tmp.length = (u8) tmp.ptr[-1];

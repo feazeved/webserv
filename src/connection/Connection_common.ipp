@@ -7,24 +7,41 @@ isize s_get_status(Status &status) {
 
 	if (error == ENOENT || error == ENOTDIR)
 		status = Status::i404;
-	if (error == EACCES || error == EPERM || error == EROFS)
+	else if (error == EACCES || error == EPERM || error == EROFS)
 		status = Status::i403;
-	if (error == EEXIST || error == ENOTEMPTY || error == EBUSY)
+	else if (error == EEXIST || error == ENOTEMPTY || error == EBUSY)
 		status = Status::i409;
-	if (error == ENAMETOOLONG)
+	else if (error == ENAMETOOLONG)
 		status = Status::i414;
-	if (error == ENOSPC || error == EDQUOT)
+	else if (error == ENOSPC || error == EDQUOT)
 		status = Status::i507;
-	if (error == EMFILE || error == ENFILE || error == ENOMEM)
+	else if (error == EMFILE || error == ENFILE || error == ENOMEM)
 		status = Status::i503;
-	status = Status::i500;
+	else
+		status = Status::i500;
 	return -1;
 }
 
 static inline
 pid_t s_exec_script(char *const argv[3], char **envp, int fdIn[2], int fdOut[2]) {
-	bool fail = dup2(STDOUT_FILENO, fdOut[1]) == -1 || 
-				dup2(STDIN_FILENO, fdIn[0]) == -1;
+	char *lastSlash = NULL;
+	for (char *cursor = argv[1]; *cursor != '\0'; cursor++) {
+		if (*cursor == '/')
+			lastSlash = cursor;
+	}
+	if (lastSlash != NULL) {
+		char workingDirectory[MAX_PATH_SIZE];
+		usize length = (usize)(lastSlash - argv[1]);		// TODO: Review this
+		if (length == 0)
+			length = 1;
+		MEMCPY(workingDirectory, argv[1], length);
+		workingDirectory[length] = '\0';
+		if (chdir(workingDirectory) == -1)
+			std::exit(1);
+	}
+
+	bool fail = dup2(fdOut[1], STDOUT_FILENO) == -1 ||
+				dup2(fdIn[0], STDIN_FILENO) == -1;
 
 	close(fdOut[0]);	// Child Read End
 	close(fdOut[1]);	// Parent Write End
@@ -33,19 +50,23 @@ pid_t s_exec_script(char *const argv[3], char **envp, int fdIn[2], int fdOut[2])
 	if (fail) {
 		close(STDOUT_FILENO);
 		close(STDIN_FILENO);
-		_exit(1);	// TODO: Appropriate return
+		std::exit(1);
 	}
 
 	execve(argv[0], argv, envp);
 	if (errno != ENOENT && errno != ENOTDIR)
-		_exit(126);
-	_exit(127);
+		std::exit(126);
+	std::exit(127);
 }
 
 // Check epoll, see if can write, if not, set to write and return 0
 CONNECTION_INL
 (isize) write_to_client(u32 events) {
-	isize bytesWritten = recvBuffer.write(clientFd, ATOMIC_IOSIZE);
+	// if (sendBuffer.size() == 0)
+	// 	return 0;
+	// if ((events & EPOLLOUT) == 0)
+	// 	return EPOLLOUT;
+	isize bytesWritten = sendBuffer.write(clientFd, ATOMIC_IOSIZE);
 	if (bytesWritten <= 0)
 		return close_connection();
 	if (sendBuffer.size() != 0)
@@ -62,6 +83,8 @@ CONNECTION_INL
 	This is only called when information is needed, therefore if is 0 bytes
 	are read, the connection should close. But maybe it's error_path instead
 */
+	// if ((events & EPOLLIN) == 0)
+	// 	return -2;
 CONNECTION_INL
 (isize) read_from_client(u32 events) {
 	isize bytesRead = recvBuffer.read(clientFd, ATOMIC_IOSIZE);

@@ -78,8 +78,11 @@ void s_parse_server_directive(VirtualServer &server, const Array32<Parser::Token
 		PERR_EXIT(1, "Error: Invalid server directive");
 	if (dir.name == "listen")
 		return s_directive_listen(dir, server);
-	if (dir.name == "host")
+	if (dir.name == "host") {
+		if (server.host.length != 0)
+			PERR_EXIT(1, "Error: Duplicate host definition");
 		server.host = dir.args[0];
+	}
 	else if (dir.name == "client_max_body_size")
 		s_directive_body_size(dir.args[0], server.maxBodySize, server);
 	else if (dir.name == "root")
@@ -127,7 +130,7 @@ PARSER_INL
 
 	usize locationCount = s_count_locations(tokens, cursor, end);
 	if (server.locations.alloc_b(locationCount) == true)
-		_exit(1);
+		std::exit(1);
 
 	usize locationIndex = 0;
 	while (cursor != end) {

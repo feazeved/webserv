@@ -17,7 +17,7 @@ public:
 	typedef Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;
 	static const usize minReadSize = 4;
 	u8 data[bufferSize - (3 * sizeof(usize))];	// Trailing storage pads unbounded memory loads
-	usize readPos, scanPos, writePos;
+	usize writePos, readPos, scanPos;
 
 	ALWAYS_INLINE
 	u8* get_end() {	// rename to mptr

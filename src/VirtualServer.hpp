@@ -28,7 +28,9 @@ public:
 
 	VirtualServer()
 		: serverRoot(), host(), locations(), port(SIZE_MAX),
-		  maxBodySize(SIZE_MAX), gameState(NULL), listenFd(-1) {}
+		  maxBodySize(SIZE_MAX), gameState(NULL), listenFd(-1) {
+			MEMSET_INLINE(errorPages, 0, sizeof(errorPages));
+	}
 
 	~VirtualServer() {
 		clear();
@@ -53,6 +55,8 @@ public:
 		listenFd = socket(AF_INET, SOCK_STREAM, 0);
 		if (listenFd == -1)
 			PERR_EXIT(clear(), "Error: Failed to create listening socket");
+		if (s_set_close_on_exec(listenFd))	// TODO: Review
+			PERR_EXIT(clear(), "Error: Failed to configure listening socket");
 
 		int reuseAddress = 1;
 		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR,
@@ -81,6 +85,16 @@ public:
 			return true;
 
 		return false;
+	}
+
+	// TODO: Review
+	static inline
+	bool s_set_close_on_exec(int fd)
+	{
+		int flags = fcntl(fd, F_GETFD, 0);
+		if (flags == -1)
+			return true;
+		return fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1;
 	}
 
 	static bool s_resolve_host_and_port(const StringView32& host, usize port, sockaddr_in& address) {

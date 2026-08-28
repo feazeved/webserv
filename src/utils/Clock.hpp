@@ -11,17 +11,16 @@
 class Clock {
 public:
 	static std::time_t timeBegin, timeNow, timeElapsed;
-	static std::tm *timeInfo;
 	static isize secondsRef;
 
 	static void init() {
 		timeBegin = std::time(NULL);
+		timeElapsed = 0;
 	}
 
 	static void update_time() {
 		timeNow = std::time(NULL);
 		timeElapsed = timeNow - timeBegin;
-		timeInfo = std::localtime(&timeBegin);
 	}
 
 	// Does not call update time

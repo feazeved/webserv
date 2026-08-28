@@ -53,6 +53,7 @@ usize s_strtol10(const char *str, usize length) {
 // 	return 0;
 // }
 
+// TODO: Implement minimum size, and file querying before not after
 PARSER_INL
 (bool) s_read_whole_file(const char *filePath, usize &fileOffset, usize &fileSize, usize padSize) {
 	struct stat st;
@@ -99,7 +100,7 @@ PARSER_INL
 	if (cursor == end || tokens[cursor].type != Token::SEMICOLON)
 		PERR_EXIT(1, "Error: Unexpected token");
 	if (dir.args.alloc_a((u32)(cursor - argumentStart)) == true)
-		_exit(1);
+		std::exit(1);
 	for (u32 index = 0; index < dir.args.count; index++)
 		dir.args[index] = tokens[argumentStart + index].value;
 	return dir;

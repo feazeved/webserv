@@ -72,25 +72,32 @@ BUFFER_INL
 	usize length = readPos - originalPos;
 	if (readPos == scanPos)
 		return -1;
+	readPos++;
 	if (length >= sizeof(*ltable))
 		return 0;
-	readPos++;
 	return s_match(data + originalPos, length, ltable);
 }
 
 BUFFER_INL
 (isize) match_mime() {
 	static const u8 ltable[][8] = MIME_TABLE;
+	u8 tmp[2];
 
-	const usize minLength = scanPos - readPos > 3 ? scanPos - readPos - 3 : 0;
-	const usize searchEnd = readPos + MIN(minLength, 252);
+	MEMCPY_INLINE(tmp, data + scanPos, 2);
+	MEMCPY_INLINE(data + scanPos, "/.", 2);
 
-	while (readPos < searchEnd && data[readPos] != '.')
+	while (data[readPos] != '/')
 		readPos++;
-	if (readPos >= searchEnd)
-		return -1;
+	while (data[readPos] != '.')
+		readPos++;
 	readPos++;
-	return s_match(data + readPos, 5, ltable);	// TODO: Review 5
+	MEMCPY_INLINE(data + scanPos, tmp, 2);
+	const usize length = scanPos - readPos;
+	if (length >= sizeof(*ltable)) {
+		readPos = scanPos;
+		return Mime::OCTET_STREAM;
+	}
+	return s_match(data + readPos, length, ltable);
 }
 
 BUFFER_INL

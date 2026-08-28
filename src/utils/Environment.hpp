@@ -9,11 +9,11 @@ private:
 
 public:
 	char* envp[envSize];
-	const char** optr;
-	const char** writePtr;
+	char** optr;
+	char** writePtr;
 
-	void append(const char *ptr) {
-		*writePtr = ptr;
+	void append(char *ptr) {
+		*writePtr++ = ptr;
 		*writePtr = NULL;
 	}
 
@@ -23,6 +23,7 @@ public:
 	}
 
 	void init(char *const *envpSrc) {
+		optr = envp;
 		char** endPtr = envp + envSize - minElements;
 		while (optr < endPtr && *envpSrc != NULL)
 			*optr++ = *envpSrc++;
@@ -30,5 +31,5 @@ public:
 		writePtr = optr;
 	}
 
-	Environment() : envp(), optr(), writePtr() {}
+	Environment() : envp(), optr(envp), writePtr(envp) {}
 };

@@ -33,7 +33,8 @@ typedef unsigned long		ulong;
 
 #define PRINT_LN(fd, str)		((void)!write(fd, str "\n", sizeof(str)))
 #define PERR_RETURN(value, str)	return (PRINT_LN(2, str), (value))
-#define PERR_EXIT(value, str)	_exit((PRINT_LN(2, str), (value)))
+#include <cstdlib>	// TODO: Review these macros
+#define PERR_EXIT(value, str)	std::exit((PRINT_LN(2, str), (value)))
 
 #define STATIC_ASSERT_JOIN2(a, b) a##b
 #define STATIC_ASSERT_JOIN(a, b) STATIC_ASSERT_JOIN2(a, b)

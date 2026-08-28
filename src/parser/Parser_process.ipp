@@ -55,10 +55,10 @@ PARSER_INL
 			continue;
 		}
 		s_build_error_page_path(pathBuffer, server.serverRoot, path);
-		if (s_read_whole_file(pathBuffer, tmpSize, tmpOffset, 0))
-			_exit(1);
-		page.offset = tmpOffset;
-		page.length = tmpSize;
+		if (s_read_whole_file(pathBuffer, tmpOffset, tmpSize, 0))
+			std::exit(1);
+		page.offset = (u32)tmpOffset;
+		page.length = (u32)tmpSize;
 	}
 }
 
@@ -95,8 +95,10 @@ PARSER_INL
 		Span extension, interpreter;
 
 		while (s_next_cgi_word(cursor, end, extension)) {
-			s_next_cgi_word(cursor, end, interpreter);
-			s_next_cgi_word(cursor, end, interpreter);
+			if (!s_next_cgi_word(cursor, end, interpreter))	// TODO: These shouldn't need checking
+				PERR_EXIT(1, "Error: Invalid CGI block");
+			if (!s_next_cgi_word(cursor, end, interpreter))
+				PERR_EXIT(1, "Error: Invalid CGI block");
 
 			const u16 lengths[2] = {(u16)extension.length, (u16)interpreter.length};
 

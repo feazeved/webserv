@@ -130,7 +130,7 @@ PARSER_INL
 		PERR_EXIT(1, "Error: Invalid config");
 
 	if (tokArray.alloc_a((u32)s_count_tokens(ptr)) == true)
-		_exit(1);
+		std::exit(1);
 
 	while (true) {
 		while (IS_SPACE(*ptr))

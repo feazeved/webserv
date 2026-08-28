@@ -16,7 +16,9 @@ struct Location {
 	u8 methods;
 	bool autoindex;
 
-	Location() : methods(0), autoindex(false) {}
+	Location()
+		: uri(), root(), index(), uploadStore(), cgiBlock(), redirectTarget(),
+		  redirectStatus(), methods(0), autoindex(false) {}
 };
 
 // These are exclusive states

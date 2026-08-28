@@ -29,9 +29,12 @@ public:
 		epollFd = epoll_create(1);
 		if (epollFd == -1)
 			PERR_EXIT(clear(), "Error: Failed to create epoll instance");
+		if (VirtualServer::s_set_close_on_exec(epollFd))	// TODO: Check this
+			PERR_EXIT(clear(), "Error: Failed to configure epoll instance");
 
 		for (usize index = 0; index < parser.serverCount; index++)
 			servers[index].init();
+		Clock::init();
 	}
 
 	~Server() {
@@ -53,12 +56,11 @@ public:
 
 	// Execution
 	void run();
-	void mark_connection_writable(usize connectionIndex);
-	void add_to_epoll(int fd, u32 events, u64 key);
+	bool add_to_epoll(int fd, u32 events, u64 key);
 	void remove_from_epoll(int fd);
-	void modify_epoll_event(usize connectionIndex, u32 events);
 	void dispatch_epoll_event(const struct epoll_event& event);
 	void dispatch_connection_event(usize index, u32 events);
+	void check_timeouts();
 	void add_connection(VirtualServer* server);
 	void close_connection(usize connectionIndex);
 };

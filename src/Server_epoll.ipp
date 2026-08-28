@@ -2,18 +2,12 @@
 #include "Server.hpp"
 
 SERVER_INL
-(void) mark_connection_writable(usize connectionIndex) {
-	modify_epoll_event(connectionIndex, EPOLLOUT);
-}
-
-SERVER_INL
-(void) add_to_epoll(int fd, u32 events, u64 key) {
+(bool) add_to_epoll(int fd, u32 events, u64 key) {
 	struct epoll_event event;
 	MEMSET_INLINE(&event, 0, sizeof(event));
 	event.events = events;
 	event.data.u64 = key;
-	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &event) == -1)
-		PERR_EXIT(clear(), "Error: Failed to add epoll event");
+	return epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &event) == -1;
 }
 
 SERVER_INL
@@ -26,16 +20,15 @@ u64 s_epoll_connection_key(usize index) {
 	return (u64) index << 1;
 }
 
-SERVER_INL
-(void) modify_epoll_event(usize connectionIndex, u32 events) {
-	struct epoll_event event;
-	MEMSET_INLINE(&event, 0, sizeof(event));
-	event.events = events;
-	event.data.u64 = s_epoll_connection_key(connectionIndex);
-	if (epoll_ctl(epollFd, EPOLL_CTL_MOD,
-		connections[connectionIndex].clientFd, &event) == -1)
-		PERR_EXIT(clear(), "Error: Failed to modify epoll event");
-}
+// SERVER_INL
+// (bool) modify_epoll_event(usize connectionIndex, u32 events) {
+// 	struct epoll_event event;
+// 	MEMSET_INLINE(&event, 0, sizeof(event));
+// 	event.events = events;
+// 	event.data.u64 = s_epoll_connection_key(connectionIndex);
+// 	return epoll_ctl(epollFd, EPOLL_CTL_MOD,
+// 		connections[connectionIndex].clientFd, &event) == -1;
+// }
 
 SERVER_INL
 (void) add_connection(VirtualServer* server) {
@@ -48,7 +41,7 @@ SERVER_INL
 			return;
 		PERR_RETURN((void)0, "Error: Failed to accept connection");
 	}
-	if (VirtualServer::s_set_nonblocking(clientFd)) {
+	if (VirtualServer::s_set_nonblocking(clientFd) || VirtualServer::s_set_close_on_exec(clientFd)) {
 		close(clientFd);
 		PERR_RETURN((void)0, "Error: Failed to make client socket non-blocking");
 	}
@@ -58,7 +51,10 @@ SERVER_INL
 		close(clientFd);
 		PERR_RETURN((void)0, "Error: Connection capacity reached");
 	}
-	add_to_epoll(clientFd, EPOLLIN, s_epoll_connection_key(index));
+	if (add_to_epoll(clientFd, EPOLLIN, s_epoll_connection_key(index))) {
+		connections.free_slot(index);
+		PERR_RETURN((void)0, "Error: Failed to add client event");
+	}
 }
 
 SERVER_INL
