@@ -16,7 +16,6 @@
 
 class VirtualServer {
 public:
-	static Environment	s_fakeEnv;
 	StringView32		serverRoot;
 	StringView32		errorPages[Status::errorPageCount];
 	StringView32		host;

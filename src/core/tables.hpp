@@ -2,6 +2,18 @@
 #include "core.hpp"
 #include "config.hpp"
 
+
+// #define COMPRESSED \
+//     __attribute__((section("compressed")))
+
+// COMPRESSED int x;
+// COMPRESSED Foo foo;
+// COMPRESSED char buffer[4096];
+// extern "C" {
+// 	extern char __start_compressed[];
+// 	extern char __stop_compressed[];
+// }
+
 // Tables
 #ifdef MAIN_FILE
 	const u8 g_asciiLut[256] = {
@@ -153,6 +165,9 @@
 	HTTP_STATUS_PAGE(HTTP_STATUS_STRINGIFY(code), HTTP_STATUS_REASON(code))
 
 #define HTTP_STATUS_PAGE_MAX_SIZE 255
+
+char str[] = HTTP_STATUS(431) HTTP_STATUS_DEFAULT_PAGE(431);
+int test = sizeof(str);
 
 /*
 	Flat records stored in Arena::poolB:

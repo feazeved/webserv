@@ -105,7 +105,7 @@ CONNECTION_INL
 	if (processId < 0)
 		goto ErrorCloseOutput;
 	if (processId == 0)
-		s_exec_script(argv, cfg->s_fakeEnv.envp, fdIn, fdOut);
+		s_exec_script(argv, Environment::envp, fdIn, fdOut);
 
 	close(fdIn[0]);
 	close(fdOut[1]);
@@ -131,7 +131,7 @@ CONNECTION_INL
 		{"REQUEST_METHOD=GET", "REQUEST_METHOD=POST", "REQUEST_METHOD=DELETE"};
 	const usize methodIndex = (options & 7) / 2;
 
-	cfg->s_fakeEnv.reset();
+	Environment::reset();
 
 	argv[0] = buffer.append(req.location->root.extract());
 	buffer.append(req.interpreter);
@@ -148,10 +148,10 @@ CONNECTION_INL
 		char* lengthStr = buffer.append("HTTP_CONTENT_LENGTH=");
 		buffer.append_digit10(bodySize);
 		buffer.append("\0");	// TODO: Check if append null terminates
-		cfg->s_fakeEnv.append(lengthStr);
+		Environment::append(lengthStr);
 	}
-	cfg->s_fakeEnv.append((char*) requestMethod[methodIndex]);
-	cfg->s_fakeEnv.append(scriptName);
-	cfg->s_fakeEnv.append(req.query.ptr);
-	cfg->s_fakeEnv.append(req.cookies.ptr);
+	Environment::append((char*) requestMethod[methodIndex]);
+	Environment::append(scriptName);
+	Environment::append(req.query.ptr);
+	Environment::append(req.cookies.ptr);
 }

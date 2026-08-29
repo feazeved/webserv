@@ -9,6 +9,9 @@
 // };
 
 class Clock {
+private:
+	Clock();
+
 public:
 	static std::time_t timeBegin, timeNow, timeElapsed;
 	static isize secondsRef;

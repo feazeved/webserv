@@ -11,20 +11,12 @@ int g_epollFd = -1;
 
 int	main(int argc, char** argv, char** envp)
 {
+	(void) argc, (void)argv, (void) envp;
 	if (argc != 2)
 		PERR_RETURN(1, "Error: Usage -> ./webserv <config_file>");
 
-	static Server server(argv[1], envp);
+	static Server server(argv[1]);
 	server.run();
 	return 0;
 }
 
-__attribute__((constructor))
-void init() {
-	// Memory related init stuff like MEMCPY_INLINE ARENA_STATIC_STRINGS
-}
-
-__attribute__((destructor))
-void clear() {
-
-}

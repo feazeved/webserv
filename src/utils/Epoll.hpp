@@ -31,18 +31,18 @@ struct Epoll {
 	VirtualServer* servers;
 	struct epoll_event eventList[maxEvents];
 
-	bool init() {
+	Epoll (VirtualServer *srcServers)
+			: servers(srcServers) {
 		clear();
 		fd = epoll_create(1);
 		if (fd == -1)
-			PERR_RETURN(true, "Error: Failed to create epoll instance");
+			return ;
 
 		const int flags = fcntl(fd, F_GETFD, 0);
 		if (flags == -1 || fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1) {
 			clear();
-			PERR_RETURN(true, "Error: Failed to configure epoll instance");
+			return ;
 		}
-		return false;
 	}
 
 	void clear() {

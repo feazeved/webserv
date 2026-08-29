@@ -13,9 +13,24 @@
 #include "Parser.hpp"
 #include "Environment.hpp"
 
+__attribute__((constructor))
+void init(int argc, char** argv, char **envp) {
+	(void) argc, (void)argv, (void) envp; 
+
+	Clock::init();
+	Environment::init(envp);
+	// Memory related init stuff like MEMCPY_INLINE ARENA_STATIC_STRINGS
+}
+
+__attribute__((destructor))
+void clear(int argc, char** argv, char **envp) {
+	(void) argc, (void)argv, (void) envp; 
+
+}
+
 #define SERVER_INL(ret_type) ret_type inline Server::
-	// if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-	// 	PERR_RETURN(1, "Error: Failed to configure SIGPIPE handling");
+// if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+// 	PERR_RETURN(1, "Error: Failed to configure SIGPIPE handling");
 class Server {
 public:
 	VirtualServer servers[MAX_VIRTUAL_SERVERS];
@@ -23,16 +38,12 @@ public:
 	ConnectionPool connections;
 	Epoll epoll;
 
-	Server(const char *filePath, char **envp)
-		: parser(filePath, servers) {
-
-		VirtualServer::s_fakeEnv.init(envp);
-		if (epoll.init())
-			PERR_EXIT(clear(), "Error: Failed to create epoll instance");
+	Server(const char *filePath) : parser(filePath, servers), epoll(servers) {
+		if (epoll.fd == -1)
+			PERR_EXIT(clear(), "Error: Failed to create epoll");
 
 		for (usize index = 0; index < parser.serverCount; index++)
 			servers[index].init();
-		Clock::init();
 	}
 
 	~Server() {

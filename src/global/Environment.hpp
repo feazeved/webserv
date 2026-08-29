@@ -4,25 +4,26 @@
 // Needed for cookies and queries
 class Environment {
 private:
-	static const usize envSize = 1024 - 2;		// To align
+	static const usize envSize = 1024;
 	static const usize minElements = 64;
+	Environment();
 
 public:
-	char* envp[envSize];
-	char** optr;
-	char** writePtr;
+	static char* envp[envSize];
+	static char** optr;
+	static char** writePtr;
 
-	void append(char *ptr) {
+	static void append(char *ptr) {
 		*writePtr++ = ptr;
 		*writePtr = NULL;
 	}
 
-	void reset() {
+	static void reset() {
 		writePtr = optr;
 		*optr = NULL;
 	}
 
-	void init(char *const *envpSrc) {
+	static void init(char *const *envpSrc) {
 		optr = envp;
 		char** endPtr = envp + envSize - minElements;
 		while (optr < endPtr && *envpSrc != NULL)
