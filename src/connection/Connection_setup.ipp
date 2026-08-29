@@ -150,7 +150,7 @@ CONNECTION_INL
 		buffer.append("\0");	// TODO: Check if append null terminates
 		cfg->s_fakeEnv.append(lengthStr);
 	}
-	cfg->s_fakeEnv.append(requestMethod[methodIndex]);
+	cfg->s_fakeEnv.append((char*) requestMethod[methodIndex]);
 	cfg->s_fakeEnv.append(scriptName);
 	cfg->s_fakeEnv.append(req.query.ptr);
 	cfg->s_fakeEnv.append(req.cookies.ptr);

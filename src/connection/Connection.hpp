@@ -10,6 +10,7 @@
 #include "Buffer.hpp"
 #include "VirtualServer.hpp"
 #include "Environment.hpp"
+#include "Epoll.hpp"
 
 #define CONNECTION_INL(ret_type) inline ret_type Connection::
 
@@ -100,20 +101,20 @@ public:
 	isize validate_header();
 
 	// Configuration
-	isize dispatch(u32 events);
-	isize parse(u32 events);
+	isize dispatch(Epoll &epoll);
+	isize parse(Epoll &epoll);
 	isize error_path();
 	void build_header();
 	isize build_cgi_header();
 	isize close_connection();
 
 	// Common
-	isize write_to_client(u32 events);
-	isize read_from_client(u32 events);
+	isize write_to_client(Epoll &epoll);
+	isize read_from_client(Epoll &epoll);
 
 	// Streaming
-	isize upload_file(u32 events);
-	isize download_file(u32 events);
+	isize upload_file(Epoll &epoll);
+	isize download_file(Epoll &epoll);
 	isize cgi_method();
 	isize sse_method();
 
@@ -125,8 +126,6 @@ public:
 	
 	isize get_autoindex();
 	isize get_directory(struct stat &st, Buffer8 &pathBuffer);
-
-	Connection() : clientFd(-1) {}
 };
 
 #include "Connection_common.ipp"

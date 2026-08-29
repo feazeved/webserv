@@ -2,7 +2,7 @@
 #include "Connection.hpp"
 
 CONNECTION_INL
-(isize) upload_file(u32 events) {
+(isize) upload_file(Epoll &epoll) {
 	isize bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
 	if (bytesRead == 0) {
 		close(readFd);
@@ -16,11 +16,11 @@ CONNECTION_INL
 		mode = Mode::CLOSE;
 		return error_path();
 	}
-	return write_to_client(events);
+	return write_to_client(epoll);
 }
 
 CONNECTION_INL
-(isize) download_file(u32 events) {
+(isize) download_file(Epoll &epoll) {
 	isize bytesWritten;
 
 	if (options & Options::CHUNKED_LENGTH)
@@ -46,7 +46,7 @@ CONNECTION_INL
 		bool keepAlive = !!(options & Options::CONNECTION_TYPE);
 		mode = keepAlive ? Mode::FLUSH : Mode::CLOSE;
 	}
-	return write_to_client(events);
+	return write_to_client(epoll);
 }
 
 /*	The pipe fds here are configured to be non-blocking and read/write errors are ignored

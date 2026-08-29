@@ -28,16 +28,18 @@
 })
 
 // === Bit Helpers =========================================
-#define BIT_READ(word, index)	(((word) >> (index)) & 1)
-#define BIT_SET(word, index)	((word) | ((__typeof__(word))1 << (index)))
-#define BIT_CLR(word, index)	((word) & ~((__typeof__(word))1 << (index)))
+// TODO: Get ranged versions, like start, end
+#define BITREAD(word, index)	(((word) >> (index)) & 1)
+#define BITSET(word, index)		((word) |= ((__typeof__(word))1 << (index)))
+#define BITFLIP(word, index)	((word) ^= ((__typeof__(word))1 << (index)))
+#define BITCLR(word, index)		((word) &= ~((__typeof__(word))1 << (index)))
 
-// === MINMAX Helpers ========================================
+// === OLD MINMAX Helpers ========================================
 #define MIN(x, y)			((x) < (y) ? (x) : (y))
 #define MAX(x, y)			((x) > (y) ? (x) : (y))
 #define ABS(x)				((x) > 0 ? (x) : -(x))
-
 #define CLAMP(x, low, high)	MAX(low, MIN(x, high))
+
 #define ABSMAX(x, y)		MAX(ABS(x), ABS(y))
 #define ABSMIN(x, y)		MIN(ABS(x), ABS(y))
 #define ABSDIFF(x, y)		(MAX(x, y) - MIN(x, y))
@@ -59,20 +61,19 @@
 
 #define STRINGIFY_(x)		#x
 #define STRINGIFY(x)		STRINGIFY_(x)
-#define ALIGN_UP(x, a)		(((x) + ((a) - 1)) & ~((a) - 1))	// TODO: rename this
+#define ALIGN_UP(x, a)		(((x) + ((a) - 1)) & ~((a) - 1))
 #define ALIGN_DOWN(x, a)	((x) & ~((a) - 1))
 #define IS_POW2(x)			((x) != 0 && ((x) & ((x) - 1)) == 0)
 #define NEXT_POW2(x)		((__typeof__(x))((usize)1 << ((sizeof(x) * 8) - (usize)CLZ(x))))
 
-#define LOG2(x)				(63u - CLZ(x))	// TODO: maybe math helpers dont belong in this
-
 // === ASCII Helpers =======================================
-#define IS_ASCII(x) ((x) >= 0 && (x) < 128)
-#define IS_DIGIT(x) ((x) >= '0' && (x) <= '9')
-#define IS_UPPER(x) ((x) >= 'A' && (x) <= 'Z')
-#define IS_LOWER(x) ((x) >= 'a' && (x) <= 'z')
-#define IS_ALPHA(x) (IS_UPPER(x) || IS_LOWER(x))
-#define IS_SPACE(x)	(g_asciiLut[((unsigned char)(x))] == ASCII_SPACE)
-#define IS_HEX(x)	(g_asciiLut[((unsigned char)(x))] <= ASCII_HEX)
-#define IS_ALNUM(x) (g_asciiLut[((unsigned char)(x))] <= ASCII_LETTERS)
-#define IS_IDENT(x)	(g_asciiLut[((unsigned char)(x))] <= ASCII_IDENT)
+#define IS_ASCII(c) ((c) >= 0 && (c) < 128)
+#define IS_DIGIT(c) ((c) >= '0' && (c) <= '9')
+#define IS_UPPER(c) ((c) >= 'A' && (c) <= 'Z')
+#define IS_LOWER(c) ((c) >= 'a' && (c) <= 'z')
+#define IS_ALPHA(c) (IS_UPPER(c) || IS_LOWER(c))
+// #define IS_SPACE(c) (((c) == ' ') || ((unsigned char)(c) - (unsigned char)'\t' < 5u))	// LUTLESS version
+#define IS_SPACE(c)	(g_asciiLut[((unsigned char)(c))] == ASCII_SPACE)
+#define IS_HEX(c)	(g_asciiLut[((unsigned char)(c))] <= ASCII_HEX)
+#define IS_ALNUM(c) (g_asciiLut[((unsigned char)(c))] <= ASCII_LETTERS)
+#define IS_IDENT(c)	(g_asciiLut[((unsigned char)(c))] <= ASCII_IDENT)

@@ -37,47 +37,48 @@ SERVER_INL
 
 SERVER_INL
 (void) run() {
+	struct epoll_event* event;
+
 	for (u32 serverIndex = 0; serverIndex < parser.serverCount; serverIndex++) {
 		if (epoll.add(servers[serverIndex].listenFd, EPOLLIN, UINT32_MAX, serverIndex))
 			PERR_EXIT(clear(), "Error: Failed to add listening socket event");
 	}
 
-	struct epoll_event events[s_maxEvents];
 	while (true) {
-		const int eventCount = epoll.wait(events, s_maxEvents, 1000);
-		if (eventCount == -1) {
+		const usize eventCount = epoll.wait(1000);
+		if (eventCount == SIZE_MAX) {
 			if (errno == EINTR)
 				continue;
 			PERR_EXIT(clear(), "Error: epoll_wait failed");
 		}
 
 		Clock::update_time();
-		for (int eventIndex = 0; eventIndex < eventCount; eventIndex++) {
-			epoll.event = events[eventIndex];
-			if (epoll.is_server_event())
-				server_event();
+		for (usize eventIndex = 0; eventIndex < eventCount; eventIndex++) {
+			event = epoll.get_event(eventIndex);
+			if (event->data.u32 == UINT32_MAX)
+				server_event(event->data.u64);
 			else
-				connection_event();
+				connection_event(event->data.u64);
 		}
 		check_timeouts();
 	}
 }
 
 SERVER_INL
-(void) server_event() {
-	const u32 serverIndex = epoll.server_index();
+(void) server_event(u64 key) {
+	const u32 serverIndex = (u32)(key >> 32);
 	if (serverIndex >= parser.serverCount)
 		PERR_EXIT(clear(), "Error: Invalid listening socket event");
-	if (epoll.event.events & (EPOLLERR | EPOLLHUP))
+	if (epoll.is_error())
 		PERR_EXIT(clear(), "Error: Listening socket failed");
-	if (epoll.event.events & EPOLLIN)
+	if (epoll.is_readable())
 		add_connection(serverIndex);
 }
 
 SERVER_INL
-(void) connection_event() {
-	const u32 connectionIndex = epoll.connection_index();
-	if (epoll.event.events & (EPOLLERR | EPOLLHUP)) {
+(void) connection_event(u64 key) {
+	const u32 connectionIndex = (u32)key;
+	if (epoll.is_error()) {
 		close_connection(connectionIndex);
 		return;
 	}

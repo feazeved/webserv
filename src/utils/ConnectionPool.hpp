@@ -19,12 +19,6 @@ public:
 		// 	new (connections + index) Connection();
 	}
 
-	~ConnectionPool() {
-		clear();
-		// for (usize index = 0; index < blockCount * 64; index++)
-		// 	connections[index].~Connection();
-	}
-
 	Connection* get_ptr(usize linearIndex) {
 		return connections + linearIndex;
 	}
@@ -48,13 +42,6 @@ public:
 		}
 	}
 
-	// TODO: Review
-	bool is_active(usize linearIndex) const {
-		if (linearIndex >= blockCount * 64)
-			return false;
-		return elementBitmap[linearIndex / 64].bitread((u8)(linearIndex % 64));
-	}
-
 	void clear() {
 		for (usize blockIndex = 0; blockIndex < blockCount; blockIndex++) {
 			Bitmap &elementBlock = elementBitmap[blockIndex];
@@ -71,7 +58,7 @@ public:
 		}
 	}
 
-	usize get_slot() {
+	usize acquire_slot(int clientFd, VirtualServer *server) {
 		usize blockIndex = blockBitmap.find_first_clear();
 		if (blockIndex >= blockCount)
 			return SIZE_MAX;
@@ -81,13 +68,8 @@ public:
 		if (elementBitmap[blockIndex].count() == 64)
 			blockBitmap.bitset(blockIndex);
 
-		return blockIndex * 64 + elementIndex;
-	}
-
-	usize acquire_slot(int clientFd, VirtualServer *server) {
-		const usize index = get_slot();
-		if (index != SIZE_MAX)
-			connections[index].init(clientFd, server);
+		usize index = blockIndex * 64 + elementIndex;
+		connections[index].init(clientFd, server);
 		return index;
 	}
 

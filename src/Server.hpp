@@ -14,10 +14,10 @@
 #include "Environment.hpp"
 
 #define SERVER_INL(ret_type) ret_type inline Server::
-
+	// if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+	// 	PERR_RETURN(1, "Error: Failed to configure SIGPIPE handling");
 class Server {
 public:
-	static const usize s_maxEvents = 16;
 	VirtualServer servers[MAX_VIRTUAL_SERVERS];
 	Parser parser;
 	ConnectionPool connections;
@@ -51,8 +51,8 @@ public:
 
 	// Execution
 	void run();
-	void server_event();
-	void connection_event();
+	void server_event(u64 key);
+	void connection_event(u64 key);
 	void check_timeouts();
 	void add_connection(u32 serverIndex);
 	void close_connection(u32 connectionIndex);

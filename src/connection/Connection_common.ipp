@@ -23,6 +23,16 @@ isize s_get_status(Status &status) {
 }
 
 static inline
+void s_chdir(Span &scriptPath) {
+	char *scriptEnd = scriptPath.ptr + scriptPath.length;
+	char tmp = scriptPath.ptr[0];	// This causes page write
+	scriptPath.ptr[0] = '/';
+
+	while (*scriptEnd != '/')
+		scriptEnd--;
+}
+
+static inline
 pid_t s_exec_script(char *const argv[3], char **envp, int fdIn[2], int fdOut[2]) {
 	char *lastSlash = NULL;
 	for (char *cursor = argv[1]; *cursor != '\0'; cursor++) {
@@ -39,6 +49,7 @@ pid_t s_exec_script(char *const argv[3], char **envp, int fdIn[2], int fdOut[2])
 		if (chdir(workingDirectory) == -1)
 			std::exit(1);
 	}
+	// CHDIR here
 
 	bool fail = dup2(fdOut[1], STDOUT_FILENO) == -1 ||
 				dup2(fdIn[0], STDIN_FILENO) == -1;
@@ -61,11 +72,10 @@ pid_t s_exec_script(char *const argv[3], char **envp, int fdIn[2], int fdOut[2])
 
 // Check epoll, see if can write, if not, set to write and return 0
 CONNECTION_INL
-(isize) write_to_client(u32 events) {
-	// if (sendBuffer.size() == 0)
-	// 	return 0;
-	// if ((events & EPOLLOUT) == 0)
-	// 	return EPOLLOUT;
+(isize) write_to_client(Epoll &epoll) {
+	if (!epoll.is_writeable())
+		return epoll.set_write(clientFd, 1);
+
 	isize bytesWritten = sendBuffer.write(clientFd, ATOMIC_IOSIZE);
 	if (bytesWritten <= 0)
 		return close_connection();
@@ -83,10 +93,12 @@ CONNECTION_INL
 	This is only called when information is needed, therefore if is 0 bytes
 	are read, the connection should close. But maybe it's error_path instead
 */
-	// if ((events & EPOLLIN) == 0)
-	// 	return -2;
+
 CONNECTION_INL
-(isize) read_from_client(u32 events) {
+(isize) read_from_client(Epoll &epoll) {
+	if (!epoll.is_readable())
+		return epoll.set_read(clientFd, 1);
+
 	isize bytesRead = recvBuffer.read(clientFd, ATOMIC_IOSIZE);
 	if (bytesRead <= 0)
 		return close_connection();

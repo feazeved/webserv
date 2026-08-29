@@ -20,6 +20,7 @@ typedef __int128			i128;
 typedef unsigned __int128	u128;
 typedef size_t				usize;
 typedef ptrdiff_t			isize;
+typedef intptr_t			iptr;
 typedef uintptr_t			uptr;
 typedef unsigned char		uchar;	// For completeness, to mirror platform's type
 typedef unsigned short		ushort;
@@ -36,9 +37,9 @@ typedef unsigned long		ulong;
 #include <cstdlib>	// TODO: Review these macros
 #define PERR_EXIT(value, str)	std::exit((PRINT_LN(2, str), (value)))
 
-#define STATIC_ASSERT_JOIN2(a, b) a##b
-#define STATIC_ASSERT_JOIN(a, b) STATIC_ASSERT_JOIN2(a, b)
-#define STATIC_ASSERT(expr) typedef char STATIC_ASSERT_JOIN(static_assert_failed_, __LINE__)[(expr) ? 1 : -1]
+#define JOIN_MACROS_(a, b) a##b
+#define JOIN_MACROS(a, b) JOIN_MACROS_(a, b)
+#define STATIC_ASSERT(expr) typedef char JOIN_MACROS(static_assert_failed_, __LINE__)[(expr) ? 1 : -1]
 
 #ifdef DEBUG_MODE
 	#define ON_DEBUG(x) (x)

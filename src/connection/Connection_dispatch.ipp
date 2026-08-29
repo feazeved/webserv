@@ -19,11 +19,11 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(isize) parse(u32 events) {
+(isize) parse(Epoll &epoll) {
 	usize lineLength;
 	isize rvalue;
 
-	if (read_from_client(events) < 0)
+	if (read_from_client(epoll) < 0)
 		return error_path();
 	while ((lineLength = recvBuffer.find_line_end()) != SIZE_MAX) {
 		if (lineLength == 0) {
@@ -46,14 +46,14 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(isize) dispatch(u32 events) {
+(isize) dispatch(Epoll &epoll) {
 
 	switch (mode) {
-		case Mode::PARSE:	return parse(events); break;
-		case Mode::GET:		return upload_file(events); break;
-		case Mode::POST:	return download_file(events); break;
+		case Mode::PARSE:	return parse(epoll); break;
+		case Mode::GET:		return upload_file(epoll); break;
+		case Mode::POST:	return download_file(epoll); break;
 		case Mode::FLUSH:
-		case Mode::CLOSE:	return write_to_client(events); break;
+		case Mode::CLOSE:	return write_to_client(epoll); break;
 		case Mode::CGI:		return cgi_method(); break;
 		case Mode::SSE:		return sse_method(); break;
 		default: return -1;

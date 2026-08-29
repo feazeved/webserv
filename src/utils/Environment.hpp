@@ -30,6 +30,4 @@ public:
 		*optr = NULL;
 		writePtr = optr;
 	}
-
-	Environment() : envp(), optr(envp), writePtr(envp) {}
 };
