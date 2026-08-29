@@ -52,7 +52,7 @@ SERVER_INL
 			PERR_EXIT(clear(), "Error: epoll_wait failed");
 		}
 
-		Clock::update_time();
+		Clock::update();
 		for (usize eventIndex = 0; eventIndex < eventCount; eventIndex++) {
 			event = epoll.get_event(eventIndex);
 			if (event->data.u32 == UINT32_MAX)

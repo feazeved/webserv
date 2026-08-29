@@ -11,23 +11,20 @@ bool s_length_check(u32 length) {
 	return length == 0 || length >= MAX_PATH_SIZE;
 }
 
-static inline
+// Exact
 usize s_strtol10(const char *str, usize length) {
 	usize value = 0;
 	usize digit = 0;
-	const char *ostr = str;
 	const char *end = str + length;
 
-	while (true) {
-		digit = (usize) g_asciiLut[(u8)*str];
-		if (value >= ((SIZE_MAX - 9) / 10))	// 9 being fixed reduces branching
-			return SIZE_MAX;
-		if (digit > 9)
+	while (str < end) {
+		digit = (usize)(*str - '0');
+		if (digit > 9 || value > ((SIZE_MAX - 9) / 10))
 			break;
-		str++;
 		value = value * 10 + digit;
+		str++;
 	}
-	if (str == ostr || str != end)
+	if (str != end)
 		return SIZE_MAX;
 	return value;
 }

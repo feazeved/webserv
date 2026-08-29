@@ -114,10 +114,9 @@ void s_strip_comments(char *ptr, usize fileSize) {
 	MEMCPY_INLINE(ptr + fileSize, sentinels, sizeof(sentinels));
 }
 
-
 PARSER_INL
-(Array32<Parser::Token>) tokenize() {
-	Array32<Token> tokArray;
+(Array<Parser::Token>) tokenize() {
+	Array<Token> tokArray;
 	Token token;
 	usize length;
 	isize braces = 0;

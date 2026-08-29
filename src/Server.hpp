@@ -14,7 +14,7 @@
 #include "Environment.hpp"
 
 __attribute__((constructor))
-void init(int argc, char** argv, char **envp) {
+void init(int argc, char** argv, char** envp) {
 	(void) argc, (void)argv, (void) envp; 
 
 	Clock::init();
@@ -23,22 +23,28 @@ void init(int argc, char** argv, char **envp) {
 }
 
 __attribute__((destructor))
-void clear(int argc, char** argv, char **envp) {
-	(void) argc, (void)argv, (void) envp; 
+void clear() {
 
 }
 
 #define SERVER_INL(ret_type) ret_type inline Server::
 // if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
 // 	PERR_RETURN(1, "Error: Failed to configure SIGPIPE handling");
+
+// Have server be a template? up to 4096 connections
+// Could then reasonably assign 64 connections per virtual server
 class Server {
 public:
+	ConnectionPool connections;
+	u8 storage[CONFIG_POOL_SIZE];
+	Arena alpha, beta;
+
 	VirtualServer servers[MAX_VIRTUAL_SERVERS];
 	Parser parser;
-	ConnectionPool connections;
 	Epoll epoll;
 
-	Server(const char *filePath) : parser(filePath, servers), epoll(servers) {
+	Server(const char *filePath) : alpha((u8*)&connections, sizeof(connections)), 
+		beta(storage, sizeof(storage)), parser(filePath, servers, alpha, beta), epoll(servers) {
 		if (epoll.fd == -1)
 			PERR_EXIT(clear(), "Error: Failed to create epoll");
 
@@ -56,7 +62,8 @@ public:
 		for (usize index = 0; index < parser.serverCount; index++)
 			servers[index].clear();
 		parser.serverCount = 0;
-		Arena::clear();
+		alpha.clear();
+		beta.clear();
 		return 1;
 	}
 

@@ -69,7 +69,7 @@ void s_directive_body_size(const StringView32 &value, usize &bodySize, VirtualSe
 }
 
 static inline
-void s_parse_server_directive(VirtualServer &server, const Array32<Parser::Token> &tokens, usize &cursor, usize end) {
+void s_parse_server_directive(VirtualServer &server, const Array<Parser::Token> &tokens, usize &cursor, usize end) {
 	Parser::Directive dir = Parser::s_build_directive(tokens, cursor, end);
 
 	if (dir.name == "error_page")
@@ -92,7 +92,7 @@ void s_parse_server_directive(VirtualServer &server, const Array32<Parser::Token
 }
 
 static inline
-usize s_count_locations(const Array32<Parser::Token> &tokens, usize cursor, usize end) {
+usize s_count_locations(const Array<Parser::Token> &tokens, usize cursor, usize end) {
 	usize locationCount = 0;
 	usize locationSize;
 
@@ -118,7 +118,7 @@ usize s_count_locations(const Array32<Parser::Token> &tokens, usize cursor, usiz
 }
 
 PARSER_INL
-(isize) parse_server(const Array32<Token> &tokens, usize cursor, usize end, VirtualServer &server) {
+(isize) parse_server(const Array<Token> &tokens, usize cursor, usize end, VirtualServer &server, Arena &beta) {
 	if (cursor == end || tokens[cursor].type != Token::WORD || !(tokens[cursor].value == "server"))
 		PERR_EXIT(1, "Error: Unexpected token");
 	cursor++;
@@ -129,7 +129,8 @@ PARSER_INL
 		PERR_EXIT(1, "Error: Empty server block");
 
 	usize locationCount = s_count_locations(tokens, cursor, end);
-	if (server.locations.alloc_b(locationCount) == true)
+	server.locations = beta.alloc_array<Location>(locationCount); 	// review
+	if (server.locations.ptr == NULL)
 		std::exit(1);
 
 	usize locationIndex = 0;

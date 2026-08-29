@@ -7,17 +7,12 @@
 class ConnectionPool {
 public:
 	static const usize blockSize = sizeof(Connection) * 64;
-	static const usize blockCount = sizeof(Arena::pool.A) / blockSize;
+	static const usize blockCount = 64;
 
 public:
-	Connection *const connections;
+	Connection connections[4096];
 	Bitmap blockBitmap;
 	Bitmap elementBitmap[blockCount];	// Metadata for each 64 Connection Block
-
-	ConnectionPool() : connections((Connection*) Arena::pool.A) {
-		// for (usize index = 0; index < blockCount * 64; index++)
-		// 	new (connections + index) Connection();
-	}
 
 	Connection* get_ptr(usize linearIndex) {
 		return connections + linearIndex;
@@ -34,7 +29,7 @@ public:
 			while ((elementIndex = elementBlock.find_first_set()) != SIZE_MAX) {
 				if (base[elementIndex].check_timeout(curTime) == false)
 					continue;
-				// TODO: Update clock here, check_timeout might have lagged
+				Clock::update();
 				base[elementIndex].clear();
 				elementBlock.bitclr(elementIndex);
 			}

@@ -28,8 +28,7 @@ public:
 #define SUBP(code, next) (i##next - sizeof(HTTP_STATUS(code)) \
 	- sizeof(HTTP_STATUS_DEFAULT_PAGE(code)) - 2)
 
-enum Code
-{
+enum Code {
 	i000 = 1, ixxx = 2, i511 = sizeof(HTTP_ARENA_STATIC_STRINGS) - sizeof(HTTP_STATUS(511))
 		- sizeof(HTTP_STATUS_DEFAULT_PAGE(511)) - 2,
 	i510 = SUBP(510, 511), i508 = SUBP(508, 510), i507 = SUBP(507, 508), i506 = SUBP(506, 507),

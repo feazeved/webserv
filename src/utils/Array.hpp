@@ -1,41 +1,61 @@
 #pragma once
 #include "core.hpp"
-#include "Arena.hpp"
 
+// This is technically a span
 template <typename Type>
-class Array32 {
+class Array {
 public:
-	u32 offset;
-	u32 count;
-
-	Array32() : offset(0), count(0) {}
-
-	bool alloc_a(u32 numElements) {
-		usize totalSize = numElements * sizeof(Type);
-		count = numElements;
-		offset = Arena::alloc_a(totalSize);
-		if (offset == UINT32_MAX)
-			return true;
-		return false;
-	}
-
-	bool alloc_b(u32 numElements) {
-		usize totalSize = numElements * sizeof(Type);
-		count = numElements;
-		offset = Arena::alloc_b(totalSize);
-		if (offset == UINT32_MAX)
-			return true;
-		return false;
-	}
+	Type* ptr;
+	usize count;
 
 	Type& operator[] (usize index) {
-		return ((Type*)(Arena::mptr(offset)))[index];
+		return ptr[index];
 	}
 
 	const Type& operator[] (usize index) const {
-		return ((const Type*)(Arena::mptr(offset)))[index];
+		return ptr[index];
+	}
+
+	Array& operator=(const Array& other) {
+		ptr = other.ptr;
+		count = other.count;
 	}
 };
+
+// template <typename Type>
+// class Array32 {
+// public:
+// 	u32 offset;
+// 	u32 count;
+
+// 	Array32() : offset(0), count(0) {}
+
+// 	bool alloc_a(u32 numElements) {
+// 		usize totalSize = numElements * sizeof(Type);
+// 		count = numElements;
+// 		offset = Arena::alloc_a(totalSize);
+// 		if (offset == UINT32_MAX)
+// 			return true;
+// 		return false;
+// 	}
+
+// 	bool alloc_b(u32 numElements) {
+// 		usize totalSize = numElements * sizeof(Type);
+// 		count = numElements;
+// 		offset = Arena::alloc_b(totalSize);
+// 		if (offset == UINT32_MAX)
+// 			return true;
+// 		return false;
+// 	}
+
+	// Type& operator[] (usize index) {
+	// 	return ((Type*)(Arena::mptr(offset)))[index];
+	// }
+
+	// const Type& operator[] (usize index) const {
+	// 	return ((const Type*)(Arena::mptr(offset)))[index];
+	// }
+// };
 
 /* Packed array
 	The reason for this array's existence is to offload the memory usage consumed by the
@@ -59,11 +79,11 @@ public:
 			It would encode how many bytes behind the string is, so length = index[n] - index[n-1] - index[n-1][-1]
 */
 
-template <usize bufferSize>
-struct Array {
-	u8 data[bufferSize];
-	usize length;
-};
+// template <usize bufferSize>
+// struct Array {
+// 	u8 data[bufferSize];
+// 	usize length;
+// };
 
 template <typename Type, usize count>
 struct Matrix {

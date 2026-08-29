@@ -19,7 +19,7 @@ public:
 	StringView32		serverRoot;
 	StringView32		errorPages[Status::errorPageCount];
 	StringView32		host;
-	Array32<Location>	locations;
+	Array32<Location>	locations;	// This should be a regular Array
 	usize				port;
 	usize				maxBodySize;
 	void*				gameState;

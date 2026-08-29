@@ -159,24 +159,14 @@
 	"h1{font-size:4em;margin:0}</style>" \
 	"<h1>" code "</h1><p>" reason "</p></html>"
 
-#define HTTP_STATUS_STRINGIFY_RAW(value) #value
-#define HTTP_STATUS_STRINGIFY(value) HTTP_STATUS_STRINGIFY_RAW(value)
 #define HTTP_STATUS_DEFAULT_PAGE(code) \
-	HTTP_STATUS_PAGE(HTTP_STATUS_STRINGIFY(code), HTTP_STATUS_REASON(code))
+	HTTP_STATUS_PAGE(STRINGIFY(code), HTTP_STATUS_REASON(code))
 
 #define HTTP_STATUS_PAGE_MAX_SIZE 255
 
 char str[] = HTTP_STATUS(431) HTTP_STATUS_DEFAULT_PAGE(431);
 int test = sizeof(str);
 
-/*
-	Flat records stored in Arena::poolB:
-		[u8 status length][status][NUL]
-		[u8 page length][default page][NUL]  // error statuses only
-
-	Status::index points at the first byte of the status string.  Error-page
-	offsets are derived from that index; there is no page index table.
-*/
 #define HTTP_STATUS_STRINGS \
 	"\0\0\0\0\0\0\0\0" \
 	"\x0C" HTTP_STATUS(100) "\0" "\x17" HTTP_STATUS(101) "\0" \

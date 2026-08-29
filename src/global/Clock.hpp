@@ -21,7 +21,7 @@ public:
 		timeElapsed = 0;
 	}
 
-	static void update_time() {
+	static void update() {
 		timeNow = std::time(NULL);
 		timeElapsed = timeNow - timeBegin;
 	}

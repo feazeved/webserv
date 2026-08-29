@@ -4,6 +4,8 @@
 #include "core.hpp"
 #include "config.hpp"
 #include "tables.hpp"
+#include "Array.hpp"
+#include "Span.hpp"
 
 /*
 	Arena has two pools, A that belongs to the connection pool and B
@@ -17,61 +19,50 @@
 	the next cache-line boundary.
 */
 
-// STATIC_ASSERT(sizeof())
-
 struct Arena {
-	union Pool {
-		struct {
-			u8 A[CONNECTION_POOL_SIZE] ALIGNED(4096);
-			u8 B[CONFIG_POOL_SIZE] ALIGNED(4096);	
-		};
-		u8 base[CONNECTION_POOL_SIZE + CONFIG_POOL_SIZE] ALIGNED(4096);
-	}	static pool;
-	static usize sizeA, sizeB;
-	static const usize poolBStaticSize = ALIGN_UP(sizeof(HTTP_ARENA_STATIC_STRINGS), 64);
+	u8 *ptr;
+	usize size, capacity;
 
-	static void clear() {
-		sizeA = 0;
-		sizeB = poolBStaticSize;
+	Arena (u8* srcPtr, usize srcLength) : ptr(srcPtr), size(0), capacity(srcLength) {
+
 	}
 
-	static u8* mptr(usize fileOffset) {
-		return pool.base + fileOffset;
+	void clear() {
+		size = 0;
 	}
 
-	static u32 alloc_a(usize bytes) {
+	u8* mptr(usize fileOffset) const {
+		return ptr + fileOffset;
+	}
+
+	const u8* kptr(usize fileOffset) const {
+		return ptr + fileOffset;
+	}
+
+	u32 alloc(usize bytes) {
 		bytes = ALIGN_UP(bytes, 64);
-		if (bytes > sizeof(pool.A) - sizeA) {
+		if (bytes > capacity - size) {
 			PRINT_LN(2, "Error: Out of memory");
 			return UINT32_MAX;
 		}
-		u32 index = sizeA;
-		sizeA += bytes;
+		u32 index = size;
+		size += bytes;
 		return index;
 	}
 
-	static u32 alloc_b(usize bytes) {
+	// TODO: we could do different instatiation given a smaller range
+	// For example, if size of elements is lower than 64k, indexes could be u16
+	template <typename Type>
+	Array<Type> alloc_array(usize numElements) {
+		usize bytes = numElements * sizeof(Type);
 		bytes = ALIGN_UP(bytes, 64);
-		if (bytes > sizeof(pool.B) - sizeB) {
+		if (bytes > capacity - size) {
 			PRINT_LN(2, "Error: Out of memory");
 			return UINT32_MAX;
 		}
-		u32 index = sizeB + sizeof(pool.A);
-		sizeB += bytes;
+		u32 index = size;
+		size += bytes;
 		return index;
 	}
+
 };
-
-STATIC_ASSERT(sizeof(Arena::pool.A) + sizeof(Arena::pool.B) <= UINT32_MAX);
-STATIC_ASSERT(sizeof(HTTP_ARENA_STATIC_STRINGS) <= UINT16_MAX);
-
-#ifdef MAIN_FILE
-	Arena::Pool Arena::pool = {
-		{
-			{ 0 },
-			HTTP_ARENA_STATIC_STRINGS
-		}
-	};
-	usize Arena::sizeA = 0;
-	usize Arena::sizeB = Arena::poolBStaticSize;
-#endif
