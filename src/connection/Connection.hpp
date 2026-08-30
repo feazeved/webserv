@@ -54,7 +54,7 @@ public:
 			usize chunkSize; 
 			i32 readFd, writeFd;
 		};
-		StringView32 uri;	// TODO: Store the uri on setup
+		Span32 uri;	// TODO: Store the uri on setup
 		DIR* directory;
 	};
 

@@ -66,51 +66,43 @@ PARSER_INL
 }
 
 PARSER_INL
-(Span32) parse_cgi(const Array<Token> &tokens, usize &cursor, usize end, const Array<Location> &locations) {
-	if (cursor == end || tokens[cursor].type != Token::WORD || !(tokens[cursor].value == "cgi"))
-		PERR_EXIT(1, "Error: Unexpected token");
-	cursor++;
-	if (cursor == end || tokens[cursor].type != Token::OPEN_BRACKET)
+(Span32) parse_cgi(Array<Token> &tokArray, const Array<Location> &locations) {
+	if (tokArray[0].type != Token::OPEN_BRACKET)
 		PERR_EXIT(1, "Error: Invalid CGI block");
 
 	usize packSize = 0;
-	cursor++;
-	const usize definitionStart = cursor;
-	while (cursor != end && tokens[cursor].type != Token::CLOSE_BRACKET) {
-		const usize extensionIndex = cursor;
-		const Span &extension = tokens[cursor].value;
-		if (tokens[cursor].type != Token::WORD || extension.length < 2
-			|| extension.ptr[0] != '.')
+	tokArray.ptr++;
+	Token *definitionStart = tokArray.ptr;
+	while (tokArray[0].type != Token::CLOSE_BRACKET) {
+		Token *definition = tokArray.ptr;
+		const Span &extension = tokArray[0].value;
+		if (extension.length < 2 || extension.ptr[0] != '.')
 			PERR_EXIT(1, "Error: Invalid CGI extension");
-		for (usize index = definitionStart; index < extensionIndex; index += 4) {
-			const Span &previous = tokens[index].value;
+		for (Token *previousToken = definitionStart; previousToken < definition; previousToken += 4) {
+			const Span &previous = previousToken->value;
 			if (previous.length == extension.length && MEMCMP(previous.ptr, extension.ptr, extension.length) == 0)
 				PERR_EXIT(1, "Error: Duplicate CGI extension");
 		}
-		cursor++;
-		if (cursor == end || tokens[cursor].type != Token::WORD
-			|| !(tokens[cursor].value == "="))
+		tokArray.ptr++;
+		if (!(tokArray[0].value == "="))
 			PERR_EXIT(1, "Error: Expected '=' in CGI definition");
-		cursor++;
-		if (cursor == end || tokens[cursor].type != Token::WORD)
+		tokArray.ptr++;
+		if (tokArray[0].type != Token::WORD)
 			PERR_EXIT(1, "Error: Invalid CGI interpreter");
-		const Span &interpreter = tokens[cursor].value;
-		cursor++;
-		if (cursor == end || tokens[cursor].type != Token::SEMICOLON)
+		const Span &interpreter = tokArray[0].value;
+		tokArray.ptr++;
+		if (tokArray[0].type != Token::SEMICOLON)
 			PERR_EXIT(1, "Error: Expected ';' after CGI definition");
-		cursor++;
+		tokArray.ptr++;
 		packSize += sizeof(u16) * 2 + extension.length + interpreter.length;
 	}
-	if (cursor == end || tokens[cursor].type != Token::CLOSE_BRACKET)
-		PERR_EXIT(1, "Error: Invalid CGI block");
 
-	// Review
 	const Span32 result = beta.compress_span(locations, packSize);
 	Span packed = locations.extract(result);
 	usize offset = 0;
-	for (usize index = definitionStart; index < cursor; index += 4) {
-		const Span &extension = tokens[index].value;
-		const Span &interpreter = tokens[index + 2].value;
+	for (Token *definition = definitionStart; definition < tokArray.ptr; definition += 4) {
+		const Span &extension = definition[0].value;
+		const Span &interpreter = definition[2].value;
 		const u16 lengths[2] = {(u16)extension.length, (u16)interpreter.length};
 		MEMCPY_INLINE(packed.ptr + offset, lengths, sizeof(lengths));
 		offset += sizeof(lengths);
@@ -119,42 +111,32 @@ PARSER_INL
 		MEMCPY(packed.ptr + offset, interpreter.ptr, interpreter.length);
 		offset += interpreter.length;
 	}
+	tokArray.ptr++;
 	return result;
 }
 
 PARSER_INL
-(isize) parse_location(const Array<Token> &tokens, usize &cursor, usize end, Location &loc, const Array<Location> &locations) {
-	if (cursor == end || tokens[cursor].type != Token::WORD || !(tokens[cursor].value == "location"))
-		PERR_EXIT(1, "Error: Unexpected token");
-	cursor++;
-	if (cursor == end || tokens[cursor].type != Token::WORD)
-		PERR_EXIT(1, "Error: Expected location");
-	const Span uri = tokens[cursor].value;
+(void) parse_location(Array<Token> &tokArray, Location &loc, const Array<Location> &locations) {
+	const Span uri = tokArray[0].value;
 	if (uri.length == 0 || uri.ptr[0] != '/')
 		PERR_EXIT(1, "Error: Invalid location path");
 	if (s_length_check(uri.length))
 		PERR_EXIT(1, "Error: Path size is too large");
 	loc.uri = beta.compress_span(locations, uri);
-	cursor++;
-	if (cursor == end || tokens[cursor].type != Token::OPEN_BRACKET)
-		PERR_EXIT(1, "Error: Unexpected token");
-	const usize locationEnd = s_find_scope_end(tokens, cursor, end) + cursor;
-	cursor++;
+	tokArray.ptr += 2;
 	bool cgiDefined = false;
-	while (cursor != locationEnd) {
-		if (tokens[cursor].type == Token::WORD && tokens[cursor].value == "cgi") {
+	while (tokArray[0].type != Token::CLOSE_BRACKET) {
+		if (tokArray[0].value == "cgi") {
 			if (cgiDefined)
 				PERR_EXIT(1, "Error: Duplicate CGI block");
 			cgiDefined = true;
-			loc.cgiBlock = parse_cgi(tokens, cursor, end, locations);
+			tokArray.ptr++;
+			loc.cgiBlock = parse_cgi(tokArray, locations);
 		}
 		else {
-			Directive dir = s_build_directive(alpha, tokens, cursor, end);
+			Directive dir = s_build_directive(alpha, tokArray);
 			parse_location_directive(loc, dir, locations);
 		}
-		cursor++;
 	}
-	if (tokens[cursor].type != Token::CLOSE_BRACKET)
-		PERR_EXIT(1, "Error: Unexpected token");
-	return 0;
+	tokArray.ptr++;
 }

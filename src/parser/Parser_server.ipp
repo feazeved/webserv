@@ -71,7 +71,7 @@ PARSER_INL
 (void) parse_server_directive(VirtualServer &server, Directive &dir) {
 	if (dir.name == "error_page")
 		return s_directive_error_page(dir, server);
-	if (dir.args.count != 1)
+	if (dir.args.count != 1 || s_length_check(dir.args[0].length))
 		PERR_EXIT(1, "Error: Invalid server directive");
 	const Span &value = dir.args[0];
 	if (dir.name == "listen")
@@ -90,29 +90,35 @@ PARSER_INL
 	}
 	else
 		PERR_EXIT(1, "Error: Invalid server directive");
-	if (s_length_check(value.length))
-		PERR_EXIT(1, "Error: Invalid server directive");	// Review why not above
 }
 
 static inline
-usize s_count_locations(const Array<Parser::Token> &tokens, usize cursor, usize end) {
+usize s_count_locations(Array<Parser::Token> tokArray) {
 	usize locationCount = 0;
-	usize locationSize;
-
-	while (cursor < end) {
-		if (tokens[cursor].value == "location") {
-			usize distance = Parser::s_find_scope_end(tokens, cursor, end);
-			locationSize = (usize)(tokens[cursor + distance].value.ptr - tokens[cursor].value.ptr) + 1;
+	while (tokArray[0].type != Parser::Token::CLOSE_BRACKET) {
+		if (tokArray[0].value == "location") {
+			Parser::Token *locationStart = tokArray.ptr;
+			tokArray.ptr++;
+			if (tokArray[0].type != Parser::Token::WORD || tokArray[1].type != Parser::Token::OPEN_BRACKET)
+				PERR_EXIT(1, "Error: Invalid location block");
+			tokArray.ptr += 2;
+			usize braces = 1;
+			while (braces != 0) {
+				braces += tokArray[0].type == Parser::Token::OPEN_BRACKET;
+				braces -= tokArray[0].type == Parser::Token::CLOSE_BRACKET;
+				tokArray.ptr++;
+			}
+			const usize locationSize = (usize)(tokArray.ptr[-1].value.ptr - locationStart->value.ptr) + 1;
 			if (locationSize > MAX_LOCATION_BLOCK_SIZE)
 				PERR_EXIT(1, "Error: Location block exceeds maximum size");
 			locationCount++;
-			cursor += distance + 1;
 		}
 		else {
-			while (cursor < end && tokens[cursor].type != Parser::Token::SEMICOLON)
-				cursor++;
-			if (cursor < end)
-				cursor++;
+			while (tokArray[0].type == Parser::Token::WORD)
+				tokArray.ptr++;
+			if (tokArray[0].type != Parser::Token::SEMICOLON)
+				PERR_EXIT(1, "Error: Unexpected token");
+			tokArray.ptr++;
 		}
 	}
 	if (locationCount >= UINT16_MAX)
@@ -121,30 +127,20 @@ usize s_count_locations(const Array<Parser::Token> &tokens, usize cursor, usize 
 }
 
 PARSER_INL
-(isize) parse_server(const Array<Token> &tokens, usize cursor, usize end, VirtualServer &server) {
-	if (cursor == end || tokens[cursor].type != Token::WORD || !(tokens[cursor].value == "server"))
-		PERR_EXIT(1, "Error: Unexpected token");
-	cursor++;
-	if (cursor == end || tokens[cursor].type != Token::OPEN_BRACKET)
-		PERR_EXIT(1, "Error: Unexpected token");
-	cursor++;
-	if (cursor == end || tokens[cursor].type == Token::CLOSE_BRACKET)
-		PERR_EXIT(1, "Error: Empty server block");
-
-	usize locationCount = s_count_locations(tokens, cursor, end);
+(void) parse_server(Array<Token> &tokArray, VirtualServer &server) {
+	tokArray.ptr++;
+	usize locationCount = s_count_locations(tokArray);
 	server.locations = beta.alloc_array<Location>(locationCount);
 	if (server.locations.ptr == NULL)
 		std::exit(1);
-	Span emptySource;
-	emptySource.ptr = (char*)"";
-	emptySource.length = 0;
-	const Span32 empty = beta.compress_span(server.locations, emptySource);
+	const Span32 empty = beta.compress_span(server.locations, 0);
 
 	usize locationIndex = 0;
-	while (cursor != end) {
-		if (tokens[cursor].value == "location") {
+	while (tokArray[0].type != Token::CLOSE_BRACKET) {
+		if (tokArray[0].value == "location") {
 			Location loc(empty);
-			parse_location(tokens, cursor, end, loc, server.locations);
+			tokArray.ptr++;
+			parse_location(tokArray, loc, server.locations);
 			for (usize index = 0; index < locationIndex; index++) {
 				const Span path = server.locations.extract(server.locations[index].uri);
 				const Span candidate = server.locations.extract(loc.uri);
@@ -156,13 +152,11 @@ PARSER_INL
 			locationIndex++;
 		}
 		else {
-			Directive dir = s_build_directive(alpha, tokens, cursor, end);
+			Directive dir = s_build_directive(alpha, tokArray);
 			parse_server_directive(server, dir);
 		}
-		cursor++;
 	}
-	if (tokens[end].type != Token::CLOSE_BRACKET)
-		PERR_EXIT(1, "Error: Unexpected token");
+	tokArray.ptr++;
 	if (server.port == SIZE_MAX)
 		PERR_EXIT(1, "Error: Missing listen directive");
 	if (server.host.length == 0) {
@@ -171,5 +165,4 @@ PARSER_INL
 		localhost.length = sizeof("localhost") - 1;
 		server.host = beta.copy_span(localhost);
 	}
-	return 0;
 }

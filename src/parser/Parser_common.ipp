@@ -86,49 +86,24 @@ PARSER_INL
 }
 
 PARSER_INL
-(Parser::Directive) s_build_directive(Arena &arena, const Array<Token> &tokens, usize &cursor, usize end) {
+(Parser::Directive) s_build_directive(Arena &arena, Array<Token> &tokArray) {
 	Directive dir;
-	if (cursor == end || tokens[cursor].type != Token::WORD)
+	if (tokArray[0].type != Token::WORD)
 		PERR_EXIT(1, "Error: Unexpected token");
-	dir.name = tokens[cursor].value;
-	cursor++;
-	usize argumentStart = cursor;
-	while (cursor != end && tokens[cursor].type == Token::WORD)
-		cursor++;
-	if (cursor == end || tokens[cursor].type != Token::SEMICOLON)
+	dir.name = tokArray[0].value;
+	tokArray.ptr++;
+	Token *argumentStart = tokArray.ptr;
+	while (tokArray[0].type == Token::WORD)
+		tokArray.ptr++;
+	if (tokArray[0].type != Token::SEMICOLON)
 		PERR_EXIT(1, "Error: Unexpected token");
 
-	const usize argumentCount = cursor - argumentStart;
+	const usize argumentCount = (usize)(tokArray.ptr - argumentStart);
 	dir.args = arena.alloc_array<Span>(argumentCount);
 	if (argumentCount != 0 && dir.args.ptr == NULL)
 		std::exit(1);
 	for (usize index = 0; index < dir.args.count; index++)
-		dir.args[index] = tokens[argumentStart + index].value;
+		dir.args[index] = argumentStart[index].value;
+	tokArray.ptr++;
 	return dir;
-}
-
-PARSER_INL
-(usize) s_find_scope_end(const Array<Token> &tokens, usize begin, usize end) {
-	usize it = begin;
-	bool startedCount = false;
-	int braces = 0;
-	usize distance = 0;
-
-	while (it != end) {
-		if (tokens[it].type == Token::OPEN_BRACKET) {
-			startedCount = true;
-			braces++;
-		}
-		else if (tokens[it].type == Token::CLOSE_BRACKET) {
-			startedCount = true;
-			braces--;
-		}
-		if (!braces && startedCount)
-			break;
-		it++;
-		distance++;
-	}
-	if (it == end)
-		PERR_EXIT(1, "Error: Invalid block scope");
-	return distance;
 }

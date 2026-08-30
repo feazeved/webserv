@@ -37,20 +37,9 @@ public:
 		if (s_read_whole_file(alpha, filePath, file, 63, 16))
 			std::exit(1);
 		Array<Token> tokArray = tokenize();
-		usize cursor = 0;
-		usize end = tokArray.count;
-		usize serverIndex = 0;
-
-		while (cursor != end) {
-			if (tokArray[cursor].value == "server") {
-				usize distance = s_find_scope_end(tokArray, cursor, end);
-				parse_server(tokArray, cursor, cursor + distance, servers[serverIndex]);
-				serverIndex++;
-				cursor += distance;
-			}
-			else
-				PERR_EXIT(1, "Error: Unexpected token");
-			cursor++;
+		for (usize serverIndex = 0; serverIndex < serverCount; serverIndex++) {
+			tokArray.ptr++;
+			parse_server(tokArray, servers[serverIndex]);
 		}
 		for (usize index = 0; index < serverCount; index++) {
 			cache_error_pages(servers[index]);
@@ -60,15 +49,14 @@ public:
 
 	Array<Token> tokenize();
 	void cache_error_pages(VirtualServer &server);
-	isize parse_location(const Array<Token> &tokens, usize &cursor, usize end, Location &loc, const Array<Location> &locations);
-	isize parse_server(const Array<Token> &tokens, usize cursor, usize end, VirtualServer &server);
+	void parse_location(Array<Token> &tokArray, Location &loc, const Array<Location> &locations);
+	void parse_server(Array<Token> &tokArray, VirtualServer &server);
 
-	Span32 parse_cgi(const Array<Token> &tokens, usize &cursor, usize end, const Array<Location> &locations);
+	Span32 parse_cgi(Array<Token> &tokArray, const Array<Location> &locations);
 	void parse_location_directive(Location &location, Directive &dir, const Array<Location> &locations);
 	void parse_server_directive(VirtualServer &server, Directive &dir);
-	static Directive s_build_directive(Arena &arena, const Array<Token> &tokens, usize &cursor, usize end);
+	static Directive s_build_directive(Arena &arena, Array<Token> &tokArray);
 	static bool s_read_whole_file(Arena &arena, const char *filePath, Span &file, usize padSize = 32, usize minSize = 0, usize maxSize = UINT32_MAX);
-	static usize s_find_scope_end(const Array<Token> &tokens, usize begin, usize end);
 };
 
 #include "Parser_common.ipp"

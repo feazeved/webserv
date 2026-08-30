@@ -17,23 +17,14 @@ struct Arena {
 	u8 *ptr;
 	usize size, capacity;
 
-	Arena(u8* srcPtr, usize srcLength) : ptr(srcPtr), size(0), capacity(srcLength) {
-	}
+	Arena(u8* srcPtr, usize srcLength) : ptr(srcPtr), size(0), capacity(srcLength) {}
+
+	usize free_space()					const { return capacity - size; }
+	u8* mptr(usize fileOffset)			const { return ptr + fileOffset; }
+	const u8* kptr(usize fileOffset)	const { return ptr + fileOffset; }
 
 	void clear() {
 		size = 0;
-	}
-
-	usize free_space() const {
-		return capacity - size;
-	}
-
-	u8* mptr(usize fileOffset) const {
-		return ptr + fileOffset;
-	}
-
-	const u8* kptr(usize fileOffset) const {
-		return ptr + fileOffset;
 	}
 
 	u32 alloc(usize bytes, usize padding = 0, usize alignment = 64) {
