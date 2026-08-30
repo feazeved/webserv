@@ -2,6 +2,11 @@
 #include "Parser.hpp"
 
 static inline
+bool s_is_config_delimiter(char value) {
+	return value == '{' || value == '}' || value == ';';
+}
+
+static inline
 usize s_count_tokens(const char *str) {
 	usize tokenCount = 0;
 	while (true) {
@@ -153,7 +158,7 @@ PARSER_INL
 	}
 	if (braces != 0)
 		PERR_EXIT(1, "Error: Expected '}' to match previous '{'");
-	for (usize index = 0; index < tokArray.count; index++) {
+	for (usize index = 0; index < tokArray.count; index++) {	// Review: This could probably be done in the loop above or inside get next word
 		if (tokArray[index].type == Token::WORD) {
 			Span &word = tokArray[index].value;
 			word.ptr[word.length] = '\0';

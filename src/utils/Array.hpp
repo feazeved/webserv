@@ -25,13 +25,14 @@ public:
 		return *this;
 	}
 
-	Span extract(const Span32 &span) const {
-		Span result;
-		result.ptr = (char*)ptr + span.index;
-		result.length = span.length;
-		return result;
-	}
 };
+
+// Span extract(const Span32 &span) const {
+// 	Span result;
+// 	result.ptr = (char*)ptr + span.index;
+// 	result.length = span.length;
+// 	return result;
+// }
 
 /* Packed array
 	The reason for this array's existence is to offload the memory usage consumed by the

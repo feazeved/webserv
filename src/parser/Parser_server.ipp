@@ -109,8 +109,8 @@ usize s_count_locations(Array<Parser::Token> tokArray) {
 				tokArray.ptr++;
 			}
 			const usize locationSize = (usize)(tokArray.ptr[-1].value.ptr - locationStart->value.ptr) + 1;
-			if (locationSize > MAX_LOCATION_BLOCK_SIZE)
-				PERR_EXIT(1, "Error: Location block exceeds maximum size");
+			if (locationSize <= 1 || locationSize > MAX_LOCATION_BLOCK_SIZE)
+				PERR_EXIT(1, "Error: Invalid location block");	// No empty locations either
 			locationCount++;
 		}
 		else {
@@ -130,25 +130,21 @@ PARSER_INL
 (void) parse_server(Array<Token> &tokArray, VirtualServer &server) {
 	tokArray.ptr++;
 	usize locationCount = s_count_locations(tokArray);
-	server.locations = beta.alloc_array<Location>(locationCount);
-	if (server.locations.ptr == NULL)
+	Array<ParsedLocation> parsedLocations = alpha.alloc_array<ParsedLocation>(locationCount);
+	if (parsedLocations.ptr == NULL)
 		std::exit(1);
-	const Span32 empty = beta.compress_span(server.locations, 0);
 
 	usize locationIndex = 0;
 	while (tokArray[0].type != Token::CLOSE_BRACKET) {
 		if (tokArray[0].value == "location") {
-			Location loc(empty);
 			tokArray.ptr++;
-			parse_location(tokArray, loc, server.locations);
+			ParsedLocation loc = parse_location(tokArray);
 			for (usize index = 0; index < locationIndex; index++) {
-				const Span path = server.locations.extract(server.locations[index].uri);
-				const Span candidate = server.locations.extract(loc.uri);
-				if (path.length == candidate.length
-					&& MEMCMP(path.ptr, candidate.ptr, path.length) == 0)
+				const Span &path = parsedLocations[index].uri;
+				if (path.length == loc.uri.length && MEMCMP(path.ptr, loc.uri.ptr, path.length) == 0)
 					PERR_EXIT(1, "Error: Duplicate location");
 			}
-			server.locations[locationIndex] = loc;
+			parsedLocations[locationIndex] = loc;
 			locationIndex++;
 		}
 		else {
@@ -160,9 +156,8 @@ PARSER_INL
 	if (server.port == SIZE_MAX)
 		PERR_EXIT(1, "Error: Missing listen directive");
 	if (server.host.length == 0) {
-		Span localhost;
-		localhost.ptr = (char*)"localhost";
-		localhost.length = sizeof("localhost") - 1;
+		Span localhost = Span::create("localhost");
 		server.host = beta.copy_span(localhost);
 	}
+	server.locations = store_locations(parsedLocations);
 }

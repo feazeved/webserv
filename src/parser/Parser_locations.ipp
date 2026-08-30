@@ -2,7 +2,7 @@
 #include "Parser.hpp"
 
 static inline
-void s_set_methods(const Array<Span> &methods, Location &location) {
+void s_set_methods(const Array<Span> &methods, Parser::ParsedLocation &location) {
 	for (usize index = 0; index < methods.count; index++) {
 		if (methods[index] == "GET")
 			location.methods |= Options::GET;
@@ -16,13 +16,13 @@ void s_set_methods(const Array<Span> &methods, Location &location) {
 }
 
 PARSER_INL
-(void) parse_location_directive(Location &location, Directive &dir, const Array<Location> &locations) {
+(void) parse_location_directive(ParsedLocation &location, Directive &dir) {
 	usize length = 1;
 
 	if (dir.name == "root") {
 		if (dir.args.count != 1)
 			PERR_EXIT(1, "Error: Invalid root");
-		location.root = beta.compress_span(locations, dir.args[0]);
+		location.root = dir.args[0];
 		length = dir.args[0].length;
 	}
 	else if (dir.name == "autoindex") {
@@ -38,7 +38,7 @@ PARSER_INL
 	else if (dir.name == "index") {
 		if (dir.args.count != 1)
 			PERR_EXIT(1, "Error: Invalid index");
-		location.index = beta.compress_span(locations, dir.args[0]);
+		location.index = dir.args[0];
 		length = dir.args[0].length;
 	}
 	else if (dir.name == "upload_store") {
@@ -46,7 +46,7 @@ PARSER_INL
 		if (dir.args.count != 1 || stat(dir.args[0].ptr, &st) == -1
 			|| !S_ISDIR(st.st_mode) || access(dir.args[0].ptr, W_OK | X_OK) == -1)
 			PERR_EXIT(1, "Error: Invalid upload store");
-		location.uploadStore = beta.compress_span(locations, dir.args[0]);
+		location.uploadStore = dir.args[0];
 		length = dir.args[0].length;
 	}
 	else if (dir.name == "return") {
@@ -56,7 +56,7 @@ PARSER_INL
 		location.redirectStatus = status;
 		if (dir.args[0].length != 3 || status < 300 || status > 399 || !location.redirectStatus.is_valid())
 			PERR_EXIT(1, "Error: Invalid redirect status");
-		location.redirectTarget = beta.compress_span(locations, dir.args[1]);
+		location.redirectTarget = dir.args[1];
 		length = dir.args[1].length;
 	}
 	else
@@ -66,11 +66,11 @@ PARSER_INL
 }
 
 PARSER_INL
-(Span32) parse_cgi(Array<Token> &tokArray, const Array<Location> &locations) {
+(Parser::ParsedCgi) parse_cgi(Array<Token> &tokArray) {
 	if (tokArray[0].type != Token::OPEN_BRACKET)
 		PERR_EXIT(1, "Error: Invalid CGI block");
 
-	usize packSize = 0;
+	ParsedCgi cgi;
 	tokArray.ptr++;
 	Token *definitionStart = tokArray.ptr;
 	while (tokArray[0].type != Token::CLOSE_BRACKET) {
@@ -94,35 +94,23 @@ PARSER_INL
 		if (tokArray[0].type != Token::SEMICOLON)
 			PERR_EXIT(1, "Error: Expected ';' after CGI definition");
 		tokArray.ptr++;
-		packSize += sizeof(u16) * 2 + extension.length + interpreter.length;
+		cgi.length += sizeof(u16) * 2 + extension.length + interpreter.length;
 	}
 
-	const Span32 result = beta.compress_span(locations, packSize);
-	Span packed = locations.extract(result);
-	usize offset = 0;
-	for (Token *definition = definitionStart; definition < tokArray.ptr; definition += 4) {
-		const Span &extension = definition[0].value;
-		const Span &interpreter = definition[2].value;
-		const u16 lengths[2] = {(u16)extension.length, (u16)interpreter.length};
-		MEMCPY_INLINE(packed.ptr + offset, lengths, sizeof(lengths));
-		offset += sizeof(lengths);
-		MEMCPY(packed.ptr + offset, extension.ptr, extension.length);
-		offset += extension.length;
-		MEMCPY(packed.ptr + offset, interpreter.ptr, interpreter.length);
-		offset += interpreter.length;
-	}
+	cgi.definitions = Array<Token>(definitionStart, (usize)(tokArray.ptr - definitionStart));
 	tokArray.ptr++;
-	return result;
+	return cgi;
 }
 
 PARSER_INL
-(void) parse_location(Array<Token> &tokArray, Location &loc, const Array<Location> &locations) {
-	const Span uri = tokArray[0].value;
-	if (uri.length == 0 || uri.ptr[0] != '/')
+(Parser::ParsedLocation) parse_location(Array<Token> &tokArray) {
+	ParsedLocation loc;
+	loc.uri = tokArray[0].value;
+
+	if (loc.uri.length == 0 || loc.uri.ptr[0] != '/')
 		PERR_EXIT(1, "Error: Invalid location path");
-	if (s_length_check(uri.length))
+	if (s_length_check(loc.uri.length))
 		PERR_EXIT(1, "Error: Path size is too large");
-	loc.uri = beta.compress_span(locations, uri);
 	tokArray.ptr += 2;
 	bool cgiDefined = false;
 	while (tokArray[0].type != Token::CLOSE_BRACKET) {
@@ -131,12 +119,13 @@ PARSER_INL
 				PERR_EXIT(1, "Error: Duplicate CGI block");
 			cgiDefined = true;
 			tokArray.ptr++;
-			loc.cgiBlock = parse_cgi(tokArray, locations);
+			loc.cgiBlock = parse_cgi(tokArray);
 		}
 		else {
 			Directive dir = s_build_directive(alpha, tokArray);
-			parse_location_directive(loc, dir, locations);
+			parse_location_directive(loc, dir);
 		}
 	}
 	tokArray.ptr++;
+	return loc;
 }

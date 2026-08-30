@@ -55,31 +55,35 @@ struct Arena {
 		return Array<Type>((Type*)mptr(index), numElements);
 	}
 
-	// Review
-	Span copy_span(const Span &source) {
-		const u32 offset = alloc(source.length, 1);
+	Span alloc_span(usize length) {
+		const u32 offset = alloc(length, 1);
 		if (offset == UINT32_MAX)
 			std::exit(1);
-		Span result = {(char*)mptr(offset), source.length};
-		MEMCPY(result.ptr, source.ptr, source.length);
+		Span result = {(char*)mptr(offset), length};
 		result.ptr[result.length] = '\0';
 		return result;
 	}
 
-	template <typename Type>
-	Span32 compress_span(const Array<Type> &array, usize length) {
-		const u32 offset = alloc(length, 1);
-		if (offset == UINT32_MAX)
-			std::exit(1);
-		Span32 result = {(u32)((char*)mptr(offset) - (char*)array.ptr), (u32)length};
-		array.extract(result).ptr[length] = '\0';
-		return result;
-	}
-
-	template <typename Type>
-	Span32 compress_span(const Array<Type> &array, const Span &source) {
-		const Span32 result = compress_span(array, source.length);
-		MEMCPY(array.extract(result).ptr, source.ptr, source.length);
+	Span copy_span(const Span &source) {
+		Span result = alloc_span(source.length);
+		MEMCPY(result.ptr, source.ptr, source.length);
 		return result;
 	}
 };
+
+	// template <typename Type>
+	// Span32 compress_span(const Array<Type> &array, usize length) {
+	// 	const u32 offset = alloc(length, 1);
+	// 	if (offset == UINT32_MAX)
+	// 		std::exit(1);
+	// 	Span32 result = {(u32)((char*)mptr(offset) - (char*)array.ptr), (u32)length};
+	// 	array.extract(result).ptr[length] = '\0';
+	// 	return result;
+	// }
+
+	// template <typename Type>
+	// Span32 compress_span(const Array<Type> &array, const Span &source) {
+	// 	const Span32 result = compress_span(array, source.length);
+	// 	MEMCPY(array.extract(result).ptr, source.ptr, source.length);
+	// 	return result;
+	// }

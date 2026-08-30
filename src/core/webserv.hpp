@@ -3,30 +3,6 @@
 #include "Span.hpp"
 #include "Status.hpp"
 
-// Every Span32 in a parsed Location is relative to its owning locations Array.
-// The parser stores a NUL byte immediately after each referenced value.
-// TODO: store 2 byte starts for each path here, then MEMCMP 12 bytes to get indexes that match, and only compare those indices
-struct Location {
-	Span32 uri;
-	Span32 root;
-	Span32 index;			// If this is specified, its a file
-	Span32 uploadStore;
-	Span32 cgiBlock;		// Packed CGI definitions
-	Span32 redirectTarget;
-	Status redirectStatus;
-	u8 methods;
-	bool autoindex;
-
-	Location()
-		: uri(), root(), index(), uploadStore(), cgiBlock(), redirectTarget(),
-		  redirectStatus(), methods(0), autoindex(false) {}
-
-	explicit Location(const Span32 &empty)
-		: uri(empty), root(empty), index(empty), uploadStore(empty),
-		  cgiBlock(empty), redirectTarget(empty), redirectStatus(), methods(0),
-		  autoindex(false) {}
-};
-
 // These are exclusive states
 namespace Mode {
 	enum e_http_mode {

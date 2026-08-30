@@ -27,6 +27,29 @@ public:
 		Array<Span> args;
 	};
 
+	struct ParsedCgi {
+		Array<Token> definitions;
+		usize length;
+
+		ParsedCgi() : definitions(), length(0) {}
+	};
+
+	struct ParsedLocation {
+		Span uri;
+		Span root;
+		Span index;
+		Span uploadStore;
+		ParsedCgi cgiBlock;
+		Span redirectTarget;
+		Status redirectStatus;
+		u8 methods;
+		bool autoindex;
+
+		ParsedLocation()
+			: uri(), root(), index(), uploadStore(), cgiBlock(), redirectTarget(),
+			  redirectStatus(), methods(0), autoindex(false) {}
+	};
+
 	Arena &alpha;
 	Arena &beta;
 	Span file;
@@ -49,11 +72,12 @@ public:
 
 	Array<Token> tokenize();
 	void cache_error_pages(VirtualServer &server);
-	void parse_location(Array<Token> &tokArray, Location &loc, const Array<Location> &locations);
+	ParsedLocation parse_location(Array<Token> &tokArray);
 	void parse_server(Array<Token> &tokArray, VirtualServer &server);
+	Array<Location> store_locations(const Array<ParsedLocation> &source);
 
-	Span32 parse_cgi(Array<Token> &tokArray, const Array<Location> &locations);
-	void parse_location_directive(Location &location, Directive &dir, const Array<Location> &locations);
+	ParsedCgi parse_cgi(Array<Token> &tokArray);
+	void parse_location_directive(ParsedLocation &location, Directive &dir);
 	void parse_server_directive(VirtualServer &server, Directive &dir);
 	static Directive s_build_directive(Arena &arena, Array<Token> &tokArray);
 	static bool s_read_whole_file(Arena &arena, const char *filePath, Span &file, usize padSize = 32, usize minSize = 0, usize maxSize = UINT32_MAX);

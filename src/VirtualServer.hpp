@@ -14,6 +14,27 @@
 
 #define VIRTUALSERVER_INL(ret_type) ret_type inline VirtualServer::
 
+struct Location {
+	Span16	uri;
+	Span16	root;
+	Span16	index;
+	Span16	uploadStore;
+	Span16	cgiBlock;
+	Span16	redirectTarget;
+	Status	redirectStatus;
+	u8		methods;
+	bool	autoindex;
+
+	Location()
+		: uri(), root(), index(), uploadStore(), cgiBlock(), redirectTarget(),
+		  redirectStatus(), methods(0), autoindex(false) {}
+
+	Span extract(const Span16 &span) const {
+		Span result = {(char*)&uri + span.index, span.length};
+		return result;
+	}
+};
+
 class VirtualServer {
 public:
 	Span			serverRoot;
@@ -118,3 +139,4 @@ public:
 		return invalid;
 	}
 };
+

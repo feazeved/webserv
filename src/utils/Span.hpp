@@ -14,15 +14,21 @@ struct Span {
 		return length == size - 1 && STRCMP(ptr, literal) == 0;
 	}
 
+	template <usize size>
+	static Span create(const char (&literal)[size]) {
+		Span newSpan = {literal, size - 1};
+		return newSpan;
+	}
+
 	operator char*() const {
 		return ptr;
 	}
 };
 
-struct Span32 {
-	u32 index;
-	u32 length;
-};
+// struct Span32 {
+// 	u32 index;
+// 	u32 length;
+// };
 
 // A ZPtr could be an object that only contains its index
 // The length is encoded in the location, so extracting is ptr = *zptr + 8, length = *zptr[8]
@@ -31,11 +37,11 @@ struct Span32 {
 struct Span16 {
 	u16 index;
 	u16 length;
-
-	Span extract(char* ptr) const {
-		Span result;
-		result.ptr = ptr + index;
-		result.length = length;
-		return result;
-	}
 };
+
+// Span extract(char* ptr) const {
+// 	Span result;
+// 	result.ptr = ptr + index;
+// 	result.length = length;
+// 	return result;
+// }

@@ -2,11 +2,6 @@
 #include "Parser.hpp"
 
 static inline
-bool s_is_config_delimiter(char value) {
-	return value == '{' || value == '}' || value == ';';
-}
-
-static inline
 bool s_length_check(usize length) {
 	return length == 0 || length >= MAX_PATH_SIZE;
 }
@@ -28,27 +23,6 @@ usize s_strtol10(const char *str, usize length) {
 		return SIZE_MAX;
 	return value;
 }
-
-// PARSER_INL
-// (bool) s_read_whole_file2(char *ptr, const char *filePath, usize fileSize) {
-// 	int fd = open(filePath, O_RDONLY);
-// 	if (fd == -1)
-// 		PERR_RETURN(1, "Error: Failed to open file");
-
-// 	usize curBytes = 0;
-// 	while (curBytes < fileSize) {
-// 		usize bytesRemaining = fileSize - curBytes;
-// 		isize bytesRead = read(fd, ptr + curBytes, MIN(bytesRemaining, ATOMIC_IOSIZE));
-// 		if (bytesRead <= 0) {
-// 			close(fd);
-// 			PERR_RETURN(1, "Error: Read failure");
-// 		}
-// 		curBytes += (usize) bytesRead;
-// 	}
-// 	close(fd);
-// 	ptr[fileSize] = '\0';
-// 	return 0;
-// }
 
 PARSER_INL
 (bool) s_read_whole_file(Arena &arena, const char *filePath, Span &file, usize padSize, usize minSize, usize maxSize) {
