@@ -20,20 +20,9 @@ public:
 		return mask_start(bitStart) & mask_end(bitEnd);
 	}
 
-	ALWAYS_INLINE
-	void bitset(usize index) {
-		bitmap |= (usize)1 << index;
-	}
-
-	ALWAYS_INLINE
-	void bitclr(usize index) {
-		bitmap &= ~((usize)1 << index);
-	}
-
-	ALWAYS_INLINE
-	void bitflip(usize index) {
-		bitmap ^= (usize)1 << index;
-	}
+	ALWAYS_INLINE void bitset(usize index)	{ bitmap |= (usize)1 << index; }
+	ALWAYS_INLINE void bitclr(usize index)	{ bitmap &= ~((usize)1 << index);}
+	ALWAYS_INLINE void bitflip(usize index)	{ bitmap ^= (usize)1 << index; }
 
 	ALWAYS_INLINE	// Inclusive start, Exclusive end
 	void bitwrite(usize bitStart, usize bitEnd, bool bit) {
@@ -44,21 +33,46 @@ public:
 	}
 
 	ALWAYS_INLINE
+	static usize pop_first_set(usize &bitmap) {
+		usize index = bitmap == 0 ? WORD_BITS : (usize)CTZ(bitmap);
+		bitmap &= bitmap - 1;
+		return index;
+	}
+
+	ALWAYS_INLINE
 	bool bitread(u8 index) const {
 		return (bitmap & ((usize)1 << index)) != 0;
 	}
 
 	ALWAYS_INLINE
-	usize find_first_clear() const {
-		usize bit = (usize) FFS(~bitmap);
-		return bit ? bit - 1 : SIZE_MAX;
+	usize bitread(usize bitStart, usize bitEnd) const {
+		return (bitmap & mask_range(bitStart, bitEnd)) >> bitStart;
+	}
+
+	ALWAYS_INLINE
+	usize find_first_clear() {
+		if (bitmap == SIZE_MAX)
+			return WORD_BITS;
+		return (usize)CTZ(~bitmap);
 	}
 
 	ALWAYS_INLINE
 	usize find_first_set() const {
-		usize bit = (usize) FFS(bitmap);
-		return bit ? bit - 1 : SIZE_MAX;
+		if (bitmap == 0)
+			return WORD_BITS;
+		return (usize)CTZ(bitmap);
 	}
+
+	// template <void (*Func)(usize)>
+	// void for_each_active() const {
+	// 	usize active = bitmap;
+
+	// 	while (active != 0) {
+	// 		usize index = (usize) FFS(active) - 1;
+	// 		Func(index);
+	// 		active &= active - 1;
+	// 	}
+	// }
 
 	ALWAYS_INLINE
 	usize count() const {

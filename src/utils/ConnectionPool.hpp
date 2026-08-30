@@ -18,22 +18,36 @@ public:
 		return connections + linearIndex;
 	}
 
-	void check_timeout(time_t curTime) {
-		for (usize blockIndex = 0; blockIndex < blockCount; blockIndex++) {
-			Bitmap &elementBlock = elementBitmap[blockIndex];
-			if (elementBlock.bitmap == 0)
-				continue;
+	// void check_timeout(time_t curTime) {
+	// 	for (usize blockIndex = 0; blockIndex < blockCount; blockIndex++) {
+	// 		Bitmap &elementBlock = elementBitmap[blockIndex];
+	// 		if (elementBlock.bitmap == 0)
+	// 			continue;
 			
+	// 		Connection *base = connections + blockIndex * 64;
+	// 		usize elementIndex = blockIndex;
+	// 		while ((elementIndex = elementBlock.find_first_set()) != SIZE_MAX) {
+	// 			if (base[elementIndex].check_timeout(curTime) == false)
+	// 				continue;
+	// 			Clock::update();
+	// 			base[elementIndex].clear();
+	// 			elementBlock.bitclr(elementIndex);
+	// 		}
+	// 		blockBitmap.bitclr(blockIndex);
+	// 	}
+	// }
+
+	template <void (Connection::*Func)()>
+	void for_each_active() {
+		for (usize blockIndex = 0; blockIndex < blockCount; blockIndex++) {
+			Bitmap active = elementBitmap[blockIndex];
+
 			Connection *base = connections + blockIndex * 64;
-			usize elementIndex = blockIndex;
-			while ((elementIndex = elementBlock.find_first_set()) != SIZE_MAX) {
-				if (base[elementIndex].check_timeout(curTime) == false)
-					continue;
-				Clock::update();
-				base[elementIndex].clear();
-				elementBlock.bitclr(elementIndex);
+			usize elementIndex;
+			while ((elementIndex = active.find_first_set()) != SIZE_MAX) {
+				(base[elementIndex].*Func)();
+				active.bitclr(elementIndex);
 			}
-			blockBitmap.bitclr(blockIndex);
 		}
 	}
 
