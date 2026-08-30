@@ -6,7 +6,7 @@ bool s_length_check(usize length) {
 	return length == 0 || length >= MAX_PATH_SIZE;
 }
 
-// Exact
+static inline
 usize s_strtol10(const char *str, usize length) {
 	usize value = 0;
 	usize digit = 0;

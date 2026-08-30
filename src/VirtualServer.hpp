@@ -25,14 +25,21 @@ struct Location {
 	u8		methods;
 	bool	autoindex;
 
-	Location()
-		: uri(), root(), index(), uploadStore(), cgiBlock(), redirectTarget(),
-		  redirectStatus(), methods(0), autoindex(false) {}
+	// Location()
+	// 	: uri(), root(), index(), uploadStore(), cgiBlock(), redirectTarget(),
+	// 	  redirectStatus(), methods(0), autoindex(false) {}
 
-	Span extract(const Span16 &span) const {
-		Span result = {(char*)&uri + span.index, span.length};
+	Span extract(const Span16 &span) {
+		Span result = {(char*)this + span.index, span.length};
 		return result;
 	}
+
+	Span get_uri()				{ return extract(uri); }
+	Span get_root() 			{ return extract(root); }
+	Span get_index()			{ return extract(index); }
+	Span get_upload_store()		{ return extract(uploadStore); }
+	Span get_cgi_block()		{ return extract(cgiBlock); }
+	Span get_redirect_target()	{ return extract(redirectTarget); }
 };
 
 class VirtualServer {
@@ -46,11 +53,11 @@ public:
 	void*			gameState;
 	int 			listenFd;
 
-	VirtualServer()
-		: serverRoot(), host(), locations(), port(SIZE_MAX),
-		  maxBodySize(SIZE_MAX), gameState(NULL), listenFd(-1) {
-		MEMSET_INLINE(errorPages, 0, sizeof(errorPages));
-	}
+	// VirtualServer()
+	// 	: serverRoot(), host(), locations(), port(SIZE_MAX),
+	// 	maxBodySize(SIZE_MAX), gameState(NULL), listenFd(-1) {
+	// 	MEMSET_INLINE(errorPages, 0, sizeof(errorPages));
+	// }
 
 	~VirtualServer() {
 		clear();
@@ -78,9 +85,8 @@ public:
 		if (s_set_close_on_exec(listenFd))	// TODO: Review
 			PERR_EXIT(clear(), "Error: Failed to configure listening socket");
 
-		int reuseAddress = 1;
-		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR,
-			&reuseAddress, sizeof(reuseAddress)) == -1)
+		int reuse = 1;
+		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) == -1)
 			PERR_EXIT(clear(), "Error: Failed to configure listening socket");
 
 		sockaddr_in address;

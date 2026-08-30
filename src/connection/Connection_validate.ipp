@@ -3,14 +3,14 @@
 
 CONNECTION_INL
 (Location*) check_location() {
-	Array32<Location> &locations = cfg->locations;
+	Array<Location> &locations = cfg->locations;
 	bool match = false;
 	usize cmpLength = *req.path.ptr == '/';
 	while (cmpLength < req.path.length && req.path.ptr[cmpLength] != '/')
 		cmpLength++;
 
 	for (usize i = 0; i < locations.count; i++) {
-		Span srcUri = locations[i].uri.extract();
+		Span srcUri = locations[i].get_uri();
 		if (cmpLength != srcUri.length)
 			continue;
 		if (MEMCMP(req.path.ptr, srcUri.ptr, cmpLength) == 0) {
@@ -29,7 +29,7 @@ CONNECTION_INL
 
 static inline
 Span s_check_cgi(Location *loc, Span refExt) {
-	Span cgi = loc->cgiBlock.extract();
+	Span cgi = loc->get_cgi_block();
 	char *cgiEnd = cgi.end();
 	u16 lengths[2];
 	Span result = {0, 0};

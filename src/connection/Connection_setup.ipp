@@ -4,7 +4,7 @@
 CONNECTION_INL
 (isize) del_setup() {
 	Buffer16 pathBuffer;
-	pathBuffer.append(req.location->root.extract());
+	pathBuffer.append(req.location->get_root());
 	pathBuffer.append(req.path);
 	pathBuffer.append("\0");
 
@@ -24,8 +24,8 @@ CONNECTION_INL
 CONNECTION_INL
 (isize) post_setup() {
 	Buffer16 pathBuffer;
-	pathBuffer.append(req.location->root.extract());
-	pathBuffer.append(req.location->uploadStore.extract());
+	pathBuffer.append(req.location->get_root());
+	pathBuffer.append(req.location->get_upload_store());
 	pathBuffer.append("\0");
 
 	writeFd = open(pathBuffer, O_WRONLY | O_CREAT | O_EXCL, 0644);
@@ -67,7 +67,7 @@ CONNECTION_INL
 CONNECTION_INL
 (isize) get_setup() {
 	Buffer8 pathBuffer;
-	pathBuffer.append(req.location->root.extract());
+	pathBuffer.append(req.location->get_root());
 	pathBuffer.append(req.path);
 	pathBuffer.append("\0");
 
@@ -133,7 +133,7 @@ CONNECTION_INL
 
 	Environment::reset();
 
-	argv[0] = buffer.append(req.location->root.extract());
+	argv[0] = buffer.append(req.location->get_root());
 	buffer.append(req.interpreter);
 	buffer.append("\0");	// Todo: check if these params are null terminated
 	char* scriptName = buffer.append("SCRIPT_NAME=");

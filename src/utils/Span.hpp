@@ -20,6 +20,11 @@ struct Span {
 		return newSpan;
 	}
 
+	static Span create(char* srcPtr, usize srcLength) {
+		Span newSpan = {srcPtr, srcLength};
+		return newSpan;
+	}
+
 	operator char*() const {
 		return ptr;
 	}

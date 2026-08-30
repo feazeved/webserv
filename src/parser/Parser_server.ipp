@@ -155,9 +155,7 @@ PARSER_INL
 	tokArray.ptr++;
 	if (server.port == SIZE_MAX)
 		PERR_EXIT(1, "Error: Missing listen directive");
-	if (server.host.length == 0) {
-		Span localhost = Span::create("localhost");
-		server.host = beta.copy_span(localhost);
-	}
+	if (server.host.length == 0)
+		server.host = beta.copy_span(Span::create("localhost"));
 	server.locations = store_locations(parsedLocations);
 }
