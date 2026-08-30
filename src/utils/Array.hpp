@@ -1,12 +1,15 @@
 #pragma once
 #include "core.hpp"
+#include "Span.hpp"
 
-// This is technically a span
 template <typename Type>
 class Array {
 public:
 	Type* ptr;
 	usize count;
+
+	Array() : ptr(NULL), count(0) {}
+	Array(Type* srcPtr, usize srcCount) : ptr(srcPtr), count(srcCount) {}
 
 	Type& operator[] (usize index) {
 		return ptr[index];
@@ -19,43 +22,16 @@ public:
 	Array& operator=(const Array& other) {
 		ptr = other.ptr;
 		count = other.count;
+		return *this;
+	}
+
+	Span extract(const Span32 &span) const {
+		Span result;
+		result.ptr = (char*)ptr + span.index;
+		result.length = span.length;
+		return result;
 	}
 };
-
-// template <typename Type>
-// class Array32 {
-// public:
-// 	u32 offset;
-// 	u32 count;
-
-// 	Array32() : offset(0), count(0) {}
-
-// 	bool alloc_a(u32 numElements) {
-// 		usize totalSize = numElements * sizeof(Type);
-// 		count = numElements;
-// 		offset = Arena::alloc_a(totalSize);
-// 		if (offset == UINT32_MAX)
-// 			return true;
-// 		return false;
-// 	}
-
-// 	bool alloc_b(u32 numElements) {
-// 		usize totalSize = numElements * sizeof(Type);
-// 		count = numElements;
-// 		offset = Arena::alloc_b(totalSize);
-// 		if (offset == UINT32_MAX)
-// 			return true;
-// 		return false;
-// 	}
-
-	// Type& operator[] (usize index) {
-	// 	return ((Type*)(Arena::mptr(offset)))[index];
-	// }
-
-	// const Type& operator[] (usize index) const {
-	// 	return ((const Type*)(Arena::mptr(offset)))[index];
-	// }
-// };
 
 /* Packed array
 	The reason for this array's existence is to offload the memory usage consumed by the
@@ -90,6 +66,10 @@ struct Matrix {
 	Type array[count];
 
 	Type& operator[] (usize index) {
+		return array[index];
+	}
+
+	const Type& operator[] (usize index) const {
 		return array[index];
 	}
 };

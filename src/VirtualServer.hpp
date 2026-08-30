@@ -7,7 +7,7 @@
 
 #include "core.hpp"
 #include "webserv.hpp"
-#include "StringView.hpp"
+#include "Span.hpp"
 #include "Status.hpp"
 #include "Array.hpp"
 #include "Environment.hpp"
@@ -16,19 +16,19 @@
 
 class VirtualServer {
 public:
-	StringView32		serverRoot;
-	StringView32		errorPages[Status::errorPageCount];
-	StringView32		host;
-	Array32<Location>	locations;	// This should be a regular Array
-	usize				port;
-	usize				maxBodySize;
-	void*				gameState;
-	int 				listenFd;
+	Span			serverRoot;
+	Span			errorPages[Status::errorPageCount];
+	Span			host;
+	Array<Location>	locations;
+	usize			port;
+	usize			maxBodySize;
+	void*			gameState;
+	int 			listenFd;
 
 	VirtualServer()
 		: serverRoot(), host(), locations(), port(SIZE_MAX),
 		  maxBodySize(SIZE_MAX), gameState(NULL), listenFd(-1) {
-			MEMSET_INLINE(errorPages, 0, sizeof(errorPages));
+		MEMSET_INLINE(errorPages, 0, sizeof(errorPages));
 	}
 
 	~VirtualServer() {
@@ -96,7 +96,7 @@ public:
 		return fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1;
 	}
 
-	static bool s_resolve_host_and_port(const StringView32& host, usize port, sockaddr_in& address) {
+	static bool s_resolve_host_and_port(const Span& host, usize port, sockaddr_in& address) {
 		addrinfo hints;
 		MEMSET_INLINE(&hints, 0, sizeof(hints));
 		hints.ai_family = AF_INET;
@@ -104,7 +104,7 @@ public:
 		hints.ai_flags = 0;
 
 		addrinfo* result = NULL;
-		int status = getaddrinfo(host.kptr(), NULL, &hints, &result);
+		int status = getaddrinfo(host.ptr, NULL, &hints, &result);
 		if (status != 0 || result == NULL)
 			return true;
 

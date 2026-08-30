@@ -7,7 +7,7 @@ bool s_is_config_delimiter(char value) {
 }
 
 static inline
-bool s_length_check(u32 length) {
+bool s_length_check(usize length) {
 	return length == 0 || length >= MAX_PATH_SIZE;
 }
 
@@ -50,25 +50,24 @@ usize s_strtol10(const char *str, usize length) {
 // 	return 0;
 // }
 
-// TODO: Implement minimum size, and file querying before not after
 PARSER_INL
-(bool) s_read_whole_file(const char *filePath, usize &fileOffset, usize &fileSize, usize padSize) {
+(bool) s_read_whole_file(Arena &arena, const char *filePath, Span &file, usize padSize, usize minSize, usize maxSize) {
 	struct stat st;
-	if (stat(filePath, &st) == -1 || st.st_size < 16 || st.st_size >= UINT32_MAX)
+	if (stat(filePath, &st) == -1 || (usize)st.st_size < minSize || (usize)st.st_size >= maxSize)
 		PERR_RETURN(1, "Error: Invalid file");
 
 	int fd = open(filePath, O_RDONLY);
 	if (fd == -1)
 		PERR_RETURN(1, "Error: Failed to open file");
 
-	fileSize = (usize) st.st_size;
-	fileOffset = Arena::alloc_b(fileSize + 1 + padSize);
+	const usize fileSize = (usize)st.st_size;
+	const u32 fileOffset = arena.alloc(fileSize, 1 + padSize);
 	if (fileOffset == UINT32_MAX) {
 		close(fd);
 		PERR_RETURN(1, "Error: Out of memory");
 	}
 
-	u8* ptr = Arena::mptr(fileOffset);
+	u8* ptr = arena.mptr(fileOffset);
 	usize curBytes = 0;
 	while (curBytes < fileSize) {
 		usize bytesRemaining = fileSize - curBytes;
@@ -81,11 +80,13 @@ PARSER_INL
 	}
 	close(fd);
 	ptr[fileSize] = '\0';
+	file.ptr = (char*)ptr;
+	file.length = fileSize;
 	return 0;
 }
 
 PARSER_INL
-(Parser::Directive) s_build_directive(const Array32<Token> &tokens, usize &cursor, usize end) {
+(Parser::Directive) s_build_directive(Arena &arena, const Array<Token> &tokens, usize &cursor, usize end) {
 	Directive dir;
 	if (cursor == end || tokens[cursor].type != Token::WORD)
 		PERR_EXIT(1, "Error: Unexpected token");
@@ -96,15 +97,18 @@ PARSER_INL
 		cursor++;
 	if (cursor == end || tokens[cursor].type != Token::SEMICOLON)
 		PERR_EXIT(1, "Error: Unexpected token");
-	if (dir.args.alloc_a((u32)(cursor - argumentStart)) == true)
+
+	const usize argumentCount = cursor - argumentStart;
+	dir.args = arena.alloc_array<Span>(argumentCount);
+	if (argumentCount != 0 && dir.args.ptr == NULL)
 		std::exit(1);
-	for (u32 index = 0; index < dir.args.count; index++)
+	for (usize index = 0; index < dir.args.count; index++)
 		dir.args[index] = tokens[argumentStart + index].value;
 	return dir;
 }
 
 PARSER_INL
-(usize) s_find_scope_end(const Array32<Token> &tokens, usize begin, usize end) {
+(usize) s_find_scope_end(const Array<Token> &tokens, usize begin, usize end) {
 	usize it = begin;
 	bool startedCount = false;
 	int braces = 0;

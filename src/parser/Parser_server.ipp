@@ -5,11 +5,11 @@ static inline
 void s_directive_error_page(Parser::Directive &dir, VirtualServer &server) {
 	if (dir.args.count < 2)
 		PERR_EXIT(1, "Error: Invalid error page");
-	StringView32 path = dir.args[dir.args.count - 1];
+	Span path = dir.args[dir.args.count - 1];
 	if (s_length_check(path.length))
 		PERR_EXIT(1, "Error: Invalid error page");
-	for (u32 index = 0; index + 1 < dir.args.count; index++) {
-		usize error = s_strtol10(dir.args[index].kptr(), dir.args[index].length);
+	for (usize index = 0; index + 1 < dir.args.count; index++) {
+		usize error = s_strtol10(dir.args[index].ptr, dir.args[index].length);
 		Status status(error);
 		if (dir.args[index].length != 3 || !status.is_error())
 			PERR_EXIT(1, "Error: Invalid error number");
@@ -18,21 +18,18 @@ void s_directive_error_page(Parser::Directive &dir, VirtualServer &server) {
 }
 
 static inline
-void s_directive_listen(Parser::Directive &dir, VirtualServer &server) {
-	if (server.port != SIZE_MAX || dir.args.count != 1)
+void s_directive_listen(Arena &arena, const Span &value, VirtualServer &server) {
+	if (server.port != SIZE_MAX)
 		PERR_EXIT(1, "Error: Invalid port definition");
-	const StringView32 &listen = dir.args[0];
-	const char *port = listen.kptr();
-	usize portLength = listen.length;
+	const char *port = value.ptr;
+	usize portLength = value.length;
 	char *separator = (char*)MEMCHR(port, ':', portLength);
 	if (separator != NULL) {
 		usize hostLength = (usize)(separator - port);
-		if (hostLength == 0 || hostLength == listen.length - 1
-			|| server.host.length != 0)
+		if (hostLength == 0 || hostLength == value.length - 1 || server.host.length != 0)
 			PERR_EXIT(1, "Error: Invalid listen address");
-		server.host.length = (u32)hostLength;
-		server.host.offset = listen.offset;
-		*separator = '\0';
+		Span host = {(char*)port, hostLength};
+		server.host = arena.copy_span(host);
 		port = separator + 1;
 		portLength -= hostLength + 1;
 	}
@@ -42,12 +39,12 @@ void s_directive_listen(Parser::Directive &dir, VirtualServer &server) {
 }
 
 static inline
-void s_directive_body_size(const StringView32 &value, usize &bodySize, VirtualServer &server) {
-	if (server.maxBodySize != SIZE_MAX || value.length == 0)
+void s_directive_body_size(const Span &value, usize &bodySize) {
+	if (bodySize != SIZE_MAX || value.length == 0)
 		PERR_EXIT(1, "Error: Invalid max body size");
 
 	u8 factor = 0;
-	const char *str = value.kptr();
+	const char *str = value.ptr;
 	usize digitLength = value.length;
 	if (str[digitLength - 1] == 'G') {
 		factor = 30;
@@ -61,6 +58,8 @@ void s_directive_body_size(const StringView32 &value, usize &bodySize, VirtualSe
 		factor = 10;
 		digitLength--;
 	}
+	if (digitLength == 0)
+		PERR_EXIT(1, "Error: Invalid max body size");
 
 	const usize bytes = s_strtol10(str, digitLength);
 	if (bytes == SIZE_MAX || bytes > (SIZE_MAX >> factor))
@@ -68,27 +67,31 @@ void s_directive_body_size(const StringView32 &value, usize &bodySize, VirtualSe
 	bodySize = bytes << factor;
 }
 
-static inline
-void s_parse_server_directive(VirtualServer &server, const Array<Parser::Token> &tokens, usize &cursor, usize end) {
-	Parser::Directive dir = Parser::s_build_directive(tokens, cursor, end);
-
+PARSER_INL
+(void) parse_server_directive(VirtualServer &server, Directive &dir) {
 	if (dir.name == "error_page")
 		return s_directive_error_page(dir, server);
-	if (dir.args.count != 1 || s_length_check(dir.args[0].length))
+	if (dir.args.count != 1)
 		PERR_EXIT(1, "Error: Invalid server directive");
+	const Span &value = dir.args[0];
 	if (dir.name == "listen")
-		return s_directive_listen(dir, server);
-	if (dir.name == "host") {
+		return s_directive_listen(beta, value, server);
+	else if (dir.name == "host") {
 		if (server.host.length != 0)
 			PERR_EXIT(1, "Error: Duplicate host definition");
-		server.host = dir.args[0];
+		server.host = beta.copy_span(value);
 	}
 	else if (dir.name == "client_max_body_size")
-		s_directive_body_size(dir.args[0], server.maxBodySize, server);
-	else if (dir.name == "root")
-		server.serverRoot = dir.args[0];
+		s_directive_body_size(value, server.maxBodySize);
+	else if (dir.name == "root") {
+		if (server.serverRoot.length != 0)
+			PERR_EXIT(1, "Error: Duplicate root definition");
+		server.serverRoot = beta.copy_span(value);
+	}
 	else
 		PERR_EXIT(1, "Error: Invalid server directive");
+	if (s_length_check(value.length))
+		PERR_EXIT(1, "Error: Invalid server directive");	// Review why not above
 }
 
 static inline
@@ -99,7 +102,7 @@ usize s_count_locations(const Array<Parser::Token> &tokens, usize cursor, usize 
 	while (cursor < end) {
 		if (tokens[cursor].value == "location") {
 			usize distance = Parser::s_find_scope_end(tokens, cursor, end);
-			locationSize = tokens[cursor + distance].value.offset - tokens[cursor].value.offset + 1;
+			locationSize = (usize)(tokens[cursor + distance].value.ptr - tokens[cursor].value.ptr) + 1;
 			if (locationSize > MAX_LOCATION_BLOCK_SIZE)
 				PERR_EXIT(1, "Error: Location block exceeds maximum size");
 			locationCount++;
@@ -118,7 +121,7 @@ usize s_count_locations(const Array<Parser::Token> &tokens, usize cursor, usize 
 }
 
 PARSER_INL
-(isize) parse_server(const Array<Token> &tokens, usize cursor, usize end, VirtualServer &server, Arena &beta) {
+(isize) parse_server(const Array<Token> &tokens, usize cursor, usize end, VirtualServer &server) {
 	if (cursor == end || tokens[cursor].type != Token::WORD || !(tokens[cursor].value == "server"))
 		PERR_EXIT(1, "Error: Unexpected token");
 	cursor++;
@@ -129,25 +132,33 @@ PARSER_INL
 		PERR_EXIT(1, "Error: Empty server block");
 
 	usize locationCount = s_count_locations(tokens, cursor, end);
-	server.locations = beta.alloc_array<Location>(locationCount); 	// review
+	server.locations = beta.alloc_array<Location>(locationCount);
 	if (server.locations.ptr == NULL)
 		std::exit(1);
+	Span emptySource;
+	emptySource.ptr = (char*)"";
+	emptySource.length = 0;
+	const Span32 empty = beta.compress_span(server.locations, emptySource);
 
 	usize locationIndex = 0;
 	while (cursor != end) {
 		if (tokens[cursor].value == "location") {
-			Location loc;
-			parse_location(tokens, cursor, end, loc);
+			Location loc(empty);
+			parse_location(tokens, cursor, end, loc, server.locations);
 			for (usize index = 0; index < locationIndex; index++) {
-				const StringView32 &path = server.locations[index].uri;
-				if (path.length == loc.uri.length && MEMCMP(path.kptr(), loc.uri.kptr(), path.length) == 0)
+				const Span path = server.locations.extract(server.locations[index].uri);
+				const Span candidate = server.locations.extract(loc.uri);
+				if (path.length == candidate.length
+					&& MEMCMP(path.ptr, candidate.ptr, path.length) == 0)
 					PERR_EXIT(1, "Error: Duplicate location");
 			}
 			server.locations[locationIndex] = loc;
 			locationIndex++;
 		}
-		else
-			s_parse_server_directive(server, tokens, cursor, end);
+		else {
+			Directive dir = s_build_directive(alpha, tokens, cursor, end);
+			parse_server_directive(server, dir);
+		}
 		cursor++;
 	}
 	if (tokens[end].type != Token::CLOSE_BRACKET)
@@ -155,8 +166,10 @@ PARSER_INL
 	if (server.port == SIZE_MAX)
 		PERR_EXIT(1, "Error: Missing listen directive");
 	if (server.host.length == 0) {
-		server.host.length = sizeof("localhost") - 1;
-		server.host.offset = (u32)(fileOffset + fileSize + 4);
+		Span localhost;
+		localhost.ptr = (char*)"localhost";
+		localhost.length = sizeof("localhost") - 1;
+		server.host = beta.copy_span(localhost);
 	}
 	return 0;
 }

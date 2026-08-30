@@ -3,7 +3,7 @@
 #include "config.hpp"
 
 
-// #define COMPRESSED \
+// #define COMPRESSED
 //     __attribute__((section("compressed")))
 
 // COMPRESSED int x;
@@ -220,7 +220,5 @@ int test = sizeof(str);
 	"\x11" HTTP_STATUS(508) "\0\xCC" HTTP_STATUS_DEFAULT_PAGE(508) "\0" \
 	"\x10" HTTP_STATUS(510) "\0\xCA" HTTP_STATUS_DEFAULT_PAGE(510) "\0" \
 	"\x23" HTTP_STATUS(511) "\0\xF0" HTTP_STATUS_DEFAULT_PAGE(511) "\0"
-
-#define HTTP_ARENA_STATIC_STRINGS HTTP_STATUS_STRINGS
 
 STATIC_ASSERT(MAX_LOCATION_BLOCK_SIZE < UINT16_MAX);

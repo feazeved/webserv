@@ -8,27 +8,24 @@
 #include "Span.hpp"
 
 /*
-	Arena has two pools, A that belongs to the connection pool and B
-	that belongs to the config structure. Since parsing uses tokens
-	and directives, they can be allocated in pool A, so their cost
-	is effectively free because they can be safely overwritten
-
-	Offsets use one logical address space: pool A starts at zero and pool B
-	starts at sizeof(pool A).  The combined space stays well below 4 GB.
-	Pool B begins with immutable status/error strings; allocations start at
-	the next cache-line boundary.
+	Arena does not own its storage.  It only manages a caller-provided byte
+	range.  Alpha uses connection storage for parser temporaries; beta uses
+	configuration storage for values that outlive parsing.
 */
 
 struct Arena {
 	u8 *ptr;
 	usize size, capacity;
 
-	Arena (u8* srcPtr, usize srcLength) : ptr(srcPtr), size(0), capacity(srcLength) {
-
+	Arena(u8* srcPtr, usize srcLength) : ptr(srcPtr), size(0), capacity(srcLength) {
 	}
 
 	void clear() {
 		size = 0;
+	}
+
+	usize free_space() const {
+		return capacity - size;
 	}
 
 	u8* mptr(usize fileOffset) const {
@@ -39,14 +36,16 @@ struct Arena {
 		return ptr + fileOffset;
 	}
 
-	u32 alloc(usize bytes) {
-		bytes = ALIGN_UP(bytes, 64);
-		if (bytes > capacity - size) {
+	u32 alloc(usize bytes, usize padding = 0, usize alignment = 64) {
+		ASSERT(IS_POW2(alignment), "Alignment needs to be power of two");
+		bytes = ALIGN_UP(bytes + padding, alignment);
+		usize newSize = ALIGN_UP(size, alignment);
+		if (bytes > capacity - newSize) {
 			PRINT_LN(2, "Error: Out of memory");
 			return UINT32_MAX;
 		}
-		u32 index = size;
-		size += bytes;
+		u32 index = newSize;
+		size = newSize + bytes;
 		return index;
 	}
 
@@ -54,15 +53,42 @@ struct Arena {
 	// For example, if size of elements is lower than 64k, indexes could be u16
 	template <typename Type>
 	Array<Type> alloc_array(usize numElements) {
-		usize bytes = numElements * sizeof(Type);
-		bytes = ALIGN_UP(bytes, 64);
-		if (bytes > capacity - size) {
+		if (numElements > SIZE_MAX / sizeof(Type)) {
 			PRINT_LN(2, "Error: Out of memory");
-			return UINT32_MAX;
+			return Array<Type>();
 		}
-		u32 index = size;
-		size += bytes;
-		return index;
+		const usize bytes = numElements * sizeof(Type);
+		const u32 index = alloc(bytes, 0, __alignof__(Type));
+		if (index == UINT32_MAX)
+			return Array<Type>();
+		return Array<Type>((Type*)mptr(index), numElements);
 	}
 
+	// Review
+	Span copy_span(const Span &source) {
+		const u32 offset = alloc(source.length, 1);
+		if (offset == UINT32_MAX)
+			std::exit(1);
+		Span result = {(char*)mptr(offset), source.length};
+		MEMCPY(result.ptr, source.ptr, source.length);
+		result.ptr[result.length] = '\0';
+		return result;
+	}
+
+	template <typename Type>
+	Span32 compress_span(const Array<Type> &array, usize length) {
+		const u32 offset = alloc(length, 1);
+		if (offset == UINT32_MAX)
+			std::exit(1);
+		Span32 result = {(u32)((char*)mptr(offset) - (char*)array.ptr), (u32)length};
+		array.extract(result).ptr[length] = '\0';
+		return result;
+	}
+
+	template <typename Type>
+	Span32 compress_span(const Array<Type> &array, const Span &source) {
+		const Span32 result = compress_span(array, source.length);
+		MEMCPY(array.extract(result).ptr, source.ptr, source.length);
+		return result;
+	}
 };

@@ -42,8 +42,8 @@ Parser::Token s_match_delimiter(char *ptr, usize delimPos, isize &braces) {
 	Parser::Token token;
 	char delimiter = ptr[delimPos];
 
+	token.value.ptr = ptr + delimPos;
 	token.value.length = 1;
-	token.value.offset = (u32)(ptr + delimPos - (char*)Arena::pool.A);
 	switch (delimiter) {
 		case '{' :
 			token.type = Parser::Token::OPEN_BRACKET;
@@ -121,14 +121,16 @@ PARSER_INL
 	usize length;
 	isize braces = 0;
 	usize tokenIndex = 0;
-	char *ptr = (char*) Arena::mptr(fileOffset);
+	char *ptr = file.ptr;
 
-	s_strip_comments(ptr, fileSize);
-	serverCount = s_count_servers(ptr, fileSize);
+	s_strip_comments(ptr, file.length);
+	serverCount = s_count_servers(ptr, file.length);
 	if (serverCount == 0 || serverCount > MAX_VIRTUAL_SERVERS)
 		PERR_EXIT(1, "Error: Invalid config");
 
-	if (tokArray.alloc_a((u32)s_count_tokens(ptr)) == true)
+	const usize tokenCount = s_count_tokens(ptr);
+	tokArray = alpha.alloc_array<Token>(tokenCount);
+	if (tokArray.ptr == NULL)
 		std::exit(1);
 
 	while (true) {
@@ -143,18 +145,18 @@ PARSER_INL
 		else {
 			length = s_get_next_word(ptr);
 			token.type = Token::WORD;
-			token.value.length = (u32) length;
-			token.value.offset = (u32) (ptr - (char*)Arena::pool.A);
+			token.value.ptr = ptr;
+			token.value.length = length;
 			ptr += length;
 		}
 		tokArray[tokenIndex++] = token;
 	}
 	if (braces != 0)
 		PERR_EXIT(1, "Error: Expected '}' to match previous '{'");
-	for (u32 index = 0; index < tokArray.count; index++) {
+	for (usize index = 0; index < tokArray.count; index++) {
 		if (tokArray[index].type == Token::WORD) {
-			StringView32 &word = tokArray[index].value;
-			word.mptr()[word.length] = '\0';
+			Span &word = tokArray[index].value;
+			word.ptr[word.length] = '\0';
 		}
 	}
 	return tokArray;

@@ -2,17 +2,17 @@
 #include "Parser.hpp"
 
 static inline
-void s_build_error_page_path(char *out, const StringView32 &root, const StringView32 &path) {
+void s_build_error_page_path(char *out, const Span &root, const Span &path) {
 	usize length = 0;
 	if (root.length != 0) {
-		MEMCPY(out, root.kptr(), root.length);
+		MEMCPY(out, root.ptr, root.length);
 		length = root.length;
 	}
 
 	usize pathOffset = 0;
 	if (root.length != 0 && path.length != 0) {
 		const bool rootHasSlash = out[length - 1] == '/';
-		const bool pathHasSlash = path.kptr()[0] == '/';
+		const bool pathHasSlash = path.ptr[0] == '/';
 		if (rootHasSlash && pathHasSlash)
 			pathOffset = 1;
 		else if (!rootHasSlash && !pathHasSlash)
@@ -20,7 +20,7 @@ void s_build_error_page_path(char *out, const StringView32 &root, const StringVi
 	}
 
 	const usize pathLength = path.length - pathOffset;
-	MEMCPY(out + length, path.kptr() + pathOffset, pathLength);
+	MEMCPY(out + length, path.ptr + pathOffset, pathLength);
 	length += pathLength;
 	out[length] = '\0';
 }
@@ -28,15 +28,14 @@ void s_build_error_page_path(char *out, const StringView32 &root, const StringVi
 PARSER_INL
 (void) cache_error_pages(VirtualServer &server) {
 	char pathBuffer[4 * MAX_PATH_SIZE];
-	usize tmpSize, tmpOffset;
-	StringView32 configuredPaths[Status::errorPageCount];
+	Span configuredPaths[Status::errorPageCount];
 
 	for (usize index = 0; index < Status::errorPageCount; index++)
 		configuredPaths[index] = server.errorPages[index];
 
 	for (usize index = 0; index < Status::errorPageCount; index++) {
-		StringView32 &page = server.errorPages[index];
-		const StringView32 &path = configuredPaths[index];
+		Span &page = server.errorPages[index];
+		const Span &path = configuredPaths[index];
 		if (path.length == 0) {
 			page = Status::s_error_str(index);
 			continue;
@@ -44,10 +43,10 @@ PARSER_INL
 
 		usize duplicate = 0;
 		for (; duplicate < index; duplicate++) {
-			const StringView32 &previousPath = configuredPaths[duplicate];
+			const Span &previousPath = configuredPaths[duplicate];
 			if (path.length == previousPath.length
 				&& previousPath.length != 0
-				&& MEMCMP(path.kptr(), previousPath.kptr(), path.length) == 0)
+				&& MEMCMP(path.ptr, previousPath.ptr, path.length) == 0)
 				break;
 		}
 		if (duplicate != index) {
@@ -55,62 +54,7 @@ PARSER_INL
 			continue;
 		}
 		s_build_error_page_path(pathBuffer, server.serverRoot, path);
-		if (s_read_whole_file(pathBuffer, tmpOffset, tmpSize, 0))
+		if (s_read_whole_file(beta, pathBuffer, page, 0, 0))
 			std::exit(1);
-		page.offset = (u32)tmpOffset;
-		page.length = (u32)tmpSize;
-	}
-}
-
-static inline
-bool s_next_cgi_word(char *&cursor, char *end, Span &word) {
-	while (cursor != end && ((u8)*cursor <= 32 || s_is_config_delimiter(*cursor)))
-		cursor++;
-	if (cursor == end)
-		return false;
-
-	word.ptr = cursor;
-	while (cursor != end && (u8)*cursor > 32 && !s_is_config_delimiter(*cursor))
-		cursor++;
-	word.length = (usize)(cursor - (const char*)word.ptr);
-	return true;
-}
-
-/*
-	Each normalized CGI entry contains two u16 lengths followed by the
-	extension bytes and interpreter bytes.
-*/
-PARSER_INL
-(void) process_cgi_block(VirtualServer &server) {
-	u8 buffer[MAX_LOCATION_BLOCK_SIZE];
-
-	for (u32 i = 0; i < server.locations.count; i++) {
-		StringView32 &block = server.locations[i].cgiBlock;
-		if (block.length == 0)
-			continue;
-
-		char *cursor = block.mptr();
-		char *const end = cursor + block.length;
-		usize packSize = 0;
-		Span extension, interpreter;
-
-		while (s_next_cgi_word(cursor, end, extension)) {
-			if (!s_next_cgi_word(cursor, end, interpreter))	// TODO: These shouldn't need checking
-				PERR_EXIT(1, "Error: Invalid CGI block");
-			if (!s_next_cgi_word(cursor, end, interpreter))
-				PERR_EXIT(1, "Error: Invalid CGI block");
-
-			const u16 lengths[2] = {(u16)extension.length, (u16)interpreter.length};
-
-			MEMCPY_INLINE(buffer + packSize, lengths, sizeof(lengths));
-			packSize += sizeof(lengths);
-			MEMCPY(buffer + packSize, extension.ptr, extension.length);
-			packSize += extension.length;
-			MEMCPY(buffer + packSize, interpreter.ptr, interpreter.length);
-			packSize += interpreter.length;
-		}
-
-		MEMCPY(Arena::mptr(block.offset), buffer, packSize);
-		block.length = (u32)packSize;
 	}
 }

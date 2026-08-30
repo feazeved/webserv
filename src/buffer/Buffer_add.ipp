@@ -1,14 +1,6 @@
 #pragma once
 #include "Buffer.hpp"
 
-// TODO: remove this function and just do it inside each function
-static inline
-char* s_original_ptr(u8 *data, usize &pos, usize delta) {
-	char *optr = (char*) data + pos;
-	pos += delta;
-	return optr;
-}
-
 BUFFER_INL
 (char*) prepend(const Span &span) {
 	readPos -= span.length;
@@ -39,26 +31,50 @@ BUFFER_INL_T
 
 BUFFER_INL
 (char*) append(const char* ptr, usize length) {
-	MEMCPY(data + writePos, ptr, length);
-	return s_original_ptr(data, writePos, length);
+	char* optr = (char*)data + writePos;
+	MEMCPY(optr, ptr, length);
+	writePos += length;
+	return optr;
 }
 
 BUFFER_INL
 (char*) append(const Span &span) {
-	MEMCPY(data + writePos, span.ptr, span.length);
-	return s_original_ptr(data, writePos, span.length);
+	char* optr = (char*)data + writePos;
+	MEMCPY(optr, span.ptr, span.length);
+	writePos += span.length;
+	return optr;
 }
 
 BUFFER_INL_T
 (usize N, char*) append(const char (&string)[N]) {
-	MEMCPY_INLINE(data + writePos, string, N);	// Copies null terminator, advances past content only
-	return s_original_ptr(data, writePos, (N - 1));
+	char* optr = (char*)data + writePos;
+	MEMCPY_INLINE(optr, string, N);	// Copies null terminator, advances past content only
+	writePos += N - 1;
+	return optr;
 }
 
 BUFFER_INL_T
 (usize N, char*) append_inline(const char* ptr, usize length) {
-	MEMCPY_INLINE(data + writePos, ptr, N);
-	return s_original_ptr(data, writePos, length);
+	char* optr = (char*)data + writePos;
+	MEMCPY_INLINE(optr, ptr, N);
+	writePos += length;
+	return optr;
+}
+
+BUFFER_INL
+(char*) memset(u8 byte, usize length) {
+	char* optr = (char*)data + writePos;
+	MEMSET(optr, byte, length);
+	writePos += length;
+	return optr;
+}
+
+BUFFER_INL_T
+(usize N, char*) memset_inline(u8 byte, usize length) {
+	char* optr = (char*)data + writePos;
+	MEMSET_INLINE(optr, byte, N);
+	writePos += length;
+	return optr;
 }
 
 BUFFER_INL
@@ -69,8 +85,10 @@ BUFFER_INL
 	usize digitLength = s_itoa10(number, digitEnd);
 
 	char* digitStart = digitEnd - digitLength;
-	MEMCPY_INLINE(data + writePos, digitStart, maxLengthAligned);
-	return s_original_ptr(data, writePos, digitLength);
+	char* optr = (char*)data + writePos;
+	MEMCPY_INLINE(optr, digitStart, maxLengthAligned);
+	writePos += digitLength;
+	return optr;
 }
 
 BUFFER_INL
@@ -81,8 +99,11 @@ BUFFER_INL
 	usize digitLength = s_itoa16(number, digitEnd);
 
 	char* digitStart = digitEnd - digitLength;
-	MEMCPY_INLINE(data + writePos, digitStart, maxLengthAligned);
-	return s_original_ptr(data, writePos, digitLength);
+	char* optr = (char*)data + writePos;
+	MEMCPY_INLINE(optr, digitStart, maxLengthAligned);
+
+	writePos += digitLength;
+	return optr;
 }
 
 // Should be impossible for dst buffer to not fit

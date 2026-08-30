@@ -14,7 +14,7 @@ struct Span {
 		return length == size - 1 && STRCMP(ptr, literal) == 0;
 	}
 
-	operator char*() {
+	operator char*() const {
 		return ptr;
 	}
 };
@@ -32,7 +32,7 @@ struct Span16 {
 	u16 index;
 	u16 length;
 
-	Span extract(char* ptr) {
+	Span extract(char* ptr) const {
 		Span result;
 		result.ptr = ptr + index;
 		result.length = length;

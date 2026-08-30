@@ -92,17 +92,6 @@ public:
 		return bytesWritten;
 	}
 
-	char* memset(u8 byte, usize length) {
-		MEMSET(data + writePos, byte, length);
-		return s_original_ptr(data, writePos, length);
-	}
-
-	template <usize N>
-	char* memset_inline(u8 byte, usize length) {
-		MEMSET_INLINE(data + writePos, byte, N);
-		return s_original_ptr(data, writePos, length);
-	}
-
 	// HTTP
 	isize dechunk(HTTP_Buffer& tmp, usize &chunkSize, usize &bodySize);
 	isize decode(int writeFd, usize &chunkSize, usize &bodySize);
@@ -141,6 +130,9 @@ public:
 
 	char* append_digit10(usize number);
 	char* append_digit16(usize number);
+
+	char* memset(u8 byte, usize length);
+	template <usize N> char* memset_inline(u8 byte, usize length);
 
 	void bufcpy(const Buffer& other) {
 		const usize bytesUsed = other.writePos - other.readPos;

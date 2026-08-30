@@ -2,9 +2,9 @@
 
 #include "core.hpp"
 #include "tables.hpp"
-#include "StringView.hpp"
+#include "Span.hpp"
 /*
-	Status stores a u16 offset to a status string in Arena::poolB.  Every
+	Status stores a u16 offset into its static string catalog.  Every
 	status record is length-prefixed and NUL-terminated.  Error records append
 	a length-prefixed, NUL-terminated default page immediately after the status.
 
@@ -13,7 +13,7 @@
 class Status {
 public:
 	static const usize errorPageCount = 32 + 12;
-	static const usize arenaOffset = sizeof(Arena::pool.A);
+	static char strings[];
 	static char *const startPtr;
 
 	u16 index;
@@ -29,7 +29,7 @@ public:
 	- sizeof(HTTP_STATUS_DEFAULT_PAGE(code)) - 2)
 
 enum Code {
-	i000 = 1, ixxx = 2, i511 = sizeof(HTTP_ARENA_STATIC_STRINGS) - sizeof(HTTP_STATUS(511))
+	i000 = 1, ixxx = 2, i511 = sizeof(HTTP_STATUS_STRINGS) - sizeof(HTTP_STATUS(511))
 		- sizeof(HTTP_STATUS_DEFAULT_PAGE(511)) - 2,
 	i510 = SUBP(510, 511), i508 = SUBP(508, 510), i507 = SUBP(507, 508), i506 = SUBP(506, 507),
 	i505 = SUBP(505, 506), i504 = SUBP(504, 505), i503 = SUBP(503, 504), i502 = SUBP(502, 503),
@@ -113,7 +113,7 @@ STATIC_ASSERT(i100 == 9);
 	}
 
 	ALWAYS_INLINE
-	usize get_page_index() {
+	usize get_page_index() const {
 		if (index < Status::i400)
 			return SIZE_MAX;
 		return s_code_to_index((Code)index) - (32ul * 4);
@@ -122,7 +122,7 @@ STATIC_ASSERT(i100 == 9);
 	ALWAYS_INLINE
 	Span status_str() const {
 		Span result;
-		result.ptr = startPtr + (usize) index;
+		result.ptr = startPtr + (usize)index;
 		result.length = (u8) result.ptr[-1];
 		return result;
 	}
@@ -130,7 +130,7 @@ STATIC_ASSERT(i100 == 9);
 	ALWAYS_INLINE
 	Span error_str() const {
 		Span result;
-		result.ptr = startPtr + (usize) index;
+		result.ptr = startPtr + (usize)index;
 		result.length = (u8) result.ptr[-1];
 	
 		result.ptr += result.length + 2;
@@ -139,18 +139,15 @@ STATIC_ASSERT(i100 == 9);
 	}
 
 	ALWAYS_INLINE
-	static StringView32 s_error_str(usize number) {
-		usize offset = s_index(3 + (number >= 32), number);
+	static Span s_error_str(usize number) {
+		const usize offset = s_index(3 + (number >= 32), number);
+
 		Span tmp;
-		tmp.ptr = startPtr + (usize) offset;
+		tmp.ptr = startPtr + offset;
 		tmp.length = (u8) tmp.ptr[-1];
 		tmp.ptr += tmp.length + 2;
 		tmp.length = (u8)tmp.ptr[-1];
-	
-		StringView32 result;
-		result.offset = (u32)(tmp.ptr - startPtr) + arenaOffset;
-		result.length = tmp.length;
-		return result;
+		return tmp;
 	}
 
 	ALWAYS_INLINE
@@ -256,7 +253,8 @@ STATIC_ASSERT(i100 == 9);
 };
 
 #ifdef MAIN_FILE
-	char *const Status::startPtr = (char*) Arena::pool.B;
+	char Status::strings[] = HTTP_STATUS_STRINGS;
+	char *const Status::startPtr = Status::strings;
 #endif
 
 STATIC_ASSERT(sizeof(HTTP_STATUS_STRINGS) <= UINT16_MAX);
