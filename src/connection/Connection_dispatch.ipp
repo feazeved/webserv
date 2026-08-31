@@ -20,7 +20,6 @@ CONNECTION_INL
 		if (rvalue == -1)
 			return close_connection();
 	}
-
 	if (recvBuffer.bytes_free() < recvBuffer.minReadSize) {
 		status = Status::i431;	// Couldnt read from client, buffer is full
 		return close_connection();

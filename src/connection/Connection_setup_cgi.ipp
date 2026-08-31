@@ -112,7 +112,7 @@ CONNECTION_INL
 	close(fdOut[1]);
 	readFd = fdOut[0];
 	writeFd = fdIn[1];
-	return 0;
+	return cgi_method(epoll);
 
 	ErrorCloseOutput:	close(fdOut[0]), close(fdOut[1]);
 	ErrorCloseInput:	close(fdIn[0]), close(fdIn[1]);

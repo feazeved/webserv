@@ -57,7 +57,6 @@ CONNECTION_INL
 		options &= ~(u16)Options::KEEP_ALIVE;
 		return 0;		// Keep the connection alive until header is flushed
 	}
-
 	return -1;
 }
 

@@ -26,7 +26,7 @@ CONNECTION_INL
 	sendBuffer.append("HTTP/1.1 ");
 	sendBuffer.append_inline<3>(str.ptr, 3);
 
-	sendBuffer.append("OK\r\nContent-Type: ");
+	sendBuffer.append(" OK\r\nContent-Type: ");
 	sendBuffer.append_mime(contentType);
 	if (options & Options::KEEP_ALIVE)
 		sendBuffer.append("\r\nConnection: keep-alive\r\n\r\n");

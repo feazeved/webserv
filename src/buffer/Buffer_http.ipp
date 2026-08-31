@@ -17,7 +17,8 @@ BUFFER_INL
 			if (lineLength == SIZE_MAX)
 				break;
 			chunkSize = strtol16();
-				// TODO: skip spaces here
+			if (!strcmp("\r\n"))
+				return -1;	// No tolerance
 			if (chunkSize == 0) {
 				if (lineLength != 0)
 					return -1;	// CLOSING ERROR: no header end after 0

@@ -101,5 +101,5 @@ CONNECTION_INL
 		return post_setup(epoll);
 	if (mode == Mode::CGI)
 		return cgi_setup(epoll);
-	return del_setup(epoll);		// TODO: All setup calls should call dispatch again
+	return del_setup(epoll);
 }

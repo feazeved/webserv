@@ -152,8 +152,11 @@ struct Buffer {
 	operator char*() { return (char*)(data + readPos); }
 
 	char* rptr() { return (char*)(data + readPos); }
+	u8& rptr(usize index) { return *(data + readPos + index); }
 	char* wptr() { return (char*)(data + writePos); }
+	u8& wptr(usize index) { return *(data + writePos + index); }
 	char* sptr() { return (char*)(data + scanPos); }
+	u8& sptr(usize index) { return *(data + scanPos + index); }
 
 	u8& operator*() {
 		return data[writePos];
