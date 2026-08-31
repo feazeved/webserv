@@ -97,5 +97,6 @@ BUFFER_INL
 		}
 		readPos++;
 	}
+	data[readPos - 1] = 0;	// Null terminates target
 	return 0;
 }

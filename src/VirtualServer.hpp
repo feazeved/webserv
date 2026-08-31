@@ -107,10 +107,8 @@ public:
 		int flags = fcntl(fd, F_GETFL, 0);
 		if (flags == -1)
 			return true;
-
 		if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
 			return true;
-
 		return false;
 	}
 

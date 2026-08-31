@@ -2,19 +2,65 @@
 #include "Connection.hpp"
 
 CONNECTION_INL
+(isize) write_to_client(Epoll &epoll) {
+	if (!epoll.is_writeable())
+		return epoll.set_write(clientFd, 1);
+
+	isize bytesWritten = sendBuffer.write(clientFd, ATOMIC_IOSIZE);
+	if (bytesWritten <= 0)
+		return close_connection(false);
+	if (sendBuffer.size() != 0)
+		return bytesWritten;
+	if (mode == Mode::FLUSH) {
+		mode = Mode::PARSE;
+		return bytesWritten;
+	}
+	return close_connection();
+}
+
+CONNECTION_INL
+(isize) read_from_client(Epoll &epoll) {
+	if (!epoll.is_readable())
+		return epoll.set_read(clientFd, 1);
+
+	isize bytesRead = recvBuffer.read(clientFd, ATOMIC_IOSIZE);
+	if (bytesRead <= 0)
+		return close_connection(false);
+	return bytesRead;
+}
+
+CONNECTION_INL
 (isize) upload_file(Epoll &epoll) {
 	isize bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
 	if (bytesRead == 0) {
 		close(readFd);
 		readFd = -1;
-		bool keepAlive = !!(options & Options::CONNECTION_TYPE);
+		bool keepAlive = !!(options & Options::KEEP_ALIVE);
 		mode = keepAlive ? Mode::FLUSH : Mode::CLOSE;
 	}
 	else if (bytesRead == -1) {
 		close(readFd);
 		readFd = -1;
 		mode = Mode::CLOSE;
-		return error_path();
+		return close_connection(false);
+	}
+	return write_to_client(epoll);
+}
+
+CONNECTION_INL
+(isize) upload_directory(Epoll &epoll) {
+	isize bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
+	if (bytesRead == 0) {
+		close(readFd);
+		readFd = -1;
+		bool keepAlive = !!(options & Options::KEEP_ALIVE);
+		mode = keepAlive ? Mode::FLUSH : Mode::CLOSE;
+	}
+	else if (bytesRead == -1) {
+		close(readFd);
+		readFd = -1;
+		mode = Mode::CLOSE;
+		return close_connection(false);
 	}
 	return write_to_client(epoll);
 }
@@ -35,7 +81,7 @@ CONNECTION_INL
 		close(writeFd);
 		writeFd = -1;
 		status = Status::i500;
-		return error_path();
+		return close_connection();
 	}
 
 	if (!status.is_set() && bodySize == 0) {	// Must guarantee that bodySize is 0
@@ -43,7 +89,7 @@ CONNECTION_INL
 		writeFd = -1;	// Finished reading
 		status = Status::i201;
 		build_header();
-		bool keepAlive = !!(options & Options::CONNECTION_TYPE);
+		bool keepAlive = !!(options & Options::KEEP_ALIVE);
 		mode = keepAlive ? Mode::FLUSH : Mode::CLOSE;
 	}
 	return write_to_client(epoll);
@@ -69,7 +115,7 @@ CONNECTION_INL
 		close(writeFd);
 		writeFd = -1;
 		status = Status::i500;
-		return error_path();
+		return close_connection();
 	}
 
 	if (bodySize == 0) {	// Must guarantee that bodySize is 0
@@ -84,7 +130,6 @@ CONNECTION_INL
 	}
 
 	isize delta = ((bytesWritten < 0 || bytesRead < 0) ? -1 : 1);
-	// bonusTime = CLAMP(bonusTime + delta, 0, 30);
 
 	if (!status.is_set()) {
 		if (sendBuffer.find_header_end() != SIZE_MAX) {

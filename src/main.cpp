@@ -19,4 +19,3 @@ int	main(int argc, char** argv, char** envp)
 	server.run();
 	return 0;
 }
-

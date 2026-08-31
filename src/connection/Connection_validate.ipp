@@ -5,15 +5,15 @@ CONNECTION_INL
 (Location*) check_location() {
 	Array<Location> &locations = cfg->locations;
 	bool match = false;
-	usize cmpLength = *req.path.ptr == '/';
-	while (cmpLength < req.path.length && req.path.ptr[cmpLength] != '/')
+	usize cmpLength = *req.target.ptr == '/';
+	while (cmpLength < req.target.length && req.target.ptr[cmpLength] != '/')
 		cmpLength++;
 
 	for (usize i = 0; i < locations.count; i++) {
 		Span srcUri = locations[i].get_uri();
 		if (cmpLength != srcUri.length)
 			continue;
-		if (MEMCMP(req.path.ptr, srcUri.ptr, cmpLength) == 0) {
+		if (MEMCMP(req.target.ptr, srcUri.ptr, cmpLength) == 0) {
 			match = true;
 			if ((locations[i].methods & (options & 7)) != 0) {
 				return &locations[i];
@@ -49,12 +49,12 @@ Span s_check_cgi(Location *loc, Span refExt) {
 
 CONNECTION_INL
 (isize) validate_target() {
-	if (recvBuffer.check_target(req.path, req.query) == -1)
+	if (recvBuffer.check_target(req.target, req.query) == -1)
 		return -1;
 	req.location = check_location();
 	if (req.location == NULL)
 		return -1;
-	req.interpreter = s_check_cgi(req.location, req.path);
+	req.interpreter = s_check_cgi(req.location, req.target);
 	if (req.interpreter.ptr == NULL)
 		contentType = recvBuffer.match_mime();	// TODO: Is CGI a mime or octet stream?
 	else
@@ -68,41 +68,30 @@ CONNECTION_INL
 	const bool encodingSet = options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH);
 
 	if (status.is_set())
-		return error_path();	// An error caused early interruption
+		return close_connection();	// An error caused early interruption
 
 	if ((options & 0xF) == 0) {
 		status = Status::i400;
 		mode = Mode::CLOSE;
-		return error_path();	// TODO: Method not set, should be impossible. Remove in future
+		return close_connection();	// TODO: Method not set, should be impossible. Remove in future
 	}
 
 	if ((options & Options::HOST) == 0) {
 		status = Status::i400;
 		mode = Mode::CLOSE;
-		return error_path();	// Host not set
+		return close_connection();	// Host not set
 	}
 
 	if (isBodyMethod && !encodingSet) {
 		status = Status::i411;
 		mode = Mode::CLOSE;	// TODO: Should be useless to set it here
-		return error_path();	// Transfer encoding not set
+		return close_connection();	// Transfer encoding not set
 	}
 
 	if (!isBodyMethod && encodingSet) {
 		status = Status::i400;
 		mode = Mode::CLOSE;
-		return error_path();	// Encoding set for non-body methods
+		return close_connection();	// Encoding set for non-body methods
 	}
-
-	if (options & Options::CHUNKED_LENGTH)
-		bodySize = cfg->maxBodySize;
-
-	mode = (Mode::e_http_mode)(options & 0x0F);
-	if (mode == Mode::GET)
-		return get_setup();
-	if (mode == Mode::POST)
-		return post_setup();
-	if (mode == Mode::CGI)
-		return cgi_setup();
-	return del_setup();		// TODO: All setup calls should call dispatch again
+	return setup();
 }

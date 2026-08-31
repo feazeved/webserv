@@ -1,6 +1,7 @@
 #pragma once
 #include "core.hpp"
 
+// TODO: Create 32, 16 and 8 bit specializations
 class Bitmap {
 public:
 	usize bitmap;
@@ -33,13 +34,6 @@ public:
 	}
 
 	ALWAYS_INLINE
-	static usize pop_first_set(usize &bitmap) {
-		usize index = bitmap == 0 ? WORD_BITS : (usize)CTZ(bitmap);
-		bitmap &= bitmap - 1;
-		return index;
-	}
-
-	ALWAYS_INLINE
 	bool bitread(u8 index) const {
 		return (bitmap & ((usize)1 << index)) != 0;
 	}
@@ -47,6 +41,13 @@ public:
 	ALWAYS_INLINE
 	usize bitread(usize bitStart, usize bitEnd) const {
 		return (bitmap & mask_range(bitStart, bitEnd)) >> bitStart;
+	}
+
+	ALWAYS_INLINE
+	static usize pop_first_set(usize &bitmap) {
+		usize index = bitmap == 0 ? WORD_BITS : (usize)CTZ(bitmap);
+		bitmap &= bitmap - 1;
+		return index;
 	}
 
 	ALWAYS_INLINE

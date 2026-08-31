@@ -30,7 +30,7 @@ namespace Options {
 		CHUNKED_LENGTH = 1 << 5,
 		FIXED_LENGTH = 1 << 6,
 		HOST = 1 << 7,
-		CONNECTION_TYPE = 1 << 8	// Keep alive or
+		KEEP_ALIVE = 1 << 8
 	};
 }
 

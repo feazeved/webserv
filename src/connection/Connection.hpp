@@ -1,6 +1,7 @@
 #pragma once
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <errno.h>
@@ -17,9 +18,11 @@
 class Connection {
 public:
 	struct Request {
-		Span path, query, cookies, interpreter;
+		Span target, query, cookies, interpreter;
 		Span contentTypeHeader, contentSize;
 		Location* location;
+
+		// Can add root and other location vars here
 
 		void reset() {
 			MEMSET_INLINE(this, 0, sizeof(*this));
@@ -40,8 +43,8 @@ public:
 
 	VirtualServer* cfg;
 	Status status;
-	u8 options;
-	u8 contentType;
+	u16 options;	// TODO: Change this to a bitmap
+	u8 contentType;	// TODO: this should be a span in req maybe?
 	Mode::e_http_mode mode;
 	i32 clientFd;
 	u32 startTime;
@@ -58,40 +61,10 @@ public:
 		DIR* directory;
 	};
 
-	isize init(int fd, VirtualServer* serverConfig) {
-		ASSERT(clientFd != -1, "Assigned a connection already in use");
-		clientFd = fd;
-		cfg = serverConfig;
-		readFd = -1;
-		writeFd = -1;
-		processId = -1;
-		mode = Mode::PARSE;
-		recvBuffer.clear();
-		sendBuffer.clear();
-		startTime = Clock::time_elapsed();
-		return 1;
-	}
-
-	void clear() {
-		if (readFd >= 0)
-			close(readFd);
-		if (writeFd >= 0)
-			close(writeFd);
-		clientFd = -1;
-	}
-
-	bool check_timeout(time_t curTime) {
-		const time_t elapsed = curTime - startTime;
-
-		if (elapsed > CONNECTION_TIMEOUT) {
-			// TODO: Cull child here
-			return true;
-		}
-		return false;
-	}
-
-	void append_env(Buffer64 &buffer, char* argv[3]);
-	Location* check_location();
+	// Core
+	isize init(int fd, VirtualServer* serverConfig);
+	void clear();
+	bool check_timeout(time_t curTime);
 
 	// Parsing
 	isize validate_target();
@@ -99,14 +72,17 @@ public:
 	isize parse_line(usize lineLength);
 	isize parse_cgi_line(Buffer16 &tmpBuffer);
 	isize validate_header();
+	Location* check_location();
 
 	// Configuration
 	isize dispatch(Epoll &epoll);
 	isize parse(Epoll &epoll);
-	isize error_path();
+	isize close_connection(bool streamHeader = true);
+
+	// Response
+	void build_error_header();
 	void build_header();
 	isize build_cgi_header();
-	isize close_connection();
 
 	// Common
 	isize write_to_client(Epoll &epoll);
@@ -116,23 +92,24 @@ public:
 	isize upload_file(Epoll &epoll);
 	isize download_file(Epoll &epoll);
 	isize cgi_method();
-	isize sse_method();
+	isize upload_directory(Epoll &epoll);
 
-	// First Run (rename to setup)
+	// Setup
+	isize setup();
 	isize del_setup();
 	isize get_setup();
 	isize post_setup();
 	isize cgi_setup();
-	
-	isize get_autoindex();
+	char* append_env(Buffer64 &buffer, char* argv[3]);
 	isize get_directory(struct stat &st, Buffer8 &pathBuffer);
 };
 
 #include "Connection_common.ipp"
 #include "Connection_dispatch.ipp"
-#include "Connection_methods.ipp"
+#include "Connection_stream.ipp"
 #include "Connection_response.ipp"
 #include "Connection_setup.ipp"
-#include "Connection_autoindex.ipp"
-#include "Connection_validate.ipp"
+#include "Connection_setup_cgi.ipp"
+#include "Connection_setup_get.ipp"
 #include "Connection_parse.ipp"
+#include "Connection_validate.ipp"

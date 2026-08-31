@@ -14,13 +14,34 @@ CONNECTION_INL
 
 	while (sendBuffer.find_line_end() == 1) {
 		if (parse_cgi_line(tmpBuffer) == -1) {
-			return error_path();
+			return close_connection();
 		}
 	}
 }
 
 CONNECTION_INL
 (void) build_header() {
+	Span str = status.status_str();
+
+	sendBuffer.append("HTTP/1.1 ");
+	if (status.is_error()) {
+		sendBuffer.append(str.ptr, str.length);
+		sendBuffer.append("\r\n");
+		mode = Mode::CLOSE;
+	}
+	else {
+		sendBuffer.append_inline<3>(str.ptr, 3);
+		sendBuffer.append("OK\r\n");
+		mode = Mode::FLUSH;
+	}
+
+	sendBuffer.append("Content-Type: ");
+	sendBuffer.append_mime(contentType);
+	sendBuffer.append("\r\n\r\n");
+}
+
+CONNECTION_INL
+(void) build_error_header() {
 	Span str = status.status_str();
 
 	sendBuffer.append("HTTP/1.1 ");

@@ -22,85 +22,67 @@ isize s_get_status(Status &status) {
 	return -1;
 }
 
-static inline
-void s_chdir(Span &scriptPath) {
-	char *scriptEnd = scriptPath.ptr + scriptPath.length;
-	char tmp = scriptPath.ptr[0];	// This causes page write
-	scriptPath.ptr[0] = '/';
-
-	while (*scriptEnd != '/')
-		scriptEnd--;
-}
-
-static inline
-pid_t s_exec_script(char *const argv[3], char **envp, int fdIn[2], int fdOut[2]) {
-	char *lastSlash = NULL;
-	for (char *cursor = argv[1]; *cursor != '\0'; cursor++) {
-		if (*cursor == '/')
-			lastSlash = cursor;
-	}
-	if (lastSlash != NULL) {
-		char workingDirectory[MAX_PATH_SIZE];
-		usize length = (usize)(lastSlash - argv[1]);		// TODO: Review this
-		if (length == 0)
-			length = 1;
-		MEMCPY(workingDirectory, argv[1], length);
-		workingDirectory[length] = '\0';
-		if (chdir(workingDirectory) == -1)
-			std::exit(1);
-	}
-	// CHDIR here
-
-	bool fail = dup2(fdOut[1], STDOUT_FILENO) == -1 ||
-				dup2(fdIn[0], STDIN_FILENO) == -1;
-
-	close(fdOut[0]);	// Child Read End
-	close(fdOut[1]);	// Parent Write End
-	close(fdIn[0]);		// Child Read End
-	close(fdIn[1]);		// Parent Write End
-	if (fail) {
-		close(STDOUT_FILENO);
-		close(STDIN_FILENO);
-		std::exit(1);
-	}
-
-	execve(argv[0], argv, envp);
-	if (errno != ENOENT && errno != ENOTDIR)
-		std::exit(126);
-	std::exit(127);
-}
-
-// Check epoll, see if can write, if not, set to write and return 0
 CONNECTION_INL
-(isize) write_to_client(Epoll &epoll) {
-	if (!epoll.is_writeable())
-		return epoll.set_write(clientFd, 1);
-
-	isize bytesWritten = sendBuffer.write(clientFd, ATOMIC_IOSIZE);
-	if (bytesWritten <= 0)
-		return close_connection();
-	if (sendBuffer.size() != 0)
-		return bytesWritten;
-	if (mode == Mode::FLUSH) {
-		mode = Mode::PARSE;
-		return bytesWritten;
-	}
-	return close_connection();
+(isize) init(int fd, VirtualServer* serverConfig) {
+	ASSERT(clientFd != -1, "Assigned a connection already in use");
+	clientFd = fd;
+	cfg = serverConfig;
+	readFd = -1;
+	writeFd = -1;
+	processId = -1;
+	mode = Mode::PARSE;
+	recvBuffer.clear();
+	sendBuffer.clear();
+	startTime = Clock::time_elapsed();
+	return 1;
 }
-
-/*
-	Check epoll, see if can write, if not, set to write and return 0
-	This is only called when information is needed, therefore if is 0 bytes
-	are read, the connection should close. But maybe it's error_path instead
-*/
 
 CONNECTION_INL
-(isize) read_from_client(Epoll &epoll) {
-	if (!epoll.is_readable())
-		return epoll.set_read(clientFd, 1);
+(isize) close_connection(bool streamHeader) {
+	if (readFd >= 0) {
+		close(readFd);
+		readFd = -1;
+	}
 
-	isize bytesRead = recvBuffer.read(clientFd, ATOMIC_IOSIZE);
-	if (bytesRead <= 0)
-		return close_connection();
-	return bytesRead;
+	if (writeFd >= 0) {
+		close(writeFd);
+		writeFd = -1;
+	}
+
+	if (streamHeader) {
+		build_header();
+		options &= ~(u16)Options::KEEP_ALIVE;
+		return 0;		// Keep the connection alive until header is flushed
+	}
+
+	return -1;
+}
+
+// TODO: Check if waiting is necessary, might be able to cull the child in Server
+// Give a bitmap and an index, and it sets the index when a kill happens
+CONNECTION_INL
+(void) clear() {
+	int status;
+
+	if (readFd >= 0)
+		close(readFd);
+	if (writeFd >= 0)
+		close(writeFd);
+	clientFd = -1;
+	if (processId != -1) {
+		kill(processId, SIGKILL);
+		waitpid(processId, &status, WNOHANG);
+		processId = -1;
+	}
+}
+
+CONNECTION_INL
+(bool) check_timeout(time_t curTime) {
+	const time_t elapsed = curTime - startTime;
+
+	if (elapsed > CONNECTION_TIMEOUT) {
+		clear();
+		return true;
+	}
+	return false;
 }
