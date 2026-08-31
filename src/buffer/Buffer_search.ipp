@@ -82,17 +82,24 @@ BUFFER_INL
 (isize) match_mime() {
 	static const u8 ltable[][8] = MIME_TABLE;
 	u8 tmp[2];
+	usize dotPos = SIZE_MAX;
 
 	MEMCPY_INLINE(tmp, data + scanPos, 2);
-	MEMCPY_INLINE(data + scanPos, "/.", 2);
+	MEMCPY_INLINE(data + scanPos, "/.", 2);		// TODO: needs to find app.min.js for example
 
-	while (data[readPos] != '/')
-		readPos++;
-	while (data[readPos] != '.')
-		readPos++;
-	readPos++;
+	while (true) {
+		while (data[readPos] != '/')
+			readPos++;
+		while (data[readPos] != '.')
+			readPos++;
+		if (readPos >= scanPos)
+			break;
+		dotPos = readPos;
+	}
+
+	// readPos++;
 	MEMCPY_INLINE(data + scanPos, tmp, 2);
-	const usize length = scanPos - readPos;
+	const usize length = scanPos - dotPos;
 	if (length >= sizeof(*ltable)) {
 		readPos = scanPos;
 		return Mime::OCTET_STREAM;
@@ -106,6 +113,8 @@ BUFFER_INL
 
 	const u8 *str = mimeStrings[mimeIndex];
 	const usize length = *str;
-	MEMCPY_INLINE(data + writePos, str + 1, 24);
-	return s_original_ptr(data, writePos, length);
+	char *optr = (char*)data + writePos;
+	MEMCPY_INLINE(optr, str + 1, 24);
+	writePos += length;
+	return optr;
 }

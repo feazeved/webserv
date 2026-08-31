@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include "core.hpp"
+#include "tables.hpp"
 #include "webserv.hpp"
 #include "Span.hpp"
 

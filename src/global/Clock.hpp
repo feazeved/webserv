@@ -18,6 +18,7 @@ public:
 
 	static void init() {
 		timeBegin = std::time(NULL);
+		timeNow = timeBegin;
 		timeElapsed = 0;
 	}
 
@@ -78,3 +79,10 @@ public:
 		buffer[16] += (u8)(minute % 10U);
 	}
 };
+
+#ifdef MAIN_FILE
+	std::time_t Clock::timeBegin = 0;
+	std::time_t Clock::timeNow = 0;
+	std::time_t Clock::timeElapsed = 0;
+	isize Clock::secondsRef = 0;
+#endif

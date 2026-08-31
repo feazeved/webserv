@@ -19,14 +19,15 @@ struct MemoryPool {
 	template <void (Type::*Func)()>
 	void for_each_active() {
 		for (usize blockIndex = 0; blockIndex < blockCount; blockIndex++) {
-			Bitmap &elementBlock = elementBitmap[blockIndex];
-			if (elementBlock.bitmap == 0)
+			Bitmap active = elementBitmap[blockIndex];
+			if (active.bitmap == 0)
 				continue;
 
 			Type *base = elements + blockIndex * 64;
 			usize elementIndex;
-			while ((elementIndex = elementBlock.find_first_set()) != SIZE_MAX) {
-				base[elementIndex].*Func();
+			while ((elementIndex = active.find_first_set()) < WORD_BITS) {
+				(base[elementIndex].*Func)();
+				active.bitclr(elementIndex);
 			}
 		}
 	}
@@ -39,7 +40,7 @@ struct MemoryPool {
 
 			Type *base = elements + blockIndex * 64;
 			usize elementIndex;
-			while ((elementIndex = elementBlock.find_first_set()) != SIZE_MAX) {
+			while ((elementIndex = elementBlock.find_first_set()) < WORD_BITS) {
 				base[elementIndex].clear();
 				elementBlock.bitclr(elementIndex);
 			}
@@ -54,7 +55,7 @@ struct MemoryPool {
 
 		usize elementIndex = elementBitmap[blockIndex].find_first_clear();
 		elementBitmap[blockIndex].bitset(elementIndex);
-		if (elementBitmap[blockIndex].count() == 64)
+		if (elementBitmap[blockIndex].bitmap == SIZE_MAX)
 			blockBitmap.bitset(blockIndex);
 
 		usize index = blockIndex * 64 + elementIndex;
@@ -75,4 +76,3 @@ struct MemoryPool {
 		return elements[index];
 	}
 };
-

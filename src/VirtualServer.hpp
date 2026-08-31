@@ -42,6 +42,7 @@ struct Location {
 	Span get_redirect_target()	{ return extract(redirectTarget); }
 };
 
+
 class VirtualServer {
 public:
 	Span			serverRoot;
@@ -53,11 +54,11 @@ public:
 	void*			gameState;
 	int 			listenFd;
 
-	// VirtualServer()
-	// 	: serverRoot(), host(), locations(), port(SIZE_MAX),
-	// 	maxBodySize(SIZE_MAX), gameState(NULL), listenFd(-1) {
-	// 	MEMSET_INLINE(errorPages, 0, sizeof(errorPages));
-	// }
+	VirtualServer()
+		: serverRoot(), host(), locations(), port(SIZE_MAX),
+		maxBodySize(SIZE_MAX), gameState(NULL), listenFd(-1) {
+		MEMSET_INLINE(errorPages, 0, sizeof(errorPages));
+	}
 
 	~VirtualServer() {
 		clear();

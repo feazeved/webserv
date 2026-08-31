@@ -21,14 +21,14 @@ static inline
 void s_directive_listen(Arena &arena, const Span &value, VirtualServer &server) {
 	if (server.port != SIZE_MAX)
 		PERR_EXIT(1, "Error: Invalid port definition");
-	const char *port = value.ptr;
+	char *port = value.ptr;
 	usize portLength = value.length;
 	char *separator = (char*)MEMCHR(port, ':', portLength);
 	if (separator != NULL) {
 		usize hostLength = (usize)(separator - port);
 		if (hostLength == 0 || hostLength == value.length - 1 || server.host.length != 0)
 			PERR_EXIT(1, "Error: Invalid listen address");
-		Span host = {(char*)port, hostLength};
+		Span host = {port, hostLength};
 		server.host = arena.copy_span(host);
 		port = separator + 1;
 		portLength -= hostLength + 1;

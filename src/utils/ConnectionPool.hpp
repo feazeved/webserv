@@ -44,7 +44,7 @@ public:
 
 			Connection *base = connections + blockIndex * 64;
 			usize elementIndex;
-			while ((elementIndex = active.find_first_set()) != SIZE_MAX) {
+			while ((elementIndex = active.find_first_set()) < WORD_BITS) {
 				(base[elementIndex].*Func)();
 				active.bitclr(elementIndex);
 			}
@@ -59,7 +59,7 @@ public:
 
 			Connection *base = connections + blockIndex * 64;
 			usize elementIndex;
-			while ((elementIndex = elementBlock.find_first_set()) != SIZE_MAX) {
+			while ((elementIndex = elementBlock.find_first_set()) < WORD_BITS) {
 				base[elementIndex].clear();
 				elementBlock.bitclr(elementIndex);
 			}
@@ -74,7 +74,7 @@ public:
 
 		usize elementIndex = elementBitmap[blockIndex].find_first_clear();
 		elementBitmap[blockIndex].bitset(elementIndex);
-		if (elementBitmap[blockIndex].count() == 64)
+		if (elementBitmap[blockIndex].bitmap == SIZE_MAX)
 			blockBitmap.bitset(blockIndex);
 
 		usize index = blockIndex * 64 + elementIndex;

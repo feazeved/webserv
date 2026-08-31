@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <errno.h>
+#include <signal.h>
 #include <unistd.h>
 
 #include "core.hpp"
@@ -11,12 +12,15 @@
 #include "ConnectionPool.hpp"
 #include "VirtualServer.hpp"
 #include "Parser.hpp"
+#include "Clock.hpp"
 #include "Environment.hpp"
 
 __attribute__((constructor))
 void init(int argc, char** argv, char** envp) {
 	(void) argc, (void)argv, (void) envp; 
 
+	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+		PERR_EXIT(1, "Error: Failed to configure SIGPIPE handling");
 	Clock::init();
 	Environment::init(envp);
 	// Memory related init stuff like MEMCPY_INLINE ARENA_STATIC_STRINGS
@@ -28,9 +32,6 @@ void clear() {
 }
 
 #define SERVER_INL(ret_type) ret_type inline Server::
-// if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-// 	PERR_RETURN(1, "Error: Failed to configure SIGPIPE handling");
-
 // Have server be a template? up to 4096 connections
 // Could then reasonably assign 64 connections per virtual server
 class Server {

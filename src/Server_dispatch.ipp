@@ -55,7 +55,7 @@ SERVER_INL
 		Clock::update();
 		for (usize eventIndex = 0; eventIndex < eventCount; eventIndex++) {
 			event = epoll.get_event(eventIndex);
-			if (event->data.u32 == UINT32_MAX)
+			if ((u32)event->data.u64 == UINT32_MAX)
 				server_event(event->data.u64);
 			else
 				connection_event(event->data.u64);

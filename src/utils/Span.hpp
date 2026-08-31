@@ -16,7 +16,7 @@ struct Span {
 
 	template <usize size>
 	static Span create(const char (&literal)[size]) {
-		Span newSpan = {literal, size - 1};
+		Span newSpan = {(char*)literal, size - 1};
 		return newSpan;
 	}
 

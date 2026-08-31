@@ -1,4 +1,5 @@
 #pragma once
+#include <unistd.h>
 #include "core.hpp"
 
 // Needed for cookies and queries
@@ -14,6 +15,7 @@ public:
 	static char** writePtr;
 
 	static void append(char *ptr) {
+		ASSERT(writePtr < envp + envSize - 1, "Environment buffer overflow");
 		*writePtr++ = ptr;
 		*writePtr = NULL;
 	}
@@ -32,3 +34,9 @@ public:
 		writePtr = optr;
 	}
 };
+
+#ifdef MAIN_FILE
+	char* Environment::envp[Environment::envSize];
+	char** Environment::optr = Environment::envp;
+	char** Environment::writePtr = Environment::envp;
+#endif

@@ -164,9 +164,6 @@
 
 #define HTTP_STATUS_PAGE_MAX_SIZE 255
 
-char str[] = HTTP_STATUS(431) HTTP_STATUS_DEFAULT_PAGE(431);
-int test = sizeof(str);
-
 #define HTTP_STATUS_STRINGS \
 	"\0\0\0\0\0\0\0\0" \
 	"\x0C" HTTP_STATUS(100) "\0" "\x17" HTTP_STATUS(101) "\0" \
