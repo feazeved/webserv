@@ -77,7 +77,7 @@ public:
 	// Configuration
 	isize dispatch(Epoll &epoll);
 	isize parse(Epoll &epoll);
-	isize close_connection(bool streamHeader = true);
+	isize close_connection(bool streamHeader=true);
 
 	// Response
 	void build_error_header();

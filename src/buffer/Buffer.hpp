@@ -47,8 +47,10 @@ public:
 
 	ALWAYS_INLINE
 	usize reserve(usize bytes) {
-		
-		return sizeof(data) - writePos;
+		usize bytesFree = bytes_free();
+		if (bytes >= bytesFree)
+			bytesFree = compact();
+		return bytesFree;
 	}
 
 	void clear() {

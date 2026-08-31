@@ -76,14 +76,14 @@ CONNECTION_INL
 (isize) upload_directory(Epoll &epoll) {
 	errno = 0;
 	struct dirent* entry = readdir(directory);
-	const usize bytesFree = sendBuffer.bytes_free();	// Maybe a call to compaction here is needed
+	const usize bytesFree = sendBuffer.reserve(HTTP_DIRENT_MAX_SIZE);
 
 	if (bytesFree < HTTP_DIRENT_MAX_SIZE)
 		return write_to_client(epoll);	// Might need to flush the buffer
 
-	const usize minCapacity = bytesFree - HTTP_DIRENT_MAX_SIZE;
+	const usize bytesMax = MIN(ATOMIC_IOSIZE, bytesFree - HTTP_DIRENT_MAX_SIZE);
 	usize bytesTotal = 0;
-	while (bytesTotal < minCapacity) {
+	while (bytesTotal < bytesMax) {
 		entry = readdir(directory);
 		if (entry == NULL) {
 			closedir(directory);
