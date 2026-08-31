@@ -93,7 +93,7 @@ PARSER_INL
 }
 
 static inline
-usize s_count_locations(Array<Parser::Token> tokArray) {
+usize s_count_locations(ArrayView<Parser::Token> tokArray) {
 	usize locationCount = 0;
 	while (tokArray[0].type != Parser::Token::CLOSE_BRACKET) {
 		if (tokArray[0].value == "location") {
@@ -127,10 +127,10 @@ usize s_count_locations(Array<Parser::Token> tokArray) {
 }
 
 PARSER_INL
-(void) parse_server(Array<Token> &tokArray, VirtualServer &server) {
+(void) parse_server(ArrayView<Token> &tokArray, VirtualServer &server) {
 	tokArray.ptr++;
 	usize locationCount = s_count_locations(tokArray);
-	Array<ParsedLocation> parsedLocations = alpha.alloc_array<ParsedLocation>(locationCount);
+	ArrayView<ParsedLocation> parsedLocations = alpha.alloc_array<ParsedLocation>(locationCount);
 	if (parsedLocations.ptr == NULL)
 		std::exit(1);
 

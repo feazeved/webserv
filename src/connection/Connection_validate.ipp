@@ -3,7 +3,7 @@
 
 CONNECTION_INL
 (Location*) check_location() {
-	Array<Location> &locations = cfg->locations;
+	ArrayView<Location> &locations = cfg->locations;
 	bool match = false;
 	usize cmpLength = *req.target.ptr == '/';
 	while (cmpLength < req.target.size && req.target.ptr[cmpLength] != '/')

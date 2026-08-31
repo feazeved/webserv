@@ -3,13 +3,13 @@
 #include "Span.hpp"
 
 template <typename Type>
-class Array {
+class ArrayView {
 public:
 	Type* ptr;
 	usize count;
 
-	Array() : ptr(NULL), count(0) {}
-	Array(Type* srcPtr, usize srcCount) : ptr(srcPtr), count(srcCount) {}
+	ArrayView() : ptr(NULL), count(0) {}
+	ArrayView(Type* srcPtr, usize srcCount) : ptr(srcPtr), count(srcCount) {}
 
 	Type& operator[] (usize index) {
 		return ptr[index];
@@ -19,12 +19,26 @@ public:
 		return ptr[index];
 	}
 
-	Array& operator=(const Array& other) {
+	ArrayView& operator=(const ArrayView& other) {
 		ptr = other.ptr;
 		count = other.count;
 		return *this;
 	}
 
+};
+
+template <typename Type, usize count>
+class Array {
+public:
+	Type ptr[count];
+
+	Type& operator[] (usize index) {
+		return ptr[index];
+	}
+
+	const Type& operator[] (usize index) const {
+		return ptr[index];
+	}
 };
 
 // Span extract(const Span32 &span) const {
@@ -62,9 +76,9 @@ public:
 // 	usize length;
 // };
 
-template <typename Type, usize count>
+template <typename Type, usize rows, usize cols>
 struct Matrix {
-	Type array[count];
+	Type array[rows][cols];
 
 	Type& operator[] (usize index) {
 		return array[index];

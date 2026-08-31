@@ -60,7 +60,7 @@ PARSER_INL
 }
 
 PARSER_INL
-(Parser::Directive) s_build_directive(Arena &arena, Array<Token> &tokArray) {
+(Parser::Directive) s_build_directive(Arena &arena, ArrayView<Token> &tokArray) {
 	Directive dir;
 	if (tokArray[0].type != Token::WORD)
 		PERR_EXIT(1, "Error: Unexpected token");

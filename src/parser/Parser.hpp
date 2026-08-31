@@ -25,11 +25,11 @@ public:
 
 	struct Directive {
 		Span name;
-		Array<Span> args;
+		ArrayView<Span> args;
 	};
 
 	struct ParsedCgi {
-		Array<Token> definitions;
+		ArrayView<Token> definitions;
 		usize size;
 
 		ParsedCgi() : definitions(), size(0) {}
@@ -60,7 +60,7 @@ public:
 		: alpha(srcAlpha), beta(srcBeta), file(), serverCount(0) {
 		if (s_read_whole_file(alpha, filePath, file, 63, 16))
 			std::exit(1);
-		Array<Token> tokArray = tokenize();
+		ArrayView<Token> tokArray = tokenize();
 		for (usize serverIndex = 0; serverIndex < serverCount; serverIndex++) {
 			tokArray.ptr++;
 			parse_server(tokArray, servers[serverIndex]);
@@ -71,16 +71,16 @@ public:
 		alpha.clear();
 	}
 
-	Array<Token> tokenize();
+	ArrayView<Token> tokenize();
 	void cache_error_pages(VirtualServer &server);
-	ParsedLocation parse_location(Array<Token> &tokArray);
-	void parse_server(Array<Token> &tokArray, VirtualServer &server);
-	Array<Location> store_locations(const Array<ParsedLocation> &source);
+	ParsedLocation parse_location(ArrayView<Token> &tokArray);
+	void parse_server(ArrayView<Token> &tokArray, VirtualServer &server);
+	ArrayView<Location> store_locations(const ArrayView<ParsedLocation> &source);
 
-	ParsedCgi parse_cgi(Array<Token> &tokArray);
+	ParsedCgi parse_cgi(ArrayView<Token> &tokArray);
 	void parse_location_directive(ParsedLocation &location, Directive &dir);
 	void parse_server_directive(VirtualServer &server, Directive &dir);
-	static Directive s_build_directive(Arena &arena, Array<Token> &tokArray);
+	static Directive s_build_directive(Arena &arena, ArrayView<Token> &tokArray);
 	static bool s_read_whole_file(Arena &arena, const char *filePath, Span &file, usize padSize = 32, usize minSize = 0, usize maxSize = UINT32_MAX);
 };
 

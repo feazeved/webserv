@@ -73,15 +73,3 @@ CONNECTION_INL
 	clientFd = -1;
 	processId = -1;
 }
-
-// CONNECTION_INL
-// (void) check_timeout(time_t curTime, pid_t* &pidList, u32* connectionPtr) {
-// 	const time_t elapsed = curTime - startTime;
-
-// 	if (elapsed > CONNECTION_TIMEOUT) {
-// 		*pidList++ = processId;
-// 		*connectionPtr++ = 
-// 		clear();
-// 	}
-
-// }

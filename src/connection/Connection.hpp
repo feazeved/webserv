@@ -60,7 +60,6 @@ struct Connection {
 	// Common
 	isize init(int fd, VirtualServer* serverConfig);
 	void clear();
-	void check_timeout(time_t curTime, pid_t* &pidList);
 
 	// Parsing
 	isize parse_first_line(usize lineLength);

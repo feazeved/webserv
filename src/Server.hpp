@@ -69,7 +69,6 @@ public:
 	}
 
 	// connections.for_each_active<Connection::check_timeout(30)>;	// how the fuck do you do this
-	#define HTTP_TIMEOUT 60
 
 	void check_timeouts() {
 		pid_t pidList[ConnectionPool::elementCount];
@@ -95,7 +94,7 @@ public:
 		}
 
 		for (usize i = 0; i < count; i++)
-			waitpid(pidList[i], NULL, WNOHANG);	// Do i have to wait with no hang for one of them?
+			waitpid(pidList[i], NULL, WNOHANG);	// Do i have to stop and wait for one of them?
 	}
 
 	// Execution

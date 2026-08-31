@@ -17,16 +17,14 @@ BUFFER_INL
 			if (lineLength == SIZE_MAX)
 				break;
 			chunkSize = strtol16();
-			if (!strcmp("\r\n"))
-				return -1;	// No tolerance
+			if (chunkSize > bodySize || !strcmp("\r\n"))
+				return -1;			// Body size was greater than maximum allowed or Wrong
 			if (chunkSize == 0) {
 				if (lineLength != 0)
 					return -1;	// CLOSING ERROR: no header end after 0
 				bodySize = 0;
 				break;
 			}
-			if (chunkSize > bodySize)
-				return -1;			// CLOSING ERROR: Body size was greater than maximum allowed or Wrong
 			bodySize -= chunkSize;
 		}
 		else if (chunkSize > 0) {
@@ -51,7 +49,7 @@ BUFFER_INL
 	if (readPos < scanPos)
 		return write(writeFd, MIN(scanPos - readPos, (usize)ATOMIC_IOSIZE));
 
-	Buffer<sizeof(*this)> tmpBuffer = {};
+	Buffer tmpBuffer = {};
 
 	if (dechunk(tmpBuffer, chunkSize, bodySize) < 0)
 		return -1;

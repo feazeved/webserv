@@ -120,8 +120,8 @@ void s_strip_comments(char *ptr, usize fileSize) {
 }
 
 PARSER_INL
-(Array<Parser::Token>) tokenize() {
-	Array<Token> tokArray;
+(ArrayView<Parser::Token>) tokenize() {
+	ArrayView<Token> tokArray;
 	Token token;
 	usize length;
 	isize braces = 0;

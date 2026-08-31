@@ -51,14 +51,14 @@ usize s_location_size(const Parser::ParsedLocation &loc) {
 }
 
 PARSER_INL
-(Array<Location>) store_locations(const Array<ParsedLocation> &source) {
+(ArrayView<Location>) store_locations(const ArrayView<ParsedLocation> &source) {
 	usize allocationSize = source.count * sizeof(Location);
 	for (usize index = 0; index < source.count; index++)
 		allocationSize += s_location_size(source[index]);
 	const u32 allocation = beta.alloc(allocationSize, 0, __alignof__(Location));
 	if (allocation == UINT32_MAX)
 		std::exit(1);
-	Array<Location> locations((Location*)beta.mptr(allocation), source.count);
+	ArrayView<Location> locations((Location*)beta.mptr(allocation), source.count);
 	char *wptr = (char*)(locations.ptr + locations.count);
 	for (usize locationIndex = 0; locationIndex < locations.count; locationIndex++)
 		s_store_location(wptr, source[locationIndex], locations[locationIndex]);

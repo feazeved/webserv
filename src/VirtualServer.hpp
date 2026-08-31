@@ -47,7 +47,7 @@ public:
 	Span			serverRoot;
 	Span			errorPages[Status::errorPageCount];
 	Span			host;
-	Array<Location>	locations;
+	ArrayView<Location>	locations;
 	usize			port;
 	usize			maxBodySize;
 	void*			gameState;
@@ -82,8 +82,10 @@ public:
 		listenFd = socket(AF_INET, SOCK_STREAM, 0);
 		if (listenFd == -1)
 			PERR_EXIT(clear(), "Error: Failed to create listening socket");
-		if (s_set_close_on_exec(listenFd))	// TODO: Review
+		if (s_set_close_on_exec(listenFd))
 			PERR_EXIT(clear(), "Error: Failed to configure listening socket");
+		if (s_set_nonblocking(listenFd))
+			PERR_EXIT(clear(), "Error: Failed to make listening socket non-blocking");
 
 		int reuse = 1;
 		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) == -1)
@@ -96,8 +98,6 @@ public:
 			PERR_EXIT(clear(), "Error: Failed to bind listening socket");
 		if (listen(listenFd, SOMAXCONN) == -1)
 			PERR_EXIT(clear(), "Error: Failed to listen on socket");
-		if (s_set_nonblocking(listenFd))
-			PERR_EXIT(clear(), "Error: Failed to make listening socket non-blocking");
 	}
 
 	static inline

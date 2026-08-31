@@ -2,7 +2,7 @@
 #include "Parser.hpp"
 
 static inline
-void s_set_methods(const Array<Span> &methods, Parser::ParsedLocation &location) {
+void s_set_methods(const ArrayView<Span> &methods, Parser::ParsedLocation &location) {
 	for (usize index = 0; index < methods.count; index++) {
 		if (methods[index] == "GET")
 			location.methods |= Options::GET;
@@ -66,7 +66,7 @@ PARSER_INL
 }
 
 PARSER_INL
-(Parser::ParsedCgi) parse_cgi(Array<Token> &tokArray) {
+(Parser::ParsedCgi) parse_cgi(ArrayView<Token> &tokArray) {
 	if (tokArray[0].type != Token::OPEN_BRACKET)
 		PERR_EXIT(1, "Error: Invalid CGI block");
 
@@ -97,13 +97,13 @@ PARSER_INL
 		cgi.size += sizeof(u16) * 2 + extension.size + interpreter.size;
 	}
 
-	cgi.definitions = Array<Token>(definitionStart, (usize)(tokArray.ptr - definitionStart));
+	cgi.definitions = ArrayView<Token>(definitionStart, (usize)(tokArray.ptr - definitionStart));
 	tokArray.ptr++;
 	return cgi;
 }
 
 PARSER_INL
-(Parser::ParsedLocation) parse_location(Array<Token> &tokArray) {
+(Parser::ParsedLocation) parse_location(ArrayView<Token> &tokArray) {
 	ParsedLocation loc;
 	loc.uri = tokArray[0].value;
 

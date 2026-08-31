@@ -43,17 +43,17 @@ struct Arena {
 	// TODO: we could do different instatiation given a smaller range
 	// For example, if size of elements is lower than 64k, indexes could be u16
 	template <typename Type>
-	Array<Type> alloc_array(usize numElements, usize alignSize = 16) {
+	ArrayView<Type> alloc_array(usize numElements, usize alignSize = 16) {
 		if (numElements > SIZE_MAX / sizeof(Type)) {
 			PRINT_LN(2, "Error: Out of memory");
-			return Array<Type>();
+			return ArrayView<Type>();
 		}
 		const usize bytes = numElements * sizeof(Type);
 		alignSize = MAX(alignSize, __alignof__(Type));
 		const u32 index = alloc(bytes, 0, alignSize);
 		if (index == UINT32_MAX)
-			return Array<Type>();
-		return Array<Type>((Type*)mptr(index), numElements);
+			return ArrayView<Type>();
+		return ArrayView<Type>((Type*)mptr(index), numElements);
 	}
 
 	Span alloc_span(usize length) {
