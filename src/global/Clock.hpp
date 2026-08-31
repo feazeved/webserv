@@ -22,9 +22,10 @@ public:
 		timeElapsed = 0;
 	}
 
-	static void update() {
+	static time_t update() {
 		timeNow = std::time(NULL);
 		timeElapsed = timeNow - timeBegin;
+		return timeElapsed;
 	}
 
 	// Does not call update time

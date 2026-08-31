@@ -29,7 +29,7 @@ struct Connection {
 
 		// Can add root and other location vars here
 
-		void reset() {
+		void clear() {
 			MEMSET_INLINE(this, 0, sizeof(*this));
 		}
 	};
@@ -60,7 +60,7 @@ struct Connection {
 	// Common
 	isize init(int fd, VirtualServer* serverConfig);
 	void clear();
-	bool check_timeout(time_t curTime);
+	void check_timeout(time_t curTime, pid_t* &pidList);
 
 	// Parsing
 	isize parse_first_line(usize lineLength);

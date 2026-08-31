@@ -151,7 +151,7 @@ STATIC_ASSERT(i100 == 9);
 	}
 
 	ALWAYS_INLINE
-	void reset() {
+	void clear() {
 		index = i000;
 	}
 

@@ -150,6 +150,7 @@ struct Buffer {
 	}
 
 	operator char*() { return (char*)(data + readPos); }
+
 	char* rptr() { return (char*)(data + readPos); }
 	char* wptr() { return (char*)(data + writePos); }
 	char* sptr() { return (char*)(data + scanPos); }

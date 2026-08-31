@@ -44,7 +44,14 @@ public:
 	}
 
 	ALWAYS_INLINE
-	static usize pop_first_set(usize &bitmap) {
+	static usize s_pop_first_set(usize &bitmap) {
+		usize index = bitmap == 0 ? WORD_BITS : (usize)CTZ(bitmap);
+		bitmap &= bitmap - 1;
+		return index;
+	}
+
+	ALWAYS_INLINE
+	usize pop_first_set() {
 		usize index = bitmap == 0 ? WORD_BITS : (usize)CTZ(bitmap);
 		bitmap &= bitmap - 1;
 		return index;
@@ -89,6 +96,8 @@ public:
 	void set() {
 		bitmap = SIZE_MAX;
 	}
+
+	operator usize() { return bitmap; }
 
 	Bitmap() {
 		clear();

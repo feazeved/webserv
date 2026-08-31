@@ -8,9 +8,10 @@ class ConnectionPool {
 public:
 	static const usize blockSize = sizeof(Connection) * 64;
 	static const usize blockCount = 64;
+	static const usize elementCount = 4096;
 
 public:
-	Connection connections[4096];
+	Connection connections[elementCount];
 	Bitmap blockBitmap;
 	Bitmap elementBitmap[blockCount];	// Metadata for each 64 Connection Block
 

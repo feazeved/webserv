@@ -32,7 +32,7 @@ Span s_check_cgi(Location *loc, Span refExt) {
 	Span cgi = loc->get_cgi_block();
 	char *cgiEnd = cgi.end();
 	u16 lengths[2];
-	Span result = {0, 0};
+	Span result = {};
 
 	while (cgi.ptr < cgiEnd) {
 		MEMCPY_INLINE(lengths, cgi.ptr, sizeof(lengths));

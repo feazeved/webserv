@@ -30,7 +30,7 @@ SERVER_INL
 }
 
 SERVER_INL
-(void) close_connection(u32 connectionIndex) {
+(void) remove_connection(u32 connectionIndex) {
 	epoll.remove(connections[connectionIndex].clientFd);
 	connections.free_slot(connectionIndex);
 }
@@ -79,11 +79,11 @@ SERVER_INL
 (void) connection_event(u64 key) {
 	const u32 connectionIndex = (u32)key;
 	if (epoll.is_error()) {
-		close_connection(connectionIndex);
+		remove_connection(connectionIndex);
 		return;
 	}
 	if (connections[connectionIndex].dispatch(epoll) == -1)
-		close_connection(connectionIndex);
+		remove_connection(connectionIndex);
 }
 
 // SERVER_INL

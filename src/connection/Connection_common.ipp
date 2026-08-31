@@ -34,6 +34,8 @@ CONNECTION_INL
 	mode = Mode::PARSE;
 	recvBuffer.clear();
 	sendBuffer.clear();
+	req.clear();
+	status.clear();
 	startTime = Clock::time_elapsed();
 	return 1;
 }
@@ -59,12 +61,8 @@ CONNECTION_INL
 	return -1;
 }
 
-// TODO: Check if waiting is necessary, might be able to cull the child in Server
-// Give a bitmap and an index, and it sets the index when a kill happens
 CONNECTION_INL
 (void) clear() {
-	int status;
-
 	if (mode == Mode::AUTOINDEX && directory != NULL) {
 		closedir(directory);
 		readFd = -1;
@@ -74,20 +72,17 @@ CONNECTION_INL
 	if (writeFd >= 0)
 		close(writeFd);
 	clientFd = -1;
-	if (processId != -1) {
-		kill(processId, SIGKILL);
-		waitpid(processId, &status, WNOHANG);
-		processId = -1;
-	}
+	processId = -1;
 }
 
-CONNECTION_INL
-(bool) check_timeout(time_t curTime) {
-	const time_t elapsed = curTime - startTime;
+// CONNECTION_INL
+// (void) check_timeout(time_t curTime, pid_t* &pidList, u32* connectionPtr) {
+// 	const time_t elapsed = curTime - startTime;
 
-	if (elapsed > CONNECTION_TIMEOUT) {
-		clear();
-		return true;
-	}
-	return false;
-}
+// 	if (elapsed > CONNECTION_TIMEOUT) {
+// 		*pidList++ = processId;
+// 		*connectionPtr++ = 
+// 		clear();
+// 	}
+
+// }

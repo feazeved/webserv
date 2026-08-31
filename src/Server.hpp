@@ -68,13 +68,42 @@ public:
 		return 1;
 	}
 
+	// connections.for_each_active<Connection::check_timeout(30)>;	// how the fuck do you do this
+	#define HTTP_TIMEOUT 60
+
+	void check_timeouts() {
+		pid_t pidList[ConnectionPool::elementCount];
+		u32 indexList[ConnectionPool::elementCount];
+		usize count = 0;
+		time_t timeNow = Clock::update();
+		usize elementIndex;
+	
+		for (usize i = 0; i < connections.elementCount; i++) {
+			Bitmap bitmap = connections.elementBitmap[i];
+			usize outerIndex = 64 * i;
+			while ((elementIndex = bitmap.pop_first_set()) != WORD_BITS) {
+				usize linearIndex = outerIndex + elementIndex;
+				Connection& connection = connections.connections[linearIndex];
+				if (timeNow - connection.startTime > 60) {
+					pidList[count] = connection.processId;
+					indexList[count] = linearIndex;
+					kill(connection.processId, SIGKILL);
+					remove_connection(linearIndex);
+					count++;
+				}
+			}
+		}
+
+		for (usize i = 0; i < count; i++)
+			waitpid(pidList[i], NULL, WNOHANG);	// Do i have to wait with no hang for one of them?
+	}
+
 	// Execution
 	void run();
 	void server_event(u64 key);
 	void connection_event(u64 key);
-	void check_timeouts();
 	void add_connection(u32 serverIndex);
-	void close_connection(u32 connectionIndex);
+	void remove_connection(u32 connectionIndex);
 };
 
 #include "Server_dispatch.ipp"
