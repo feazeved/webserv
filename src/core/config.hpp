@@ -26,3 +26,5 @@
 		#define ATOMIC_IOSIZE 512
 	#endif
 #endif
+
+#define HTTP_DIRENT_MAX_SIZE 512

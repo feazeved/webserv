@@ -45,6 +45,12 @@ public:
 		return sizeof(data) - writePos;
 	}
 
+	ALWAYS_INLINE
+	usize reserve(usize bytes) {
+		
+		return sizeof(data) - writePos;
+	}
+
 	void clear() {
 		readPos = 0;
 		writePos = 0;

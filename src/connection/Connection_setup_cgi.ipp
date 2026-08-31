@@ -67,7 +67,7 @@ CONNECTION_INL
 	buffer.append(req.target);							// /home/webserv/www/images/cgi/process.py
 	argv[2] = NULL;
 
-	usize scriptPathLength = req.target.length + root.length;
+	usize scriptPathLength = req.target.size + root.size;
 	char* cwdPath = buffer.append(argv[1], scriptPathLength);
 	s_chdir(cwdPath, scriptPathLength);							// /home/webserv/www/images/cgi
 

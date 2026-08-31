@@ -24,39 +24,32 @@ CONNECTION_INL
 	Span str = status.status_str();
 
 	sendBuffer.append("HTTP/1.1 ");
-	if (status.is_error()) {
-		sendBuffer.append(str.ptr, str.length);
-		sendBuffer.append("\r\n");
-		mode = Mode::CLOSE;
-	}
-	else {
-		sendBuffer.append_inline<3>(str.ptr, 3);
-		sendBuffer.append("OK\r\n");
-		mode = Mode::FLUSH;
-	}
+	sendBuffer.append_inline<3>(str.ptr, 3);
 
-	sendBuffer.append("Content-Type: ");
+	sendBuffer.append("OK\r\nContent-Type: ");
 	sendBuffer.append_mime(contentType);
-	sendBuffer.append("\r\n\r\n");
+	if (options & Options::KEEP_ALIVE)
+		sendBuffer.append("\r\nConnection: keep-alive\r\n\r\n");
+	else
+		sendBuffer.append("\r\nConnection: close\r\n\r\n");
 }
 
+// HTTP/1.1 404 Not Found
+// Content-Type: text/plain
+// Content-Length: 14
+// Connection: close
+// 404 Not Found
+
+// This can be moved to buffer
 CONNECTION_INL
 (void) build_error_header() {
-	Span str = status.status_str();
+	Span errorStr = status.error_str();
 
 	sendBuffer.append("HTTP/1.1 ");
-	if (status.is_error()) {
-		sendBuffer.append(str.ptr, str.length);
-		sendBuffer.append("\r\n");
-		mode = Mode::CLOSE;
-	}
-	else {
-		sendBuffer.append_inline<3>(str.ptr, 3);
-		sendBuffer.append("OK\r\n");
-		mode = Mode::FLUSH;
-	}
-
-	sendBuffer.append("Content-Type: ");
-	sendBuffer.append_mime(contentType);
+	sendBuffer.append(errorStr.ptr, errorStr.size);
+	sendBuffer.append("\r\nContent-Type: text/html\r\nContent-Length: ");
+	sendBuffer.append_digit10(errorStr.size);
+	sendBuffer.append("\r\nConnection: close\r\n");
+	sendBuffer.append(errorStr);
 	sendBuffer.append("\r\n\r\n");
 }

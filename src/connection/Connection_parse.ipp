@@ -48,11 +48,20 @@ CONNECTION_INL
 			recvBuffer.readPos += lineLength;
 			break;
 
+		case Field::CONNECTION:	// TODO: Add keep alive
+			if (recvBuffer.strcasecmp("keep-alive"))	// not adding another bit just to check
+				options |= Options::KEEP_ALIVE;			// if had been set already
+			else if (recvBuffer.strcasecmp("close"))	// last setting counts
+				options &= ~(u16)Options::KEEP_ALIVE;
+			else
+				goto Error;
+		break;
+
 		case Field::TRANSFER_ENCODING:
 			if (options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH))
-				goto Error; // ERROR: bad request, transfer method had already been set
+				goto Error; // ERROR: transfer method already set
 			if (recvBuffer.strcasecmp("chunked") == false)
-				goto Error; // ERROR: bad request, transfer encoding isnt chunked
+				goto Error; // ERROR: transfer encoding isnt chunked
 			options |= Options::CHUNKED_LENGTH;
 			break;
 
@@ -81,7 +90,7 @@ CONNECTION_INL
 			while ((lineEnd[-1] == ' ' || lineEnd[-1] == '\t'))
 				lineEnd--;
 			req.cookies.ptr = (char*) recvBuffer.rptr();
-			req.cookies.length = (usize) (lineEnd - recvBuffer.rptr());
+			req.cookies.size = (usize) (lineEnd - recvBuffer.rptr());
 			break;
 	}
 

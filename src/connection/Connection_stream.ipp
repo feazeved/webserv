@@ -30,42 +30,6 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(isize) upload_file(Epoll &epoll) {
-	isize bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
-	if (bytesRead == 0) {
-		close(readFd);
-		readFd = -1;
-		bool keepAlive = !!(options & Options::KEEP_ALIVE);
-		mode = keepAlive ? Mode::FLUSH : Mode::CLOSE;
-	}
-	else if (bytesRead == -1) {
-		close(readFd);
-		readFd = -1;
-		mode = Mode::CLOSE;
-		return close_connection(false);
-	}
-	return write_to_client(epoll);
-}
-
-CONNECTION_INL
-(isize) upload_directory(Epoll &epoll) {
-	isize bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
-	if (bytesRead == 0) {
-		close(readFd);
-		readFd = -1;
-		bool keepAlive = !!(options & Options::KEEP_ALIVE);
-		mode = keepAlive ? Mode::FLUSH : Mode::CLOSE;
-	}
-	else if (bytesRead == -1) {
-		close(readFd);
-		readFd = -1;
-		mode = Mode::CLOSE;
-		return close_connection(false);
-	}
-	return write_to_client(epoll);
-}
-
-CONNECTION_INL
 (isize) download_file(Epoll &epoll) {
 	isize bytesWritten;
 

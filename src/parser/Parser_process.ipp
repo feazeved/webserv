@@ -3,10 +3,10 @@
 
 static inline
 Span16 s_store_location_span(Location &location, char* &wptr, const Span &source) {
-	Span16 result = {(u16)(wptr - (char*)&location.uri), (u16)source.length};
-	if (source.length != 0)
-		MEMCPY(wptr, source.ptr, source.length);
-	wptr += source.length;
+	Span16 result = {(u16)(wptr - (char*)&location.uri), (u16)source.size};
+	if (source.size != 0)
+		MEMCPY(wptr, source.ptr, source.size);
+	wptr += source.size;
 	*wptr++ = '\0';
 	return result;
 }
@@ -14,18 +14,18 @@ Span16 s_store_location_span(Location &location, char* &wptr, const Span &source
 static inline
 void s_store_cgi(char* &wptr, const Parser::ParsedCgi &cgiBlock, Location &location) {
 		location.cgiBlock.index = (u16)(wptr - (char*)&location.uri);
-		location.cgiBlock.length = (u16)cgiBlock.length;
+		location.cgiBlock.size = (u16)cgiBlock.size;
 		for (usize index = 0; index < cgiBlock.definitions.count; index += 4) {
 			Parser::Token *definition = cgiBlock.definitions.ptr + index;
 			const Span &extension = definition[0].value;
 			const Span &interpreter = definition[2].value;
-			const u16 lengths[2] = {(u16)extension.length, (u16)interpreter.length};
+			const u16 lengths[2] = {(u16)extension.size, (u16)interpreter.size};
 			MEMCPY_INLINE(wptr, lengths, sizeof(lengths));
 			wptr += sizeof(lengths);
-			MEMCPY(wptr, extension.ptr, extension.length);
-			wptr += extension.length;
-			MEMCPY(wptr, interpreter.ptr, interpreter.length);
-			wptr += interpreter.length;
+			MEMCPY(wptr, extension.ptr, extension.size);
+			wptr += extension.size;
+			MEMCPY(wptr, interpreter.ptr, interpreter.size);
+			wptr += interpreter.size;
 		}
 		*wptr++ = '\0';	
 }
@@ -45,8 +45,8 @@ void s_store_location(char* &wptr, const Parser::ParsedLocation &ploc, Location 
 
 static inline
 usize s_location_size(const Parser::ParsedLocation &loc) {
-	usize packSize = 6 + loc.uri.length + loc.root.length + loc.index.length;
-	packSize += loc.uploadStore.length + loc.cgiBlock.length + loc.redirectTarget.length;
+	usize packSize = 6 + loc.uri.size + loc.root.size + loc.index.size;
+	packSize += loc.uploadStore.size + loc.cgiBlock.size + loc.redirectTarget.size;
 	return packSize;
 }
 
@@ -68,13 +68,13 @@ PARSER_INL
 static inline
 void s_build_error_page_path(char *out, const Span &root, const Span &path) {
 	usize length = 0;
-	if (root.length != 0) {
-		MEMCPY(out, root.ptr, root.length);
-		length = root.length;
+	if (root.size != 0) {
+		MEMCPY(out, root.ptr, root.size);
+		length = root.size;
 	}
 
 	usize pathOffset = 0;
-	if (root.length != 0 && path.length != 0) {
+	if (root.size != 0 && path.size != 0) {
 		const bool rootHasSlash = out[length - 1] == '/';
 		const bool pathHasSlash = path.ptr[0] == '/';
 		if (rootHasSlash && pathHasSlash)
@@ -83,7 +83,7 @@ void s_build_error_page_path(char *out, const Span &root, const Span &path) {
 			out[length++] = '/';
 	}
 
-	const usize pathLength = path.length - pathOffset;
+	const usize pathLength = path.size - pathOffset;
 	MEMCPY(out + length, path.ptr + pathOffset, pathLength);
 	length += pathLength;
 	out[length] = '\0';
@@ -100,7 +100,7 @@ PARSER_INL
 	for (usize index = 0; index < Status::errorPageCount; index++) {
 		Span &page = server.errorPages[index];
 		const Span &path = configuredPaths[index];
-		if (path.length == 0) {
+		if (path.size == 0) {
 			page = Status::s_error_str(index);
 			continue;
 		}
@@ -108,8 +108,8 @@ PARSER_INL
 		usize duplicate = 0;
 		for (; duplicate < index; duplicate++) {
 			const Span &previousPath = configuredPaths[duplicate];
-			if (path.length == previousPath.length && previousPath.length != 0
-				&& MEMCMP(path.ptr, previousPath.ptr, path.length) == 0)
+			if (path.size == previousPath.size && previousPath.size != 0
+				&& MEMCMP(path.ptr, previousPath.ptr, path.size) == 0)
 				break;
 		}
 		if (duplicate != index) {

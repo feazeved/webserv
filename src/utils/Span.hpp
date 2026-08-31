@@ -3,25 +3,25 @@
 
 struct Span {
 	char* ptr;
-	usize length;
+	usize size;
 
 	char* end() const {
-		return ptr + length;
+		return ptr + size;
 	}
 
-	template <usize size>
-	bool operator==(const char (&literal)[size]) const {
-		return length == size - 1 && STRCMP(ptr, literal) == 0;
+	template <usize length>
+	bool operator==(const char (&literal)[length]) const {
+		return size == length - 1 && STRCMP(ptr, literal) == 0;
 	}
 
-	template <usize size>
-	static Span create(const char (&literal)[size]) {
-		Span newSpan = {(char*)literal, size - 1};
+	template <usize length>
+	static Span create(const char (&literal)[length]) {
+		Span newSpan = {(char*)literal, length - 1};
 		return newSpan;
 	}
 
-	static Span create(char* srcPtr, usize srcLength) {
-		Span newSpan = {srcPtr, srcLength};
+	static Span create(char* srcPtr, usize srcSize) {
+		Span newSpan = {srcPtr, srcSize};
 		return newSpan;
 	}
 
@@ -41,12 +41,12 @@ struct Span {
 
 struct Span16 {
 	u16 index;
-	u16 length;
+	u16 size;
 };
 
 // Span extract(char* ptr) const {
 // 	Span result;
 // 	result.ptr = ptr + index;
-// 	result.length = length;
+// 	result.size = length;
 // 	return result;
 // }

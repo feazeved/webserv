@@ -123,7 +123,7 @@ STATIC_ASSERT(i100 == 9);
 	Span status_str() const {
 		Span result;
 		result.ptr = startPtr + (usize)index;
-		result.length = (u8) result.ptr[-1];
+		result.size = (u8) result.ptr[-1];
 		return result;
 	}
 
@@ -131,10 +131,10 @@ STATIC_ASSERT(i100 == 9);
 	Span error_str() const {
 		Span result;
 		result.ptr = startPtr + (usize)index;
-		result.length = (u8) result.ptr[-1];
+		result.size = (u8) result.ptr[-1];
 	
-		result.ptr += result.length + 2;
-		result.length = (u8)result.ptr[-1];
+		result.ptr += result.size + 2;
+		result.size = (u8)result.ptr[-1];
 		return result;
 	}
 
@@ -144,9 +144,9 @@ STATIC_ASSERT(i100 == 9);
 
 		Span tmp;
 		tmp.ptr = startPtr + offset;
-		tmp.length = (u8) tmp.ptr[-1];
-		tmp.ptr += tmp.length + 2;
-		tmp.length = (u8)tmp.ptr[-1];
+		tmp.size = (u8) tmp.ptr[-1];
+		tmp.ptr += tmp.size + 2;
+		tmp.size = (u8)tmp.ptr[-1];
 		return tmp;
 	}
 

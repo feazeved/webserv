@@ -36,6 +36,56 @@ CONNECTION_INL
 	return 0;
 }
 
+#define HTTP_INDEX_HEADER "<html><head><title>Index of /download/</title></head><body><h1>Index of "
+#define HTTP_INDEX_MIDDLE "/</title></head><body><h1>Index of "
+#define HTTP_INDEX_TAIL "/</h1><hr><pre><a href=\"../\">../</a>"
+
+CONNECTION_INL
+(isize) get_directory(struct stat &st, Buffer8 &pathBuffer) {
+	pathBuffer.append("/index.html");
+	readFd = open(pathBuffer, O_RDONLY);
+	if (readFd == -1 && req.location->autoindex == false)
+		return s_get_status(status);
+	if (readFd == -1) {
+		pathBuffer.writePos -= sizeof("/index.html");	// TODO: add overwrite function
+		*pathBuffer = 0;
+		directory = opendir(pathBuffer);
+		if (directory == NULL)
+			return s_get_status(status);
+	}
+	status = Status::i200;
+	bodySize = (usize)st.st_size;
+	build_header();
+	sendBuffer.append(HTTP_INDEX_HEADER);
+	sendBuffer.append(req.target);			// TODO: Actually might need to be the last /
+	sendBuffer.append(HTTP_INDEX_MIDDLE);
+	sendBuffer.append(req.target);
+	sendBuffer.append(HTTP_INDEX_TAIL);
+	return 0;
+}
+
+CONNECTION_INL
+(isize) get_setup() {
+	Buffer8 pathBuffer;
+	pathBuffer.append(req.location->get_root());
+	pathBuffer.append(req.target);
+	pathBuffer.append("\0");
+
+	struct stat st;
+	if (stat(pathBuffer, &st) == -1)
+		return s_get_status(status);
+
+	if (S_ISDIR(st.st_mode))
+		return get_directory(st, pathBuffer);
+	readFd = open(pathBuffer, O_RDONLY);
+	if (readFd == -1)
+		return s_get_status(status);
+	status = Status::i200;
+	bodySize = (usize)st.st_size;
+	build_header();
+	return 0;
+}
+
 CONNECTION_INL
 (isize) setup() {
 	if (options & Options::CHUNKED_LENGTH)

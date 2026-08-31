@@ -30,7 +30,7 @@ public:
 // Span extract(const Span32 &span) const {
 // 	Span result;
 // 	result.ptr = (char*)ptr + span.index;
-// 	result.length = span.length;
+// 	result.size = span.size;
 // 	return result;
 // }
 

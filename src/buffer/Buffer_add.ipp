@@ -3,8 +3,8 @@
 
 BUFFER_INL
 (char*) prepend(const Span &span) {
-	readPos -= span.length;
-	MEMCPY(data + readPos, span.ptr, span.length);
+	readPos -= span.size;
+	MEMCPY(data + readPos, span.ptr, span.size);
 	return (char*) data + readPos;
 }
 
@@ -40,8 +40,8 @@ BUFFER_INL
 BUFFER_INL
 (char*) append(const Span &span) {
 	char* optr = (char*)data + writePos;
-	MEMCPY(optr, span.ptr, span.length);
-	writePos += span.length;
+	MEMCPY(optr, span.ptr, span.size);
+	writePos += span.size;
 	return optr;
 }
 

@@ -17,9 +17,6 @@ namespace Mode {
 	};
 }
 
-// TODO: is it not better to have more defined states, like POST_CHUNKED
-// POST_CHUNKED, POST_REGULAR, GET, GET_AUTOINDEX, DEL, CGI, CGI_CHUNKED
-
 namespace Options {
 	enum e_http_options {
 		GET = 1 << 0,

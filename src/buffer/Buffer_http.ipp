@@ -77,17 +77,17 @@ BUFFER_INL
 	if (data[readPos] != '/')
 		return -1;
 	path.ptr = (char*)data + readPos;
-	path.length = scanPos - readPos;
+	path.size = scanPos - readPos;
 	query.ptr = (char*)data + scanPos;
-	query.length = 0;
+	query.size = 0;
 	while (readPos < scanPos) {
 		if (g_asciiLut[data[readPos]] > ASCII_RFC_SYMBOLS) {
 			if (data[readPos] != '?')
 				return -1;
-			path.length = readPos - lineStart;
+			path.size = readPos - lineStart;
 			readPos++;
 			query.ptr = (char*)data + readPos;
-			query.length = scanPos - readPos;
+			query.size = scanPos - readPos;
 			break;
 		}
 		if (data[readPos] == '%') {

@@ -6,12 +6,12 @@ CONNECTION_INL
 	Array<Location> &locations = cfg->locations;
 	bool match = false;
 	usize cmpLength = *req.target.ptr == '/';
-	while (cmpLength < req.target.length && req.target.ptr[cmpLength] != '/')
+	while (cmpLength < req.target.size && req.target.ptr[cmpLength] != '/')
 		cmpLength++;
 
 	for (usize i = 0; i < locations.count; i++) {
 		Span srcUri = locations[i].get_uri();
-		if (cmpLength != srcUri.length)
+		if (cmpLength != srcUri.size)
 			continue;
 		if (MEMCMP(req.target.ptr, srcUri.ptr, cmpLength) == 0) {
 			match = true;
@@ -37,9 +37,9 @@ Span s_check_cgi(Location *loc, Span refExt) {
 	while (cgi.ptr < cgiEnd) {
 		MEMCPY_INLINE(lengths, cgi.ptr, sizeof(lengths));
 		const char *ext = cgi.ptr + sizeof(lengths);
-		if (refExt.length == lengths[0] && MEMCMP(ext, refExt.ptr, refExt.length) == 0) {
+		if (refExt.size == lengths[0] && MEMCMP(ext, refExt.ptr, refExt.size) == 0) {
 			result.ptr = cgi.ptr + lengths[0];
-			result.length = (u16)(lengths[1]);
+			result.size = (u16)(lengths[1]);
 			return result;
 		}
 		cgi.ptr += lengths[0] + lengths[1] + 1;	// +1 here right?

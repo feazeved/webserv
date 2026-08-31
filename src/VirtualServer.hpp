@@ -30,7 +30,7 @@ struct Location {
 	// 	  redirectStatus(), methods(0), autoindex(false) {}
 
 	Span extract(const Span16 &span) {
-		Span result = {(char*)this + span.index, span.length};
+		Span result = {(char*)this + span.index, span.size};
 		return result;
 	}
 

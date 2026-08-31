@@ -48,7 +48,7 @@ Parser::Token s_match_delimiter(char *ptr, usize delimPos, isize &braces) {
 	char delimiter = ptr[delimPos];
 
 	token.value.ptr = ptr + delimPos;
-	token.value.length = 1;
+	token.value.size = 1;
 	switch (delimiter) {
 		case '{' :
 			token.type = Parser::Token::OPEN_BRACKET;
@@ -128,8 +128,8 @@ PARSER_INL
 	usize tokenIndex = 0;
 	char *ptr = file.ptr;
 
-	s_strip_comments(ptr, file.length);
-	serverCount = s_count_servers(ptr, file.length);
+	s_strip_comments(ptr, file.size);
+	serverCount = s_count_servers(ptr, file.size);
 	if (serverCount == 0 || serverCount > MAX_VIRTUAL_SERVERS)
 		PERR_EXIT(1, "Error: Invalid config");
 
@@ -151,7 +151,7 @@ PARSER_INL
 			length = s_get_next_word(ptr);
 			token.type = Token::WORD;
 			token.value.ptr = ptr;
-			token.value.length = length;
+			token.value.size = length;
 			ptr += length;
 		}
 		tokArray[tokenIndex++] = token;
@@ -161,7 +161,7 @@ PARSER_INL
 	for (usize index = 0; index < tokArray.count; index++) {	// Review: This could probably be done in the loop above or inside get next word
 		if (tokArray[index].type == Token::WORD) {
 			Span &word = tokArray[index].value;
-			word.ptr[word.length] = '\0';
+			word.ptr[word.size] = '\0';
 		}
 	}
 	return tokArray;

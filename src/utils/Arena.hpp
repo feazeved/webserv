@@ -60,13 +60,13 @@ struct Arena {
 		if (offset == UINT32_MAX)
 			std::exit(1);
 		Span result = {(char*)mptr(offset), length};
-		result.ptr[result.length] = '\0';
+		result.ptr[result.size] = '\0';
 		return result;
 	}
 
 	Span copy_span(const Span &source) {
-		Span result = alloc_span(source.length);
-		MEMCPY(result.ptr, source.ptr, source.length);
+		Span result = alloc_span(source.size);
+		MEMCPY(result.ptr, source.ptr, source.size);
 		return result;
 	}
 };
@@ -83,7 +83,7 @@ struct Arena {
 
 	// template <typename Type>
 	// Span32 compress_span(const Array<Type> &array, const Span &source) {
-	// 	const Span32 result = compress_span(array, source.length);
-	// 	MEMCPY(array.extract(result).ptr, source.ptr, source.length);
+	// 	const Span32 result = compress_span(array, source.size);
+	// 	MEMCPY(array.extract(result).ptr, source.ptr, source.size);
 	// 	return result;
 	// }

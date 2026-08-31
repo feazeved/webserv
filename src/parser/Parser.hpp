@@ -30,9 +30,9 @@ public:
 
 	struct ParsedCgi {
 		Array<Token> definitions;
-		usize length;
+		usize size;
 
-		ParsedCgi() : definitions(), length(0) {}
+		ParsedCgi() : definitions(), size(0) {}
 	};
 
 	struct ParsedLocation {

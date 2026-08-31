@@ -19,6 +19,7 @@ isize s_get_status(Status &status) {
 		status = Status::i503;
 	else
 		status = Status::i500;
+	errno = 0;
 	return -1;
 }
 

@@ -23,7 +23,7 @@ PARSER_INL
 		if (dir.args.count != 1)
 			PERR_EXIT(1, "Error: Invalid root");
 		location.root = dir.args[0];
-		length = dir.args[0].length;
+		length = dir.args[0].size;
 	}
 	else if (dir.name == "autoindex") {
 		if (dir.args.count != 1 || (!(dir.args[0] == "on") && !(dir.args[0] == "off")))
@@ -39,7 +39,7 @@ PARSER_INL
 		if (dir.args.count != 1)
 			PERR_EXIT(1, "Error: Invalid index");
 		location.index = dir.args[0];
-		length = dir.args[0].length;
+		length = dir.args[0].size;
 	}
 	else if (dir.name == "upload_store") {
 		struct stat st;
@@ -47,17 +47,17 @@ PARSER_INL
 			|| !S_ISDIR(st.st_mode) || access(dir.args[0].ptr, W_OK | X_OK) == -1)
 			PERR_EXIT(1, "Error: Invalid upload store");
 		location.uploadStore = dir.args[0];
-		length = dir.args[0].length;
+		length = dir.args[0].size;
 	}
 	else if (dir.name == "return") {
 		if (dir.args.count != 2)
 			PERR_EXIT(1, "Error: Invalid redirect");
 		const usize status = s_strtol10(dir.args[0].ptr, 3);
 		location.redirectStatus = status;
-		if (dir.args[0].length != 3 || status < 300 || status > 399 || !location.redirectStatus.is_valid())
+		if (dir.args[0].size != 3 || status < 300 || status > 399 || !location.redirectStatus.is_valid())
 			PERR_EXIT(1, "Error: Invalid redirect status");
 		location.redirectTarget = dir.args[1];
-		length = dir.args[1].length;
+		length = dir.args[1].size;
 	}
 	else
 		PERR_EXIT(1, "Error: Invalid location directive");
@@ -76,11 +76,11 @@ PARSER_INL
 	while (tokArray[0].type != Token::CLOSE_BRACKET) {
 		Token *definition = tokArray.ptr;
 		const Span &extension = tokArray[0].value;
-		if (extension.length < 2 || extension.ptr[0] != '.')
+		if (extension.size < 2 || extension.ptr[0] != '.')
 			PERR_EXIT(1, "Error: Invalid CGI extension");
 		for (Token *previousToken = definitionStart; previousToken < definition; previousToken += 4) {
 			const Span &previous = previousToken->value;
-			if (previous.length == extension.length && MEMCMP(previous.ptr, extension.ptr, extension.length) == 0)
+			if (previous.size == extension.size && MEMCMP(previous.ptr, extension.ptr, extension.size) == 0)
 				PERR_EXIT(1, "Error: Duplicate CGI extension");
 		}
 		tokArray.ptr++;
@@ -94,7 +94,7 @@ PARSER_INL
 		if (tokArray[0].type != Token::SEMICOLON)
 			PERR_EXIT(1, "Error: Expected ';' after CGI definition");
 		tokArray.ptr++;
-		cgi.length += sizeof(u16) * 2 + extension.length + interpreter.length;
+		cgi.size += sizeof(u16) * 2 + extension.size + interpreter.size;
 	}
 
 	cgi.definitions = Array<Token>(definitionStart, (usize)(tokArray.ptr - definitionStart));
@@ -107,9 +107,9 @@ PARSER_INL
 	ParsedLocation loc;
 	loc.uri = tokArray[0].value;
 
-	if (loc.uri.length == 0 || loc.uri.ptr[0] != '/')
+	if (loc.uri.size == 0 || loc.uri.ptr[0] != '/')
 		PERR_EXIT(1, "Error: Invalid location path");
-	if (s_length_check(loc.uri.length))
+	if (s_length_check(loc.uri.size))
 		PERR_EXIT(1, "Error: Path size is too large");
 	tokArray.ptr += 2;
 	bool cgiDefined = false;

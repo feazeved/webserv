@@ -55,7 +55,7 @@ PARSER_INL
 	close(fd);
 	ptr[fileSize] = '\0';
 	file.ptr = (char*)ptr;
-	file.length = fileSize;
+	file.size = fileSize;
 	return 0;
 }
 
