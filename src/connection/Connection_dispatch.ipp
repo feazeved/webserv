@@ -11,7 +11,7 @@ CONNECTION_INL
 	while ((lineLength = recvBuffer.find_line_end()) != SIZE_MAX) {
 		if (lineLength == 0) {
 			recvBuffer.readPos = recvBuffer.scanPos;
-			return validate_header();
+			return validate_header(epoll);
 		}
 		if ((options & 7) == 0)	// Methods are not set
 			rvalue = parse_first_line(lineLength);
@@ -36,7 +36,7 @@ CONNECTION_INL
 		case Mode::POST:	return download_file(epoll); break;
 		case Mode::FLUSH:
 		case Mode::CLOSE:	return write_to_client(epoll); break;
-		case Mode::CGI:		return cgi_method(); break;
+		case Mode::CGI:		return cgi_method(epoll); break;
 		default: return -1;
 	}
 }

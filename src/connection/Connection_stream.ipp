@@ -64,7 +64,7 @@ CONNECTION_INL
 */
 
 CONNECTION_INL
-(isize) cgi_method() {
+(isize) cgi_method(Epoll &epoll) {
 	isize bytesWritten, bytesRead;
 
 	if (options & Options::CHUNKED_LENGTH)
@@ -93,7 +93,7 @@ CONNECTION_INL
 		readFd = -1;
 	}
 
-	isize delta = ((bytesWritten < 0 || bytesRead < 0) ? -1 : 1);
+	// isize delta = ((bytesWritten < 0 || bytesRead < 0) ? -1 : 1);
 
 	if (!status.is_set()) {
 		if (sendBuffer.find_header_end() != SIZE_MAX) {

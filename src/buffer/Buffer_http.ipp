@@ -8,7 +8,7 @@
 // Scanptr needs to be used to remember what was written or not
 
 BUFFER_INL
-(isize) dechunk(HTTP_Buffer& tmp, usize &chunkSize, usize &bodySize) {
+(isize) dechunk(Buffer& tmp, usize &chunkSize, usize &bodySize) {
 	const usize searchEnd = writePos >= 4 ? writePos - 3 : 0;
 
 	while (readPos < searchEnd) {
@@ -50,7 +50,7 @@ BUFFER_INL
 	if (readPos < scanPos)
 		return write(writeFd, MIN(scanPos - readPos, (usize)ATOMIC_IOSIZE));
 
-	Buffer<sizeof(*this)> tmpBuffer;
+	Buffer<sizeof(*this)> tmpBuffer = {};
 
 	if (dechunk(tmpBuffer, chunkSize, bodySize) < 0)
 		return -1;
@@ -71,23 +71,23 @@ BUFFER_INL
 }
 
 BUFFER_INL
-(isize) check_target(Span &path, Span &query) {
+(isize) check_target(Span &path, Span &query, usize targetEnd) {
 	const usize lineStart = readPos;
 
 	if (data[readPos] != '/')
 		return -1;
 	path.ptr = (char*)data + readPos;
-	path.size = scanPos - readPos;
-	query.ptr = (char*)data + scanPos;
+	path.size = targetEnd - readPos;
+	query.ptr = (char*)data + targetEnd;
 	query.size = 0;
-	while (readPos < scanPos) {
+	while (readPos < targetEnd) {
 		if (g_asciiLut[data[readPos]] > ASCII_RFC_SYMBOLS) {
 			if (data[readPos] != '?')
 				return -1;
 			path.size = readPos - lineStart;
 			readPos++;
 			query.ptr = (char*)data + readPos;
-			query.size = scanPos - readPos;
+			query.size = targetEnd - readPos;
 			break;
 		}
 		if (data[readPos] == '%') {

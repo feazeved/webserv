@@ -15,8 +15,13 @@
 
 #define CONNECTION_INL(ret_type) inline ret_type Connection::
 
-class Connection {
-public:
+static const usize metadataSize = 160;	// TODO: adjust size on final pass
+static const usize metasizeAlign = ALIGN_UP(metadataSize / 2, 8ul);
+static const usize bytesFree = 2 * metasizeAlign - metadataSize;	// Debug only
+static const usize bufferSize = HTTP_BUFFERSIZE - metasizeAlign;
+typedef Buffer<bufferSize> HTTP_Buffer;
+
+struct Connection {
 	struct Request {
 		Span target, query, cookies, interpreter;
 		Span contentTypeHeader, contentSize;
@@ -29,49 +34,42 @@ public:
 		}
 	};
 
-	static const usize metadataSize = 160;	// TODO: adjust size on final pass
-	static const usize metasizeAlign = ALIGN_UP(metadataSize / 2, 8ul);
-	static const usize bytesFree = 2 * metasizeAlign - metadataSize;	// Debug only
-	static const usize bufferSize = HTTP_BUFFERSIZE - metasizeAlign;
-
-public:
-	HTTP_Buffer recvBuffer;
-	union {
-		HTTP_Buffer sendBuffer;	// Request shares memory with sendBuffer
-		Request req;	// Req values are not needed during execution
-	};
-
 	VirtualServer* cfg;
 	Status status;
 	u16 options;	// TODO: Change this to a bitmap
 	u8 contentType;	// TODO: this should be a span in req maybe?
 	Mode::e_http_mode mode;
-	i32 clientFd;
 	u32 startTime;
-
 	pid_t processId;
 	usize bodySize;
+	i32 clientFd, readFd, writeFd;
+	HTTP_Buffer recvBuffer;
 
 	union {
+		HTTP_Buffer sendBuffer;		// Request shares memory with sendBuffer
 		struct {
-			usize chunkSize; 
-			i32 readFd, writeFd;
+			u8 padding[bufferSize - sizeof(Request)];
+			Request req;			// Req values are not needed during execution
 		};
-		Span16 uri;	// TODO: Store the uri on setup
+	};
+	union {
+		usize chunkSize;
 		DIR* directory;
 	};
 
-	// Core
+	// Common
 	isize init(int fd, VirtualServer* serverConfig);
 	void clear();
 	bool check_timeout(time_t curTime);
 
 	// Parsing
-	isize validate_target();
 	isize parse_first_line(usize lineLength);
 	isize parse_line(usize lineLength);
-	isize parse_cgi_line(Buffer16 &tmpBuffer);
-	isize validate_header();
+	isize parse_cgi_line(Buffer64 &tmpBuffer);
+
+	// Validation
+	isize validate_target(usize lineEnd);
+	isize validate_header(Epoll &epoll);
 	Location* check_location();
 
 	// Configuration
@@ -91,17 +89,17 @@ public:
 	// Streaming
 	isize upload_file(Epoll &epoll);
 	isize download_file(Epoll &epoll);
-	isize cgi_method();
+	isize cgi_method(Epoll &epoll);
 	isize upload_directory(Epoll &epoll);
 
 	// Setup
-	isize setup();
-	isize del_setup();
-	isize get_setup();
-	isize post_setup();
-	isize cgi_setup();
+	isize setup(Epoll &epoll);
+	isize del_setup(Epoll &epoll);
+	isize get_setup(Epoll &epoll);
+	isize post_setup(Epoll &epoll);
+	isize cgi_setup(Epoll &epoll);
 	char* append_env(Buffer64 &buffer, char* argv[3]);
-	isize get_directory(struct stat &st, Buffer8 &pathBuffer);
+	isize get_directory(Epoll &epoll, struct stat &st, Buffer64 &pathBuffer);
 };
 
 #include "Connection_common.ipp"

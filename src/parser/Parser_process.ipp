@@ -101,7 +101,7 @@ PARSER_INL
 		Span &page = server.errorPages[index];
 		const Span &path = configuredPaths[index];
 		if (path.size == 0) {
-			page = Status::s_error_str(index);
+			page = Status::s_error_page(index);
 			continue;
 		}
 

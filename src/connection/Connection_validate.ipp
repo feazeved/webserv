@@ -48,8 +48,8 @@ Span s_check_cgi(Location *loc, Span refExt) {
 }
 
 CONNECTION_INL
-(isize) validate_target() {
-	if (recvBuffer.check_target(req.target, req.query) == -1)
+(isize) validate_target(usize lineEnd) {
+	if (recvBuffer.check_target(req.target, req.query, lineEnd) == -1)
 		return -1;
 	req.location = check_location();
 	if (req.location == NULL)
@@ -63,7 +63,7 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(isize) validate_header() {
+(isize) validate_header(Epoll &epoll) {
 	const bool isBodyMethod = options & (Options::POST | Options::CGI);
 	const bool encodingSet = options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH);
 
@@ -93,5 +93,5 @@ CONNECTION_INL
 		mode = Mode::CLOSE;
 		return close_connection();	// Encoding set for non-body methods
 	}
-	return setup();
+	return setup(epoll);
 }

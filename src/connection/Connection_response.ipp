@@ -7,7 +7,7 @@
 // What do i get out of the header??
 CONNECTION_INL
 (isize) build_cgi_header() {
-	Buffer16 tmpBuffer;
+	Buffer64 tmpBuffer = {};
 
 	tmpBuffer.writePos += 256;
 	tmpBuffer.readPos += 256;
@@ -43,13 +43,14 @@ CONNECTION_INL
 // This can be moved to buffer
 CONNECTION_INL
 (void) build_error_header() {
-	Span errorStr = status.error_str();
+	Span statusStr = status.status_str();
+	Span errorPage = status.error_page();
 
 	sendBuffer.append("HTTP/1.1 ");
-	sendBuffer.append(errorStr.ptr, errorStr.size);
+	sendBuffer.append(statusStr.ptr, statusStr.size);
 	sendBuffer.append("\r\nContent-Type: text/html\r\nContent-Length: ");
-	sendBuffer.append_digit10(errorStr.size);
+	sendBuffer.append_digit10(errorPage.size);
 	sendBuffer.append("\r\nConnection: close\r\n");
-	sendBuffer.append(errorStr);
+	sendBuffer.append(errorPage);
 	sendBuffer.append("\r\n\r\n");
 }

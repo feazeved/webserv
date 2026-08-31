@@ -13,9 +13,7 @@
 	template <usize bufferSize> template <tmpl_param> inline ret_type Buffer<bufferSize>::
 
 template <usize bufferSize>
-class Buffer {
-public:
-	typedef Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;
+struct Buffer {
 	static const usize minReadSize = 4;
 	u8 data[bufferSize - (3 * sizeof(usize))];	// Trailing storage pads unbounded memory loads
 	usize writePos, readPos, scanPos;
@@ -102,7 +100,7 @@ public:
 	}
 
 	// HTTP
-	isize dechunk(HTTP_Buffer& tmp, usize &chunkSize, usize &bodySize);
+	isize dechunk(Buffer& tmp, usize &chunkSize, usize &bodySize);
 	isize decode(int writeFd, usize &chunkSize, usize &bodySize);
 
 	// Search
@@ -110,7 +108,7 @@ public:
 	usize find_header_end();
 	isize match_field();
 	isize match_mime();
-	isize check_target(Span &path, Span &query);
+	isize check_target(Span &path, Span &query, usize targetEnd);
 
 	// String
 	static usize s_itoa10(usize number, char *bufferEnd);
@@ -161,9 +159,9 @@ public:
 	}
 };
 
-typedef Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;
 typedef Buffer<8 * 1024> Buffer8;
 typedef Buffer<16 * 1024> Buffer16;
+typedef Buffer<32 * 1024> Buffer32;
 typedef Buffer<64 * 1024> Buffer64;
 
 #include "Buffer_add.ipp"

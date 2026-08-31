@@ -2,11 +2,10 @@
 #include "Connection.hpp"
 
 CONNECTION_INL
-(isize) del_setup() {
-	Buffer16 pathBuffer;
+(isize) del_setup(Epoll &epoll) {
+	Buffer64 pathBuffer = {};
 	pathBuffer.append(req.location->get_root());
 	pathBuffer.append(req.target);
-	pathBuffer.append("\0");
 
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)
@@ -18,30 +17,35 @@ CONNECTION_INL
 
 	status = Status::i204;
 	build_header();
-	return 0;
+	return write_to_client(epoll);
 }
 
 CONNECTION_INL
-(isize) post_setup() {
-	Buffer16 pathBuffer;
+(isize) post_setup(Epoll &epoll) {
+	Buffer64 pathBuffer = {};
 	pathBuffer.append(req.location->get_root());
 	pathBuffer.append(req.location->get_upload_store());
-	pathBuffer.append("\0");
 
 	writeFd = open(pathBuffer, O_WRONLY | O_CREAT | O_EXCL, 0644);
 	if (writeFd == -1) {
 		mode = Mode::CLOSE;
 		return s_get_status(status);
 	}
-	return 0;
+	return download_file(epoll);
 }
+
+/*
+	<html><head><title>Index of /download/</title></head><body>
+	<h1>Index of /download/</h1><hr><pre><a href="../">../</a>
+	<a href="nginx-0.1.0.tar.gz">nginx-0.1.0.tar.gz</a>                                 05-Oct-2004 15:39              220038
+*/
 
 #define HTTP_INDEX_HEADER "<html><head><title>Index of /download/</title></head><body><h1>Index of "
 #define HTTP_INDEX_MIDDLE "/</title></head><body><h1>Index of "
 #define HTTP_INDEX_TAIL "/</h1><hr><pre><a href=\"../\">../</a>"
 
 CONNECTION_INL
-(isize) get_directory(struct stat &st, Buffer8 &pathBuffer) {
+(isize) get_directory(Epoll &epoll, struct stat &st, Buffer64 &pathBuffer) {
 	pathBuffer.append("/index.html");
 	readFd = open(pathBuffer, O_RDONLY);
 	if (readFd == -1 && req.location->autoindex == false)
@@ -61,42 +65,41 @@ CONNECTION_INL
 	sendBuffer.append(HTTP_INDEX_MIDDLE);
 	sendBuffer.append(req.target);
 	sendBuffer.append(HTTP_INDEX_TAIL);
-	return 0;
+	return upload_directory(epoll);
 }
 
 CONNECTION_INL
-(isize) get_setup() {
-	Buffer8 pathBuffer;
+(isize) get_setup(Epoll &epoll) {
+	Buffer64 pathBuffer = {};
 	pathBuffer.append(req.location->get_root());
 	pathBuffer.append(req.target);
-	pathBuffer.append("\0");
 
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)
 		return s_get_status(status);
 
 	if (S_ISDIR(st.st_mode))
-		return get_directory(st, pathBuffer);
+		return get_directory(epoll, st, pathBuffer);
 	readFd = open(pathBuffer, O_RDONLY);
 	if (readFd == -1)
 		return s_get_status(status);
 	status = Status::i200;
 	bodySize = (usize)st.st_size;
 	build_header();
-	return 0;
+	return upload_file(epoll);
 }
 
 CONNECTION_INL
-(isize) setup() {
+(isize) setup(Epoll &epoll) {
 	if (options & Options::CHUNKED_LENGTH)
 		bodySize = cfg->maxBodySize;
 
 	mode = (Mode::e_http_mode)(options & 0x0F);
 	if (mode == Mode::GET)
-		return get_setup();
+		return get_setup(epoll);
 	if (mode == Mode::POST)
-		return post_setup();
+		return post_setup(epoll);
 	if (mode == Mode::CGI)
-		return cgi_setup();
-	return del_setup();		// TODO: All setup calls should call dispatch again
+		return cgi_setup(epoll);
+	return del_setup(epoll);		// TODO: All setup calls should call dispatch again
 }

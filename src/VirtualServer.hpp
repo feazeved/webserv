@@ -42,7 +42,6 @@ struct Location {
 	Span get_redirect_target()	{ return extract(redirectTarget); }
 };
 
-
 class VirtualServer {
 public:
 	Span			serverRoot;

@@ -128,7 +128,7 @@ STATIC_ASSERT(i100 == 9);
 	}
 
 	ALWAYS_INLINE
-	Span error_str() const {
+	Span error_page() const {
 		Span result;
 		result.ptr = startPtr + (usize)index;
 		result.size = (u8) result.ptr[-1];
@@ -139,7 +139,7 @@ STATIC_ASSERT(i100 == 9);
 	}
 
 	ALWAYS_INLINE
-	static Span s_error_str(usize number) {
+	static Span s_error_page(usize number) {
 		const usize offset = s_index(3 + (number >= 32), number);
 
 		Span tmp;

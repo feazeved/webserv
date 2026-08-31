@@ -88,8 +88,8 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(isize) cgi_setup() {
-	Buffer64 pathBuffer;
+(isize) cgi_setup(Epoll &epoll) {
+	Buffer64 pathBuffer = {};
 	char *chdirPath;
 	char *argv[3];
 	int fdIn[2], fdOut[2];

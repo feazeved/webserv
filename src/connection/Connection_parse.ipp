@@ -7,8 +7,8 @@ CONNECTION_INL
 		status = lineLength < 14 ? Status::i400 : Status::i431;
 		return -1;	// ERROR: Bad request "GET / HTTP/1.1" shortest possible
 	}
-	char *const lineEnd = recvBuffer.rptr() + lineLength;
 
+	usize lineEnd = lineLength - 9;
 	if (recvBuffer.strcmp("GET "))
 		options |= Options::GET;
 	else if (recvBuffer.strcmp("POST "))
@@ -20,15 +20,17 @@ CONNECTION_INL
 		return -1;
 	}
 
-	if (MEMCMP(lineEnd - 9, " HTTP/1.1", 9) != 0) {
+	char *targetEnd = recvBuffer.rptr() + lineEnd;
+	if (MEMCMP(targetEnd, " HTTP/1.1", 9) != 0) {
 		status = Status::i505;
 		return -1;
 	}
-	*(lineEnd - 9) = 0;
-	const isize result = validate_target();
+	*targetEnd = '\0';
+
+	const isize result = validate_target(lineEnd);
 	if (result < 0 && !status.is_set())
 		status = Status::i400;
-	// recvBuffer.readPos = recvBuffer.scanPtr;	// TODO: add skip spaces
+	recvBuffer.readPos = recvBuffer.scanPos;
 	return result;
 }
 
@@ -109,7 +111,7 @@ Error:
 	structural checks needed before forwarding the line.
 */
 CONNECTION_INL
-(isize) parse_cgi_line(Buffer16 &dst) {
+(isize) parse_cgi_line(Buffer64 &dst) {
 	const char* const field = (char*)sendBuffer.rptr();
 	const char* const lineEnd = (char*)sendBuffer.sptr() - 2;
 	const usize totalLength = (usize)(lineEnd - (char*)sendBuffer.rptr());
