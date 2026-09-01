@@ -7,8 +7,7 @@ CONNECTION_INL
 		status = lineLength < 14 ? Status::i400 : Status::i431;
 		return -1;	// ERROR: Bad request "GET / HTTP/1.1" shortest possible
 	}
-
-	usize lineEnd = lineLength - 9;
+	char* targetEnd = recvBuffer.rptr() + lineLength - 9;
 	if (recvBuffer.strcmp("GET "))
 		options |= Options::GET;
 	else if (recvBuffer.strcmp("POST "))
@@ -20,14 +19,17 @@ CONNECTION_INL
 		return -1;
 	}
 
-	char *targetEnd = recvBuffer.rptr() + lineEnd;
+	if (targetEnd <= recvBuffer.rptr()) {
+		status = Status::i400;
+		return -1;
+	}
 	if (MEMCMP(targetEnd, " HTTP/1.1", 9) != 0) {
 		status = Status::i505;
 		return -1;
 	}
 	*targetEnd = '\0';
 
-	const isize result = validate_target(lineEnd);
+	const isize result = validate_target((usize)(targetEnd - (char*)recvBuffer.data));
 	if (result < 0 && !status.is_set())
 		status = Status::i400;
 	recvBuffer.readPos = recvBuffer.scanPos;
@@ -47,7 +49,7 @@ CONNECTION_INL
 		goto Error;
 	switch (fieldIndex) {
 		default:
-			recvBuffer.readPos += lineLength;
+			recvBuffer.readPos = (usize)(lineEnd - (char*)recvBuffer.data);
 			break;
 
 		case Field::CONNECTION:	// TODO: Add keep alive
@@ -79,13 +81,18 @@ CONNECTION_INL
 			}
 			options |= Options::FIXED_LENGTH;
 			break;
+		case Field::CONTENT_TYPE:
+			while ((lineEnd[-1] == ' ' || lineEnd[-1] == '\t'))
+				lineEnd--;
+			req.contentTypeHeader.ptr = (char*) recvBuffer.rptr();
+			req.contentTypeHeader.size = (usize) (lineEnd - recvBuffer.rptr());
+			recvBuffer.readPos = (usize)(lineEnd - (char*)recvBuffer.data);
+			break;
 
 		case Field::HOST:
 			if (options & Options::HOST)
 				goto Error;	// ERROR: Multiple hosts
-			if (recvBuffer.strcasecmp("localhost") == false)
-				goto Error;
-			recvBuffer.strcasecmp(":8080");
+			recvBuffer.readPos = (usize)(lineEnd - (char*)recvBuffer.data);
 			options |= Options::HOST;
 			break;
 		case Field::COOKIES:
@@ -93,12 +100,13 @@ CONNECTION_INL
 				lineEnd--;
 			req.cookies.ptr = (char*) recvBuffer.rptr();
 			req.cookies.size = (usize) (lineEnd - recvBuffer.rptr());
+			recvBuffer.readPos = (usize)(lineEnd - (char*)recvBuffer.data);
 			break;
 	}
 
 	if (recvBuffer.skip_spaces())
 		goto Error;
-	// recvBuffer.readPos = recvBuffer.scanPos;
+	recvBuffer.readPos = recvBuffer.scanPos;
 	return fieldIndex;
 
 Error:

@@ -7,15 +7,7 @@ CONNECTION_INL
 		return epoll.set_write(clientFd, 1);
 
 	isize bytesWritten = sendBuffer.write(clientFd, ATOMIC_IOSIZE);
-	if (bytesWritten <= 0)
-		return close_connection(false);
-	if (sendBuffer.size() != 0)
-		return bytesWritten;
-	if (mode == Mode::FLUSH) {
-		mode = Mode::PARSE;
-		return bytesWritten;
-	}
-	return close_connection();
+	return bytesWritten;
 }
 
 CONNECTION_INL
@@ -24,15 +16,31 @@ CONNECTION_INL
 		return epoll.set_read(clientFd, 1);
 
 	isize bytesRead = recvBuffer.read(clientFd, ATOMIC_IOSIZE);
-	if (bytesRead <= 0)
-		return close_connection(false);
 	return bytesRead;
 }
 
 CONNECTION_INL
-(isize) download_file(Epoll &epoll) {
-	isize bytesWritten;
+(isize) flush(Epoll &epoll) {
+	isize bytesWritten = write_to_client(epoll);
+	if (sendBuffer.size() > 0)
+		return bytesWritten;
+	options = 0;
+	contentType = Mime::OCTET_STREAM;
+	bodySize = 0;
+	chunkSize = SIZE_MAX;
+	mode = Mode::PARSE;
+	req.clear();
+	sendBuffer.clear();
+	status.clear();
+	startTime = Clock::time_elapsed();
+	return bytesWritten;
+}
 
+CONNECTION_INL
+(isize) download_file(Epoll &epoll) {
+	isize bytesWritten = 0;
+	if (read_from_client(epoll) == -1)
+		return -1;
 	if (options & Options::CHUNKED_LENGTH)
 		bytesWritten = recvBuffer.decode(writeFd, chunkSize, bodySize);
 	else {
@@ -44,21 +52,19 @@ CONNECTION_INL
 	if (bytesWritten == -1) {
 		close(writeFd);
 		writeFd = -1;
-		status = Status::i500;
-		return close_connection();
+		bool isChunked = options & Options::CHUNKED_LENGTH;
+		Status::Code code = isChunked ? Status::i400 : Status::i500;
+		return flush_setup_close(epoll, code);
 	}
 
 	if (!status.is_set() && bodySize == 0) {	// Must guarantee that bodySize is 0
 		close(writeFd);
 		writeFd = -1;	// Finished reading
-		status = Status::i201;
 		build_header();
-		bool keepAlive = !!(options & Options::KEEP_ALIVE);
-		mode = keepAlive ? Mode::FLUSH : Mode::CLOSE;
+		return flush_setup(epoll, Status::i201);
 	}
 	return write_to_client(epoll);
 }
-
 /*	The pipe fds here are configured to be non-blocking and read/write errors are ignored
 	Failure conditions for these fds are instead handled by CGI timeouts
 */
@@ -79,7 +85,7 @@ CONNECTION_INL
 		close(writeFd);
 		writeFd = -1;
 		status = Status::i500;
-		return close_connection();
+		return -1;
 	}
 
 	if (bodySize == 0) {	// Must guarantee that bodySize is 0
@@ -102,6 +108,7 @@ CONNECTION_INL
 			return 0;	// Still no CGI Header
 		}
 		build_cgi_header();
+		flush_setup(epoll, (Status::Code) status.index);
 	}
 	return bytesRead;
 }

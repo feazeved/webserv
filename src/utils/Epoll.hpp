@@ -31,9 +31,7 @@ struct Epoll {
 	VirtualServer* servers;
 	struct epoll_event eventList[maxEvents];
 
-	Epoll (VirtualServer *srcServers)
-			: servers(srcServers) {
-		clear();
+	Epoll (VirtualServer *srcServers) : fd(-1), index(0), servers(srcServers) {
 		fd = epoll_create(1);
 		if (fd == -1)
 			return ;

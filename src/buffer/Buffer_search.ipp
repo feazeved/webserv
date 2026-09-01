@@ -94,7 +94,7 @@ BUFFER_INL
 			readPos++;
 		if (readPos >= scanPos)
 			break;
-		dotPos = readPos;
+		dotPos = readPos++;
 	}
 
 	// readPos++;

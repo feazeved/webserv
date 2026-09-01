@@ -80,11 +80,11 @@ template <typename Type, usize rows, usize cols>
 struct Matrix {
 	Type array[rows][cols];
 
-	Type& operator[] (usize index) {
+	Type (&operator[] (usize index))[cols] {
 		return array[index];
 	}
 
-	const Type& operator[] (usize index) const {
+	const Type (&operator[] (usize index) const)[cols] {
 		return array[index];
 	}
 };

@@ -1,10 +1,6 @@
 #pragma once
 #include "Connection.hpp"
 
-/*	Header is built in stack memory while parsing the header from client output
-	When the header is built, it then appends part of the CGI body to tmp buffer
-	up to how many bytes will fit in a single write */
-// What do i get out of the header??
 CONNECTION_INL
 (isize) build_cgi_header() {
 	Buffer64 tmpBuffer = {};
@@ -14,7 +10,7 @@ CONNECTION_INL
 
 	while (sendBuffer.find_line_end() == 1) {
 		if (parse_cgi_line(tmpBuffer) == -1) {
-			return close_connection();
+			return -1;
 		}
 	}
 }
@@ -23,11 +19,13 @@ CONNECTION_INL
 (void) build_header() {
 	Span str = status.status_str();
 
+	// sendBuffer.clear();	// Should not be needed
 	sendBuffer.append("HTTP/1.1 ");
 	sendBuffer.append_inline<3>(str.ptr, 3);
-
 	sendBuffer.append(" OK\r\nContent-Type: ");
 	sendBuffer.append_mime(contentType);
+	sendBuffer.append("\r\nContent-Length: ");
+	sendBuffer.append_digit10(bodySize);
 	if (options & Options::KEEP_ALIVE)
 		sendBuffer.append("\r\nConnection: keep-alive\r\n\r\n");
 	else
@@ -46,11 +44,12 @@ CONNECTION_INL
 	Span statusStr = status.status_str();
 	Span errorPage = status.error_page();
 
+	options &= ~(u16)Options::KEEP_ALIVE;	// Should not be needed
+	sendBuffer.clear();
 	sendBuffer.append("HTTP/1.1 ");
-	sendBuffer.append(statusStr.ptr, statusStr.size);
+	sendBuffer.append(statusStr);
 	sendBuffer.append("\r\nContent-Type: text/html\r\nContent-Length: ");
 	sendBuffer.append_digit10(errorPage.size);
-	sendBuffer.append("\r\nConnection: close\r\n");
+	sendBuffer.append("\r\nConnection: close\r\n\r\n");
 	sendBuffer.append(errorPage);
-	sendBuffer.append("\r\n\r\n");
 }

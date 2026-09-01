@@ -13,8 +13,8 @@ private:
 	Clock();
 
 public:
-	static std::time_t timeBegin, timeNow, timeElapsed;
-	static isize secondsRef;
+	static std::time_t timeBegin, timeNow;
+	static u32 timeElapsed;
 
 	static void init() {
 		timeBegin = std::time(NULL);
@@ -22,13 +22,14 @@ public:
 		timeElapsed = 0;
 	}
 
-	static time_t update() {
+	static u32 update() {
 		timeNow = std::time(NULL);
-		timeElapsed = timeNow - timeBegin;
+		timeElapsed = (u32)(timeNow - timeBegin);
 		return timeElapsed;
 	}
 
 	// Does not call update time
+	ALWAYS_INLINE
 	static u32 time_elapsed() {
 		return (u32)timeElapsed;
 	}

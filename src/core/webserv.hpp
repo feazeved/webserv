@@ -9,11 +9,10 @@ namespace Mode {
 		PARSE = 0,
 		GET = 1 << 0,
 		POST = 1 << 1,
-		FLUSH = 1 << 2,	// Streams header, then parses again
+		FLUSH = 1 << 2,	// Flushes whatever was in sendBuffer
 		CGI = 1 << 3,
 		SSE = 1 << 4,
-		CLOSE = 1 << 5,		// Streams header, then closes
-		AUTOINDEX = 1 << 6
+		AUTOINDEX = 1 << 5
 	};
 }
 

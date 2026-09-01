@@ -27,4 +27,4 @@
 	#endif
 #endif
 
-#define HTTP_DIRENT_MAX_SIZE 512
+#define HTTP_DIRENT_MAX_SIZE 1536	// REVIEW

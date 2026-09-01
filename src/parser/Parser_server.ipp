@@ -157,5 +157,12 @@ PARSER_INL
 		PERR_EXIT(1, "Error: Missing listen directive");
 	if (server.host.size == 0)
 		server.host = beta.copy_span(Span::create("localhost"));
+	for (usize index = 0; index < parsedLocations.count; index++) {	// Fill in optional arguments
+		ParsedLocation &parsedLoc = parsedLocations[index];
+		if (parsedLoc.root.size == 0)
+			parsedLoc.root = server.serverRoot;
+		if (parsedLoc.uploadStore.size == 0)
+			parsedLoc.uploadStore = parsedLoc.uri;
+	}
 	server.locations = store_locations(parsedLocations);
 }

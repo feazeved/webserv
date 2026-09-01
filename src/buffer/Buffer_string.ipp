@@ -34,7 +34,7 @@ BUFFER_INL
 	const usize originalPos = readPos;
 	while (true) {
 		digit = (usize) g_asciiLut[data[readPos]];
-		if (value >= (SIZE_MAX / 16 - 16))
+		if (value >= (SIZE_MAX / 16 - 16))	// Constant comparison reduces branching
 			return SIZE_MAX;
 		if (digit > 15)
 			break;
@@ -52,8 +52,8 @@ BUFFER_INL
 	usize digit = 0;
 	const usize originalPos = readPos;
 	while (true) {
-		digit = (usize) g_asciiLut[data[readPos]];
-		if (value >= ((SIZE_MAX - 9) / 10))
+		digit = (usize) data[readPos] - '0';
+		if (value >= ((SIZE_MAX - 9) / 10))	// Constant comparison reduces branching
 			return SIZE_MAX;
 		if (digit > 9)
 			break;

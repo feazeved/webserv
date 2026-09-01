@@ -1,26 +1,45 @@
 #pragma once
 #include "Connection.hpp"
 
+CONNECTION_INL
+(char*) append_target_path(Buffer64 &buffer) {
+	const Span root = req.location->get_root();
+	const Span uri = req.location->get_uri();
+
+	char* fullPath = buffer.append(root);
+	const Span suffix = {req.target.ptr + uri.size, req.target.size - uri.size};
+	if (suffix.size != 0) {
+		const bool rootHasSlash = root.size != 0 && root.ptr[root.size - 1] == '/';
+		const bool suffixHasSlash = suffix.ptr[0] == '/';
+		if (!rootHasSlash && !suffixHasSlash)
+			buffer.append("/");
+		buffer.append(suffix.ptr + (rootHasSlash && suffixHasSlash), suffix.size - (rootHasSlash && suffixHasSlash));
+	}
+	*buffer = 0;
+	return fullPath;
+}
+
 static inline
-isize s_get_status(Status &status) {
+Status::Code s_get_status() {
 	const int error = errno;
+	Status::Code code;
 
 	if (error == ENOENT || error == ENOTDIR)
-		status = Status::i404;
+		code = Status::i404;
 	else if (error == EACCES || error == EPERM || error == EROFS)
-		status = Status::i403;
+		code = Status::i403;
 	else if (error == EEXIST || error == ENOTEMPTY || error == EBUSY)
-		status = Status::i409;
+		code = Status::i409;
 	else if (error == ENAMETOOLONG)
-		status = Status::i414;
+		code = Status::i414;
 	else if (error == ENOSPC || error == EDQUOT)
-		status = Status::i507;
+		code = Status::i507;
 	else if (error == EMFILE || error == ENFILE || error == ENOMEM)
-		status = Status::i503;
+		code = Status::i503;
 	else
-		status = Status::i500;
+		code = Status::i500;
 	errno = 0;
-	return -1;
+	return code;
 }
 
 CONNECTION_INL
@@ -31,32 +50,25 @@ CONNECTION_INL
 	readFd = -1;
 	writeFd = -1;
 	processId = -1;
+	options = 0;
+	contentType = Mime::OCTET_STREAM;
+	bodySize = 0;
+	chunkSize = SIZE_MAX;
 	mode = Mode::PARSE;
 	recvBuffer.clear();
-	sendBuffer.clear();
 	req.clear();
+	sendBuffer.clear();
 	status.clear();
 	startTime = Clock::time_elapsed();
 	return 1;
 }
 
 CONNECTION_INL
-(isize) close_connection(bool streamHeader) {
-	if (readFd >= 0) {
-		close(readFd);
-		readFd = -1;
-	}
-
-	if (writeFd >= 0) {
-		close(writeFd);
-		writeFd = -1;
-	}
-
-	if (streamHeader) {
-		build_header();
-		options &= ~(u16)Options::KEEP_ALIVE;
-		return 0;		// Keep the connection alive until header is flushed
-	}
+(isize) end_connection() {
+	clear();
+	if (clientFd >= 0)
+		close(clientFd);
+	clientFd = -1;
 	return -1;
 }
 
@@ -64,12 +76,14 @@ CONNECTION_INL
 (void) clear() {
 	if (mode == Mode::AUTOINDEX && directory != NULL) {
 		closedir(directory);
+		directory = NULL;
 		readFd = -1;
 	}
 	if (readFd >= 0)
 		close(readFd);
 	if (writeFd >= 0)
 		close(writeFd);
-	clientFd = -1;
+	readFd = -1;
+	writeFd = -1;
 	processId = -1;
 }

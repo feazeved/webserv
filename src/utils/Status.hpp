@@ -138,9 +138,9 @@ STATIC_ASSERT(i100 == 9);
 		return result;
 	}
 
-	ALWAYS_INLINE
+	ALWAYS_INLINE	// THIS SHOULD USE the index dumbass
 	static Span s_error_page(usize number) {
-		const usize offset = s_index(3 + (number >= 32), number);
+		const usize offset = s_index(3 + (number >= 32), number - (number >= 32 ? 32 : 0));
 
 		Span tmp;
 		tmp.ptr = startPtr + offset;

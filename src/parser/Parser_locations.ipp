@@ -90,6 +90,8 @@ PARSER_INL
 		if (tokArray[0].type != Token::WORD)
 			PERR_EXIT(1, "Error: Invalid CGI interpreter");
 		const Span &interpreter = tokArray[0].value;
+		if (access(interpreter.ptr, X_OK) == -1)	// TODO: Check if more is not needed
+			PERR_EXIT(1, "Error: Invalid CGI interpreter");
 		tokArray.ptr++;
 		if (tokArray[0].type != Token::SEMICOLON)
 			PERR_EXIT(1, "Error: Expected ';' after CGI definition");

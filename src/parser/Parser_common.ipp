@@ -14,7 +14,7 @@ usize s_strtol10(const char *str, usize length) {
 
 	while (str < end) {
 		digit = (usize)(*str - '0');
-		if (digit > 9 || value > ((SIZE_MAX - 9) / 10))
+		if (digit > 9 || value > (SIZE_MAX - 9) / 10)
 			break;
 		value = value * 10 + digit;
 		str++;

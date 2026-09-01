@@ -24,7 +24,7 @@ typedef Buffer<bufferSize> HTTP_Buffer;
 struct Connection {
 	struct Request {
 		Span target, query, cookies, interpreter;
-		Span contentTypeHeader, contentSize;
+		Span contentTypeHeader, contentSize;	// relativeTarget (what comes after URI)
 		Location* location;
 
 		// Can add root and other location vars here
@@ -40,11 +40,14 @@ struct Connection {
 	u8 contentType;	// TODO: this should be a span in req maybe?
 	Mode::e_http_mode mode;
 	u32 startTime;
-	pid_t processId;
 	usize bodySize;
-	i32 clientFd, readFd, writeFd;
+	i32 clientFd, readFd;
 	HTTP_Buffer recvBuffer;
 
+	union {
+		dirent* dirEntry;
+		struct { pid_t processId; i32 writeFd; };
+	};
 	union {
 		HTTP_Buffer sendBuffer;		// Request shares memory with sendBuffer
 		struct {
@@ -69,12 +72,12 @@ struct Connection {
 	// Validation
 	isize validate_target(usize lineEnd);
 	isize validate_header(Epoll &epoll);
-	Location* check_location();
+	Location* match_location();
 
 	// Configuration
 	isize dispatch(Epoll &epoll);
 	isize parse(Epoll &epoll);
-	isize close_connection(bool streamHeader=true);
+	isize end_connection();
 
 	// Response
 	void build_error_header();
@@ -82,8 +85,10 @@ struct Connection {
 	isize build_cgi_header();
 
 	// Common
+	isize flush(Epoll &epoll);
 	isize write_to_client(Epoll &epoll);
 	isize read_from_client(Epoll &epoll);
+	char* append_target_path(Buffer64 &buffer);
 
 	// Streaming
 	isize upload_file(Epoll &epoll);
@@ -95,10 +100,12 @@ struct Connection {
 	isize setup(Epoll &epoll);
 	isize del_setup(Epoll &epoll);
 	isize get_setup(Epoll &epoll);
+	isize get_directory_setup(Epoll &epoll, struct stat &st, Buffer64 &pathBuffer);
 	isize post_setup(Epoll &epoll);
 	isize cgi_setup(Epoll &epoll);
 	char* append_env(Buffer64 &buffer, char* argv[3]);
-	isize get_directory(Epoll &epoll, struct stat &st, Buffer64 &pathBuffer);
+	isize flush_setup(Epoll &epoll, Status::Code code);
+	isize flush_setup_close(Epoll &epoll, Status::Code code);
 };
 
 #include "Connection_common.ipp"

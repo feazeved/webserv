@@ -6,6 +6,22 @@
 // effectively performing compaction.
 
 // Scanptr needs to be used to remember what was written or not
+/*
+	Assuming chunk extensions and trailers are intentionally unsupported, there were three concrete state-machine bugs.
+
+	For a valid ending:
+
+	0\r\n\r\n
+
+	find_line_end() returns 1 for the line "0", so this rejects every valid terminal chunk:
+
+	if (lineLength != 0)
+		return -1;
+
+	bodySize became 0 immediately after 0\r\n, before consuming the required final \r\n.
+	Consuming a chunk’s trailing \r\n advanced readPos but not scanPos, so find_line_end() could rediscover already-consumed bytes.
+	Reserving three bytes with searchEnd could stall when exactly the required two-byte delimiter was available.
+*/
 
 BUFFER_INL
 (isize) dechunk(Buffer& tmp, usize &chunkSize, usize &bodySize) {
@@ -68,6 +84,19 @@ BUFFER_INL
 	scanPos = decodedRemaining;
 	return bytesWritten;
 }
+
+/*
+Three real issues:
+
+It truncates targets without a query:
+data[readPos - 1] = 0;
+
+For /file.txt, readPos == targetEnd, so this overwrites the final t. The caller had already placed '\0' at targetEnd.
+
+It stops scanning after ?, so the query is never checked for invalid control characters, whitespace, or malformed percent sequences.
+It accepts raw .. path segments. Since the target suffix is later appended to root or upload_store, /public/../secret can escape the configured directory.
+
+*/
 
 BUFFER_INL
 (isize) check_target(Span &path, Span &query, usize targetEnd) {

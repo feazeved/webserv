@@ -25,7 +25,7 @@ BUFFER_INL_T
 BUFFER_INL_T
 (usize N, char*) prepend_inline(const char* ptr, usize length) {
 	readPos -= length;
-	MEMCPY_INLINE(data + readPos, ptr, (N - 1));
+	MEMCPY_INLINE(data + readPos, ptr, N);
 	return (char*) data + readPos;
 }
 

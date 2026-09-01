@@ -30,7 +30,7 @@ void s_chdir(char* cwdPath, usize length) {
 			cwdPath++;
 		if (cwdPath >= end)
 			break;
-		slashPtr = cwdPath;
+		slashPtr = cwdPath++;
 	}
 	*slashPtr = 0;
 	ASSERT(cwdPath != NULL, "cwdPath was NULL");
@@ -43,14 +43,6 @@ void s_chdir(char* cwdPath, usize length) {
 	HTTP_HOST=example.com:8080, HTTP_COOKIE=session=xyz
 */
 
-/*
-	Suppose we have /images/cgi/process.py, the URI is /images, and our root is /home/webserv/www/
-	First, we match the upper path with the URI and find a matching location URI
-
-	Interpreter path: /bin/python3, goes in argv[0]
-	chdir to: /home/webserv/www/images/cgi
-*/
-
 CONNECTION_INL
 (char*) append_env(Buffer64 &buffer, char* argv[3]) {
 	static const char requestMethod[3][24] = 
@@ -58,32 +50,35 @@ CONNECTION_INL
 	const usize methodIndex = (options & 7) / 2;
 
 	Environment::reset();
-	Span root = req.location->get_root();
 
 	argv[0] = buffer.append(req.interpreter);			// /bin/python3
 	char* scriptName = buffer.append("SCRIPT_NAME=");	// SCRIPTNAME=
 	buffer.append(req.target);							// SCRIPTNAME=/images/cgi/process.py
-	argv[1] = buffer.append(root);						// /home/webserv/www
-	buffer.append(req.target);							// /home/webserv/www/images/cgi/process.py
+	argv[1] = append_target_path(buffer);
 	argv[2] = NULL;
-
-	usize scriptPathLength = req.target.size + root.size;
+	
+	const usize scriptPathLength = (usize)(buffer.wptr() - argv[1]);
 	char* cwdPath = buffer.append(argv[1], scriptPathLength);
 	s_chdir(cwdPath, scriptPathLength);							// /home/webserv/www/images/cgi
 
-	req.query.ptr = STRPREP(req.query.ptr, "QUERY_STRING="); // Totally safe dont worry about it
-	req.cookies.ptr = STRPREP(req.cookies.ptr, "HTTP_COOKIE="); // Worst case scenario overwrites HTTP/1.1\r\n
+	Environment::append(STRPREP(req.query.ptr, "QUERY_STRING="));
+	if (req.cookies.size != 0)
+		Environment::append(STRPREP(req.cookies.ptr, "HTTP_COOKIE="));	// TODO: Reminder to null terminate cookies and query
 
 	if (options & Options::FIXED_LENGTH) {
-		char* lengthStr = buffer.append("HTTP_CONTENT_LENGTH=");
+		char* lengthStr = buffer.append("CONTENT_LENGTH=");
 		buffer.append_digit10(bodySize);
-		buffer.append("\0");				// TODO: Check if append null terminates
+		buffer.append("\0");
 		Environment::append(lengthStr);
+	}
+	if (req.contentTypeHeader.size != 0) {
+		char* contentTypeHeader = buffer.append("CONTENT_TYPE=");
+		buffer.append(req.contentTypeHeader);
+		buffer.append("\0");
+		Environment::append(contentTypeHeader);
 	}
 	Environment::append((char*) requestMethod[methodIndex]);
 	Environment::append(scriptName);
-	Environment::append(req.query.ptr);
-	Environment::append(req.cookies.ptr);
 	return cwdPath;
 }
 
@@ -94,14 +89,19 @@ CONNECTION_INL
 	char *argv[3];
 	int fdIn[2], fdOut[2];
 
+	chdirPath = append_env(pathBuffer, argv);
+	struct stat scriptStat;
+	if (stat(argv[1], &scriptStat) == -1 || access(argv[1], R_OK) == -1)
+		goto Error;
+	if (!S_ISREG(scriptStat.st_mode))
+		return flush_setup_close(epoll, Status::i403);
+
 	if (pipe(fdIn) == -1)
 		goto Error;
 	if (pipe(fdOut) == -1)
 		goto ErrorCloseInput;
-	if (VirtualServer::s_set_nonblocking(fdOut[0]) || VirtualServer::s_set_nonblocking(fdIn[1]))
-		goto ErrorCloseOutput;
-
-	chdirPath = append_env(pathBuffer, argv);
+	VirtualServer::s_set_stream_mode(fdIn[1]);
+	VirtualServer::s_set_stream_mode(fdOut[0]);
 	processId = fork();
 	if (processId < 0)
 		goto ErrorCloseOutput;
@@ -112,9 +112,10 @@ CONNECTION_INL
 	close(fdOut[1]);
 	readFd = fdOut[0];
 	writeFd = fdIn[1];
+	sendBuffer.clear();
 	return cgi_method(epoll);
 
 	ErrorCloseOutput:	close(fdOut[0]), close(fdOut[1]);
 	ErrorCloseInput:	close(fdIn[0]), close(fdIn[1]);
-	Error:				return s_get_status(status);
+	Error:				return flush_setup_close(epoll, s_get_status());
 }

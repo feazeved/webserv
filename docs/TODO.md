@@ -19,3 +19,6 @@
 16. Verify exit strategies for PERR_EXIT
 
 17. Create the file handling for query target and read file
+
+18. When upload store is not present, convert it to URI
+

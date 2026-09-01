@@ -82,10 +82,8 @@ public:
 		listenFd = socket(AF_INET, SOCK_STREAM, 0);
 		if (listenFd == -1)
 			PERR_EXIT(clear(), "Error: Failed to create listening socket");
-		if (s_set_close_on_exec(listenFd))
+		if (s_set_stream_mode(listenFd))
 			PERR_EXIT(clear(), "Error: Failed to configure listening socket");
-		if (s_set_nonblocking(listenFd))
-			PERR_EXIT(clear(), "Error: Failed to make listening socket non-blocking");
 
 		int reuse = 1;
 		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) == -1)
@@ -100,25 +98,10 @@ public:
 			PERR_EXIT(clear(), "Error: Failed to listen on socket");
 	}
 
-	static inline
-	bool s_set_nonblocking(int fd)
-	{
-		int flags = fcntl(fd, F_GETFL, 0);
-		if (flags == -1)
-			return true;
-		if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
-			return true;
-		return false;
-	}
-
-	// TODO: Review
-	static inline
-	bool s_set_close_on_exec(int fd)
-	{
-		int flags = fcntl(fd, F_GETFD, 0);
-		if (flags == -1)
-			return true;
-		return fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1;
+	static bool s_set_stream_mode(int fd) {
+		bool result = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
+		result = result || fcntl(fd, F_SETFD, fcntl(fd, F_GETFD, 0) | FD_CLOEXEC);
+		return result;
 	}
 
 	static bool s_resolve_host_and_port(const Span& host, usize port, sockaddr_in& address) {
