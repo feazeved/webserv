@@ -1,6 +1,54 @@
 #pragma once
 #include "Connection.hpp"
 
+/*	The pipe fds here are configured to be non-blocking and read/write errors are ignored
+	Failure conditions for these fds are instead handled by CGI timeouts
+*/
+
+CONNECTION_INL
+(isize) cgi(Epoll &epoll) {
+	isize bytesWritten, bytesRead;
+
+	if (options & Options::CHUNKED_LENGTH)
+		bytesWritten = recvBuffer.decode(writeFd, chunkSize, bodySize);
+	else {
+		bytesWritten = recvBuffer.write(writeFd, bodySize);
+		if (bytesWritten > 0)
+			bodySize -= (usize) bytesWritten;
+	}
+
+	if (bytesWritten == -1) {
+		close(writeFd);
+		writeFd = -1;
+		status = Status::i500;
+		return -1;
+	}
+
+	if (bodySize == 0) {	// Must guarantee that bodySize is 0
+		close(writeFd);
+		writeFd = -1;	// Finished reading
+	}
+
+	bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
+	if (bytesRead == 0) {
+		close(readFd);
+		readFd = -1;
+	}
+
+	// isize delta = ((bytesWritten < 0 || bytesRead < 0) ? -1 : 1);
+
+	if (!status.is_set()) {
+		if (sendBuffer.find_header_end() != SIZE_MAX) {
+			if (sendBuffer.is_full())
+				return -1;
+			return 0;	// Still no CGI Header
+		}
+		build_cgi_header();
+		flush_setup(epoll, (Status::Code) status.index);
+	}
+	return bytesRead;
+}
+
 static inline
 pid_t s_exec_script(char *const argv[3], char **envp, int fdIn[2], int fdOut[2], char* cwdPath) {
 	bool fail = dup2(fdOut[1], STDOUT_FILENO) == -1;
@@ -113,7 +161,7 @@ CONNECTION_INL
 	readFd = fdOut[0];
 	writeFd = fdIn[1];
 	sendBuffer.clear();
-	return cgi_method(epoll);
+	return cgi(epoll);
 
 	ErrorCloseOutput:	close(fdOut[0]), close(fdOut[1]);
 	ErrorCloseInput:	close(fdIn[0]), close(fdIn[1]);

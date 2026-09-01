@@ -71,7 +71,6 @@ struct Connection {
 
 	// Validation
 	isize validate_target(usize lineEnd);
-	isize validate_header(Epoll &epoll);
 	Location* match_location();
 
 	// Configuration
@@ -91,9 +90,9 @@ struct Connection {
 	char* append_target_path(Buffer64 &buffer);
 
 	// Streaming
+	isize cgi(Epoll &epoll);
 	isize upload_file(Epoll &epoll);
 	isize download_file(Epoll &epoll);
-	isize cgi_method(Epoll &epoll);
 	isize upload_directory(Epoll &epoll);
 
 	// Setup
@@ -110,10 +109,13 @@ struct Connection {
 
 #include "Connection_common.ipp"
 #include "Connection_dispatch.ipp"
-#include "Connection_stream.ipp"
-#include "Connection_stream_get.ipp"
 #include "Connection_response.ipp"
+#include "Connection_stream.ipp"
 #include "Connection_setup.ipp"
-#include "Connection_setup_cgi.ipp"
 #include "Connection_parse.ipp"
-#include "Connection_validate.ipp"
+#include "Connection_parse_first.ipp"
+
+#include "Connection_mode_get.ipp"
+#include "Connection_mode_post.ipp"
+#include "Connection_mode_cgi.ipp"
+#include "Connection_mode_flush.ipp"

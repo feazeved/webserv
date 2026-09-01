@@ -43,7 +43,7 @@ CONNECTION_INL
 		case Mode::GET:			return upload_file(epoll); break;
 		case Mode::POST:		return download_file(epoll); break;
 		case Mode::FLUSH:		return flush(epoll); break;
-		case Mode::CGI:			return cgi_method(epoll); break;
+		case Mode::CGI:			return cgi(epoll); break;
 		case Mode::AUTOINDEX:	return upload_directory(epoll); break;
 		default: return -1;
 	}

@@ -88,19 +88,36 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(isize) validate_header(Epoll &epoll) {
-	const bool isBodyMethod = options & Options::POST;
-	const bool encodingSet = options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH);
+(isize) parse_first_line(usize lineLength) {
+	if (lineLength < 14 || lineLength >= 8000) {
+		status = lineLength < 14 ? Status::i400 : Status::i431;
+		return -1;	// ERROR: Bad request "GET / HTTP/1.1" shortest possible
+	}
+	char* targetEnd = recvBuffer.rptr() + lineLength - 9;
+	if (recvBuffer.strcmp("GET "))
+		options |= Options::GET;
+	else if (recvBuffer.strcmp("POST "))
+		options |= Options::POST;
+	else if (recvBuffer.strcmp("DELETE "))
+		options |= Options::DELETE;
+	else {
+		status = Status::i501;
+		return -1;
+	}
 
-	if (status.is_set())
-		return !flush_setup_close(epoll, (Status::Code) status.index);	// An error caused early interruption
-	if ((options & 0xF) == 0)
-		return !flush_setup_close(epoll, Status::i400);	// TODO: Method not set, should be impossible. Remove in future
-	if ((options & Options::HOST) == 0)
-		return !flush_setup_close(epoll, Status::i400);	// Host not set
-	if (!isBodyMethod && encodingSet)
-		return !flush_setup_close(epoll, Status::i400);	// Encoding set for non-body methods
-	if (isBodyMethod && !encodingSet)
-		return !flush_setup_close(epoll, Status::i411);	// Transfer encoding not set
-	return 0;
+	if (targetEnd <= recvBuffer.rptr()) {
+		status = Status::i400;
+		return -1;
+	}
+	if (MEMCMP(targetEnd, " HTTP/1.1", 9) != 0) {
+		status = Status::i505;
+		return -1;
+	}
+	*targetEnd = '\0';
+
+	const isize result = validate_target((usize)(targetEnd - (char*)recvBuffer.data));
+	if (result < 0 && !status.is_set())
+		status = Status::i400;
+	recvBuffer.readPos = recvBuffer.scanPos;
+	return result;
 }

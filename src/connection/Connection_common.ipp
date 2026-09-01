@@ -21,8 +21,8 @@ CONNECTION_INL
 
 static inline
 Status::Code s_get_status() {
-	const int error = errno;
 	Status::Code code;
+	const int error = errno;
 
 	if (error == ENOENT || error == ENOTDIR)
 		code = Status::i404;

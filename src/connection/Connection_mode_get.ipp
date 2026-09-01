@@ -113,3 +113,78 @@ CONNECTION_INL
 	}
 	return write_to_client(epoll);
 }
+
+/*
+	<html><head><title>Index of /download/</title></head><body>
+	<h1>Index of /download/</h1><hr><pre><a href="../">../</a>
+	<a href="nginx-0.1.0.tar.gz">nginx-0.1.0.tar.gz</a>                                 05-Oct-2004 15:39              220038
+*/
+
+#define HTTP_INDEX_HEADER "<html><head><title>Index of "
+#define HTTP_INDEX_MIDDLE "</title></head><body><h1>Index of "
+#define HTTP_INDEX_TAIL "</h1><hr><pre><a href=\"../\">../</a>"
+
+CONNECTION_INL
+(isize) get_directory_setup(Epoll &epoll, struct stat &st, Buffer64 &pathBuffer) {
+	(void)st;
+	const usize directoryLength = pathBuffer.writePos;
+	const Span index = req.location->get_index();
+	if (pathBuffer.writePos != 0 && pathBuffer.data[pathBuffer.writePos - 1] != '/')
+		pathBuffer.append("/");
+	pathBuffer.append(index.ptr + (index.ptr[0] == '/'), index.size - (index.ptr[0] == '/'));
+	*pathBuffer = 0;
+	readFd = open(pathBuffer, O_RDONLY | O_CLOEXEC | O_NONBLOCK);
+	if (readFd >= 0) {
+		if (stat(pathBuffer, &st) == -1) {	// TODO: Use fstat
+			close(readFd);
+			readFd = -1;
+			return flush_setup_close(epoll, s_get_status());
+		}
+		pathBuffer.readPos = 0;
+		pathBuffer.scanPos = pathBuffer.writePos;
+		contentType = (u8)pathBuffer.match_mime();
+		status = Status::i200;
+		bodySize = (usize)st.st_size;
+		build_header();
+		return upload_file(epoll);
+	}
+	pathBuffer.writePos = directoryLength;
+	*pathBuffer = 0;
+	if (req.location->autoindex == false)
+		return flush_setup_close(epoll, Status::i403);
+	directory = opendir(pathBuffer);
+	if (directory == NULL) {
+		status = s_get_status();
+		return flush_setup_close(epoll, s_get_status());
+	}
+	status = Status::i200;
+	contentType = Mime::HTML;
+	mode = Mode::AUTOINDEX;
+	build_header();
+	sendBuffer.append(HTTP_INDEX_HEADER);
+	sendBuffer.append(req.target);
+	sendBuffer.append(HTTP_INDEX_MIDDLE);
+	sendBuffer.append(req.target);
+	sendBuffer.append(HTTP_INDEX_TAIL);
+	return upload_directory(epoll);
+}
+
+CONNECTION_INL
+(isize) get_setup(Epoll &epoll) {
+	Buffer64 pathBuffer = {};
+	append_target_path(pathBuffer);
+
+	struct stat st;
+	if (stat(pathBuffer, &st) == -1)
+		return flush_setup_close(epoll, s_get_status());
+
+	if (S_ISDIR(st.st_mode))
+		return get_directory_setup(epoll, st, pathBuffer);
+	readFd = open(pathBuffer, O_RDONLY | O_CLOEXEC | O_NONBLOCK);
+	if (readFd == -1)
+		return flush_setup_close(epoll, s_get_status());
+	status = Status::i200;
+	bodySize = (usize)st.st_size;
+	build_header();
+	return upload_file(epoll);
+}
