@@ -80,32 +80,48 @@ public:
 		}
 	}
 
+	void reap_children(pid_t* pidList, usize count) {
+		usize failCount = 0;
+
+		for (usize i = 0; i < count; i++) {
+			pid_t pid = waitpid(pidList[i], NULL, WNOHANG);
+			if (pid <= 0)
+				pidList[failCount++] = pidList[i];
+		}
+
+		while (failCount > 0) {	// This shit is beautiful
+			pid_t pid = waitpid(pidList[failCount - 1], NULL, WNOHANG);
+			if (pid == 0 || (pid == -1 && errno == EINTR))
+				continue;
+			failCount--;
+		}
+	}
+
 	// connections.for_each_active<Connection::check_timeout(30)>;	// how the fuck do you do this
 	void check_timeouts() {
 		pid_t pidList[ConnectionPool::elementCount];
-		u32 indexList[ConnectionPool::elementCount];
 		usize count = 0;
 		time_t timeNow = Clock::update();
 		usize elementIndex;
 	
-		for (usize i = 0; i < connections.elementCount; i++) {
+		for (usize i = 0; i < connections.blockCount; i++) {
 			Bitmap bitmap = connections.elementBitmap[i];
 			usize outerIndex = 64 * i;
 			while ((elementIndex = bitmap.pop_first_set()) != WORD_BITS) {
 				usize linearIndex = outerIndex + elementIndex;
 				Connection& connection = connections.connections[linearIndex];
-				if (timeNow - connection.startTime > 60) {
-					pidList[count] = connection.processId;
-					indexList[count] = linearIndex;
-					kill(connection.processId, SIGKILL);
+				if (timeNow - connection.startTime > HTTP_TIMEOUT) {
+					pid_t pid = connection.processId;
 					remove_connection(linearIndex);
-					count++;
+					if (pid != -1) {
+						pidList[count] = pid;
+						kill(pid, SIGKILL);
+						count++;
+					}
 				}
 			}
 		}
-		// TODO: see the best way to wait in parallel for all of them
-		for (usize i = 0; i < count; i++)
-			waitpid(pidList[i], NULL, WNOHANG);
+		reap_children(pidList, count);
 	}
 
 	int clear() {

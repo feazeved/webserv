@@ -44,7 +44,7 @@ struct Connection {
 	u8 contentType;	// TODO: this should be a span in req maybe?
 	Mode::e_http_mode mode;
 	u32 startTime;
-	u8 ioState;
+	u8 epollState;
 	usize bodySize;
 	i32 clientFd, readFd;
 	HTTP_Buffer recvBuffer;
