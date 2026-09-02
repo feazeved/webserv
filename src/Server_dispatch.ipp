@@ -30,37 +30,9 @@ SERVER_INL
 
 SERVER_INL
 (void) remove_connection(u32 connectionIndex) {
+	connections[connectionIndex].end_connection();
 	epoll.remove(connections[connectionIndex].clientFd);
 	connections.free_slot(connectionIndex);
-}
-
-SERVER_INL
-(void) run() {
-	struct epoll_event* event;
-
-	for (u32 serverIndex = 0; serverIndex < parser.serverCount; serverIndex++) {
-		if (epoll.add(servers[serverIndex].listenFd, EPOLLIN, UINT32_MAX, serverIndex))
-			PERR_EXIT(clear(), "Error: Failed to add listening socket event");
-	}
-
-	while (true) {
-		const usize eventCount = epoll.wait(1000);
-		if (eventCount == SIZE_MAX) {
-			if (errno == EINTR)
-				continue;
-			PERR_EXIT(clear(), "Error: epoll_wait failed");
-		}
-
-		Clock::update();
-		for (usize eventIndex = 0; eventIndex < eventCount; eventIndex++) {
-			event = epoll.get_event(eventIndex);
-			if ((u32)event->data.u64 == UINT32_MAX)
-				server_event(event->data.u64);
-			else
-				connection_event(event->data.u64);
-		}
-		check_timeouts();
-	}
 }
 
 SERVER_INL
@@ -84,13 +56,3 @@ SERVER_INL
 	if (connections[connectionIndex].dispatch(epoll) == -1)
 		remove_connection(connectionIndex);
 }
-
-// SERVER_INL
-// (void) check_timeouts() {
-// 	while (true) {
-// 		const usize connectionIndex = connections.find_timed_out(Clock::time_elapsed());
-// 		if (connectionIndex == SIZE_MAX)
-// 			return;
-// 		close_connection((u32)connectionIndex);
-// 	}
-// }

@@ -138,7 +138,7 @@ PARSER_INL
 	while (tokArray[0].type != Token::CLOSE_BRACKET) {
 		if (tokArray[0].value == "location") {
 			tokArray.ptr++;
-			ParsedLocation loc = parse_location(tokArray);
+			ParsedLocation loc = parse_location(tokArray, server);
 			for (usize index = 0; index < locationIndex; index++) {
 				const Span &path = parsedLocations[index].uri;
 				if (path.size == loc.uri.size && MEMCMP(path.ptr, loc.uri.ptr, path.size) == 0)
@@ -156,13 +156,6 @@ PARSER_INL
 	if (server.port == SIZE_MAX)
 		PERR_EXIT(1, "Error: Missing listen directive");
 	if (server.host.size == 0)
-		server.host = beta.copy_span(Span::create("localhost"));
-	for (usize index = 0; index < parsedLocations.count; index++) {	// Fill in optional arguments
-		ParsedLocation &parsedLoc = parsedLocations[index];
-		if (parsedLoc.root.size == 0)
-			parsedLoc.root = server.serverRoot;
-		if (parsedLoc.uploadStore.size == 0)
-			parsedLoc.uploadStore = parsedLoc.uri;
-	}
+		server.host = beta.copy_span(Span::create("localhost"));	// TODO: this is suspicious
 	server.locations = store_locations(parsedLocations);
 }

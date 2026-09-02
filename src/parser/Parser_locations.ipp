@@ -105,7 +105,7 @@ PARSER_INL
 }
 
 PARSER_INL
-(Parser::ParsedLocation) parse_location(ArrayView<Token> &tokArray) {
+(Parser::ParsedLocation) parse_location(ArrayView<Token> &tokArray, VirtualServer &server) {
 	ParsedLocation loc;
 	loc.uri = tokArray[0].value;
 
@@ -129,5 +129,11 @@ PARSER_INL
 		}
 	}
 	tokArray.ptr++;
+	if (loc.root.size == 0)
+		loc.root = server.serverRoot;
+	if (loc.uploadStore.size == 0)
+		loc.uploadStore = loc.root;
+	if (loc.index.size == 0)
+		loc.index = Span::create("index.html");	// REVIEW: make sure no writes occur
 	return loc;
 }

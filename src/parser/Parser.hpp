@@ -73,7 +73,7 @@ public:
 
 	ArrayView<Token> tokenize();
 	void cache_error_pages(VirtualServer &server);
-	ParsedLocation parse_location(ArrayView<Token> &tokArray);
+	ParsedLocation parse_location(ArrayView<Token> &tokArray, VirtualServer &server);
 	void parse_server(ArrayView<Token> &tokArray, VirtualServer &server);
 	ArrayView<Location> store_locations(const ArrayView<ParsedLocation> &source);
 

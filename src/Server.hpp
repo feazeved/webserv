@@ -32,8 +32,7 @@ void clear() {
 }
 
 #define SERVER_INL(ret_type) ret_type inline Server::
-// Have server be a template? up to 4096 connections
-// Could then reasonably assign 64 connections per virtual server
+
 class Server {
 public:
 	ConnectionPool connections;
@@ -53,23 +52,35 @@ public:
 			servers[index].init();
 	}
 
-	~Server() {
-		clear();
-	}
+	void run() {
+		struct epoll_event* event;
 
-	int clear() {
-		epoll.clear();
-		connections.clear();
-		for (usize index = 0; index < parser.serverCount; index++)
-			servers[index].clear();
-		parser.serverCount = 0;
-		alpha.clear();
-		beta.clear();
-		return 1;
+		for (u32 serverIndex = 0; serverIndex < parser.serverCount; serverIndex++) {
+			if (epoll.add(servers[serverIndex].listenFd, EPOLLIN, UINT32_MAX, serverIndex))
+				PERR_EXIT(clear(), "Error: Failed to add listening socket event");
+		}
+
+		while (true) {
+			const usize eventCount = epoll.wait(1000);
+			if (eventCount == SIZE_MAX) {
+				if (errno == EINTR)
+					continue;
+				PERR_EXIT(clear(), "Error: epoll_wait failed");
+			}
+
+			Clock::update();
+			for (usize eventIndex = 0; eventIndex < eventCount; eventIndex++) {
+				event = epoll.get_event(eventIndex);
+				if ((u32)event->data.u64 == UINT32_MAX)
+					server_event(event->data.u64);
+				else
+					connection_event(event->data.u64);
+			}
+			check_timeouts();
+		}
 	}
 
 	// connections.for_each_active<Connection::check_timeout(30)>;	// how the fuck do you do this
-
 	void check_timeouts() {
 		pid_t pidList[ConnectionPool::elementCount];
 		u32 indexList[ConnectionPool::elementCount];
@@ -92,13 +103,25 @@ public:
 				}
 			}
 		}
-
+		// TODO: see the best way to wait in parallel for all of them
 		for (usize i = 0; i < count; i++)
-			waitpid(pidList[i], NULL, WNOHANG);	// Do i have to stop and wait for one of them?
+			waitpid(pidList[i], NULL, WNOHANG);
 	}
 
-	// Execution
-	void run();
+	int clear() {
+		epoll.clear();
+		connections.clear();
+		for (usize index = 0; index < parser.serverCount; index++)
+			servers[index].clear();
+		parser.serverCount = 0;
+		alpha.clear();
+		beta.clear();
+		return 1;
+	}
+
+	~Server() { clear(); }
+
+	// Handling
 	void server_event(u64 key);
 	void connection_event(u64 key);
 	void add_connection(u32 serverIndex);
