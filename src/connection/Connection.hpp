@@ -13,6 +13,8 @@
 #include "Environment.hpp"
 #include "Epoll.hpp"
 
+#include "match.hpp"
+
 #define CONNECTION_INL(ret_type) inline ret_type Connection::
 
 static const usize metadataSize = 160;	// TODO: adjust size on final pass
@@ -117,6 +119,7 @@ struct Connection {
 #include "Connection_parse_first.ipp"
 
 #include "Connection_mode_get.ipp"
+#include "Connection_mode_autoindex.ipp"
 #include "Connection_mode_post.ipp"
 #include "Connection_mode_cgi.ipp"
 #include "Connection_mode_flush.ipp"

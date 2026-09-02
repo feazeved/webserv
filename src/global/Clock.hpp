@@ -85,6 +85,5 @@ public:
 #ifdef MAIN_FILE
 	std::time_t Clock::timeBegin = 0;
 	std::time_t Clock::timeNow = 0;
-	std::time_t Clock::timeElapsed = 0;
-	isize Clock::secondsRef = 0;
+	u32 Clock::timeElapsed = 0;
 #endif

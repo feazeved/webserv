@@ -7,8 +7,6 @@
 #include "core.hpp"
 #include "Server.hpp"
 
-int g_epollFd = -1;
-
 int	main(int argc, char** argv, char** envp)
 {
 	(void) argc, (void)argv, (void) envp;

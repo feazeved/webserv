@@ -2,7 +2,6 @@
 #include "Array.hpp"
 #include "Span.hpp"
 #include "Status.hpp"
-#include "match.hpp"
 
 // These are exclusive states
 namespace Mode {

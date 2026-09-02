@@ -25,7 +25,7 @@ struct Buffer {
 
 	ALWAYS_INLINE
 	Span get_span() {
-		Span result = {data + readPos, data + writePos};
+		Span result = {(char*)data + readPos, writePos - readPos};
 		return result;
 	}
 
