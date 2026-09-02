@@ -1,6 +1,6 @@
 # Configuration ------------------------------- #
 NAME = webserv
-VPATH = src src/utils src/global src/core src/parser src/buffer src/connection
+VPATH = src src/utils src/global src/core src/parser src/buffer src/connection src/functions
 MAIN_SRC = main.cpp
 CORE_SRC =
 TEST_SRC =

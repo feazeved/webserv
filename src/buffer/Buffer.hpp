@@ -24,6 +24,12 @@ struct Buffer {
 	}
 
 	ALWAYS_INLINE
+	Span get_span() {
+		Span result = {data + readPos, data + writePos};
+		return result;
+	}
+
+	ALWAYS_INLINE
 	const u8* get_end() const {
 		return data + sizeof(data);
 	}
@@ -107,8 +113,6 @@ struct Buffer {
 	usize find_line_end();
 	usize find_header_end();
 	isize match_field();
-	isize match_mime();
-	isize check_target(Span &path, Span &query, usize targetEnd);
 
 	// String
 	static usize s_itoa10(usize number, char *bufferEnd);

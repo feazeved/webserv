@@ -26,6 +26,8 @@ struct Connection {
 		Span target, query, cookies, interpreter;
 		Span contentTypeHeader, contentSize;	// relativeTarget (what comes after URI)
 		Location* location;
+		Span relativeTarget, targetName, targetExt;
+		Span uri, cgi;
 
 		// Can add root and other location vars here
 
@@ -65,13 +67,12 @@ struct Connection {
 	void clear();
 
 	// Parsing
-	isize parse_first_line(usize lineLength);
 	isize parse_line(usize lineLength);
+	isize parse_first_line(usize lineLength);
 	isize parse_cgi_line(Buffer64 &tmpBuffer);
-
-	// Validation
-	isize validate_target(usize lineEnd);
-	Location* match_location();
+	isize validate_target(char* str, char* end);
+	bool match_location();
+	Span check_cgi();
 
 	// Configuration
 	isize dispatch(Epoll &epoll);

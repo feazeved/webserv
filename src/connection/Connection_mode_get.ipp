@@ -140,9 +140,7 @@ CONNECTION_INL
 			readFd = -1;
 			return flush_setup_close(epoll, s_get_status());
 		}
-		pathBuffer.readPos = 0;
-		pathBuffer.scanPos = pathBuffer.writePos;
-		contentType = (u8)pathBuffer.match_mime();
+		contentType = fn::match_mime(pathBuffer.get_span());
 		status = Status::i200;
 		bodySize = (usize)st.st_size;
 		build_header();
