@@ -77,7 +77,6 @@ BUFFER_INL
 	return s_match(data + originalPos, length, ltable);
 }
 
-
 BUFFER_INL
 (char*) append_mime(u8 mimeIndex) {
 	static const u8 mimeStrings[][32] = MIME_STRINGS;

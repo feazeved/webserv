@@ -53,11 +53,13 @@ CONNECTION_INL
 		return write_to_client(epoll);
 	}
 	mode = (options & Options::CGI) ? Mode::CGI : (Mode::e_http_mode)(options & 7);
-	if (mode == Mode::GET)
-		return get_setup(epoll);
 	if (mode == Mode::POST)
 		return post_setup(epoll);
 	if (mode == Mode::CGI)
 		return cgi_setup(epoll);
+	if (epoll.is_readable())
+		epoll.clr_read(clientFd);
+	if (mode == Mode::GET)
+		return get_setup(epoll);
 	return del_setup(epoll);
 }

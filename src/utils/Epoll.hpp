@@ -71,19 +71,31 @@ struct Epoll {
 		return epoll_ctl(fd, EPOLL_CTL_DEL, targetFd, NULL) == -1;
 	}
 
-	bool set_write(i32 targetFd, bool bit) {
-		if (bit)
-			eventList[index].events |= EPOLLOUT;
-		else
-			eventList[index].events &= ~EPOLLOUT;
+	bool set_read(i32 targetFd) {
+		if (eventList[index].events & EPOLLIN)
+			return 0;
+		eventList[index].events |= EPOLLIN;
 		return epoll_ctl(fd, EPOLL_CTL_MOD, targetFd, eventList + index) == -1;
 	}
 
-	bool set_read(i32 targetFd, bool bit) {
-		if (bit)
-			eventList[index].events |= EPOLLIN;
-		else
-			eventList[index].events &= ~EPOLLIN;
+	bool clr_read(i32 targetFd) {
+		if (!(eventList[index].events & EPOLLIN))
+			return 0;
+		eventList[index].events &= ~EPOLLIN;
+		return epoll_ctl(fd, EPOLL_CTL_MOD, targetFd, eventList + index) == -1;
+	}
+
+	bool set_write(i32 targetFd) {
+		if (eventList[index].events & EPOLLOUT)
+			return 0;
+		eventList[index].events |= EPOLLOUT;
+		return epoll_ctl(fd, EPOLL_CTL_MOD, targetFd, eventList + index) == -1;
+	}
+
+	bool clr_write(i32 targetFd) {
+		if (!(eventList[index].events & EPOLLOUT))
+			return 0;
+		eventList[index].events &= ~EPOLLOUT;
 		return epoll_ctl(fd, EPOLL_CTL_MOD, targetFd, eventList + index) == -1;
 	}
 
