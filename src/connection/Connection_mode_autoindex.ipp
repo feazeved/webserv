@@ -134,9 +134,8 @@ CONNECTION_INL
 			return flush_setup_close(epoll, Status::i403);
 		}
 		contentType = fn::match_mime(pathBuffer.get_span());
-		status = Status::i200;
 		bodySize = (usize)st.st_size;
-		build_header();
+		build_header(Status::i200);
 		return upload_file(epoll);
 	}
 	pathBuffer.writePos = directoryLength;

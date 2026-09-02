@@ -71,32 +71,21 @@ struct Epoll {
 		return epoll_ctl(fd, EPOLL_CTL_DEL, targetFd, NULL) == -1;
 	}
 
-	bool set_read(i32 targetFd) {
-		if (eventList[index].events & EPOLLIN)
-			return 0;
-		eventList[index].events |= EPOLLIN;
-		return epoll_ctl(fd, EPOLL_CTL_MOD, targetFd, eventList + index) == -1;
+	bool modify(i32 targetFd, u8 newState, u8 &curState) {
+		if (newState == curState)
+			return false;
+		curState = newState;
+		struct epoll_event newEvent = {};
+		newEvent.events = (u32) newState;
+		return epoll_ctl(fd, EPOLL_CTL_MOD, targetFd, &newEvent) == -1;
 	}
 
-	bool clr_read(i32 targetFd) {
-		if (!(eventList[index].events & EPOLLIN))
-			return 0;
-		eventList[index].events &= ~EPOLLIN;
-		return epoll_ctl(fd, EPOLL_CTL_MOD, targetFd, eventList + index) == -1;
+	void clr_read_flag() {
+		eventList[index].events &= ~(u32)EPOLLOUT;
 	}
 
-	bool set_write(i32 targetFd) {
-		if (eventList[index].events & EPOLLOUT)
-			return 0;
-		eventList[index].events |= EPOLLOUT;
-		return epoll_ctl(fd, EPOLL_CTL_MOD, targetFd, eventList + index) == -1;
-	}
-
-	bool clr_write(i32 targetFd) {
-		if (!(eventList[index].events & EPOLLOUT))
-			return 0;
-		eventList[index].events &= ~EPOLLOUT;
-		return epoll_ctl(fd, EPOLL_CTL_MOD, targetFd, eventList + index) == -1;
+	void clr_write_flag() {
+		eventList[index].events &= ~(u32)EPOLLIN;
 	}
 
 	bool is_writeable() {

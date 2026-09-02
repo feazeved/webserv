@@ -18,7 +18,8 @@ CONNECTION_INL
 CONNECTION_INL
 (isize) download_file(Epoll &epoll) {
 	isize bytesWritten = 0;
-	if (read_from_client(epoll) == -1)
+	isize bytesRead = read_from_client(epoll);
+	if (bytesRead == -1)
 		return -1;
 	if (options & Options::CHUNKED_LENGTH)
 		bytesWritten = recvBuffer.decode(writeFd, chunkSize, bodySize);
@@ -37,8 +38,7 @@ CONNECTION_INL
 	if (!status.is_set() && bodySize == 0) {
 		close(writeFd);
 		writeFd = -1;	// Finished reading
-		status = Status::i201;
-		build_header();
+		build_header(Status::i201);
 		return flush_setup(epoll, Status::i201);
 	}
 	return write_to_client(epoll);

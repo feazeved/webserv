@@ -44,6 +44,7 @@ struct Connection {
 	u8 contentType;	// TODO: this should be a span in req maybe?
 	Mode::e_http_mode mode;
 	u32 startTime;
+	u8 ioState;
 	usize bodySize;
 	i32 clientFd, readFd;
 	HTTP_Buffer recvBuffer;
@@ -52,6 +53,7 @@ struct Connection {
 		dirent* dirEntry;
 		struct { pid_t processId; i32 writeFd; };
 	};
+
 	union {
 		HTTP_Buffer sendBuffer;		// Request shares memory with sendBuffer
 		struct {
@@ -59,6 +61,7 @@ struct Connection {
 			Request req;			// Req values are not needed during execution
 		};
 	};
+
 	union {
 		usize chunkSize;
 		DIR* directory;
@@ -83,7 +86,7 @@ struct Connection {
 
 	// Response
 	void build_error_header();
-	void build_header();
+	void build_header(Status::Code code);
 	isize build_cgi_header();
 
 	// Common
@@ -108,6 +111,7 @@ struct Connection {
 	char* append_env(Buffer64 &buffer, char* argv[3]);
 	isize flush_setup(Epoll &epoll, Status::Code code);
 	isize flush_setup_close(Epoll &epoll, Status::Code code);
+	isize parse_setup(Epoll &epoll);
 };
 
 #include "Connection_common.ipp"
@@ -122,4 +126,3 @@ struct Connection {
 #include "Connection_mode_autoindex.ipp"
 #include "Connection_mode_post.ipp"
 #include "Connection_mode_cgi.ipp"
-#include "Connection_mode_flush.ipp"

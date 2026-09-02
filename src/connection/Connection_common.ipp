@@ -50,6 +50,7 @@ CONNECTION_INL
 	readFd = -1;
 	writeFd = -1;
 	processId = -1;
+	ioState = EPOLLIN;
 	options = 0;
 	contentType = Mime::OCTET_STREAM;
 	bodySize = 0;

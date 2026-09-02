@@ -13,9 +13,46 @@ CONNECTION_INL
 		return flush_setup_close(epoll, Status::i403);	// Forbids deleting directories
 	if (unlink(pathBuffer) == -1)
 		return flush_setup_close(epoll, s_get_status());
+	build_header(Status::i204);
+	return flush_setup(epoll, Status::i204);
+}
 
-	status = Status::i204;
-	build_header();
+CONNECTION_INL
+(isize) parse_setup(Epoll &epoll) {
+	options = 0;
+	contentType = Mime::OCTET_STREAM;
+	bodySize = 0;
+	chunkSize = SIZE_MAX;
+	mode = Mode::PARSE;
+	req.clear();
+	sendBuffer.clear();
+	status.clear();
+	startTime = Clock::time_elapsed();
+	if (epoll.modify(clientFd, EPOLLIN, ioState))
+		return -1;
+	return parse(epoll);		// Keep the connection alive until header is flushed
+}
+
+CONNECTION_INL
+(isize) flush_setup(Epoll &epoll, Status::Code code) {
+	status = code;
+	clear();
+	mode = Mode::FLUSH;
+	isize bytesWritten = write_to_client(epoll);
+	if (sendBuffer.size() > 0 && epoll.modify(clientFd, EPOLLOUT, ioState))
+		options &= ~(u16)Options::KEEP_ALIVE;
+	return bytesWritten;
+}
+
+CONNECTION_INL
+(isize) flush_setup_close(Epoll &epoll, Status::Code code) {
+	status = code;
+	clear();
+	options &= ~(u16)Options::KEEP_ALIVE;
+	mode = Mode::FLUSH;
+	build_error_header();
+	if (epoll.modify(clientFd, EPOLLOUT, ioState))
+		return -1;
 	return write_to_client(epoll);
 }
 
@@ -53,12 +90,12 @@ CONNECTION_INL
 		return write_to_client(epoll);
 	}
 	mode = (options & Options::CGI) ? Mode::CGI : (Mode::e_http_mode)(options & 7);
+	if (epoll.modify(clientFd, EPOLLIN | EPOLLOUT, ioState))
+		return -1;
 	if (mode == Mode::POST)
 		return post_setup(epoll);
 	if (mode == Mode::CGI)
 		return cgi_setup(epoll);
-	if (epoll.is_readable())
-		epoll.clr_read(clientFd);
 	if (mode == Mode::GET)
 		return get_setup(epoll);
 	return del_setup(epoll);

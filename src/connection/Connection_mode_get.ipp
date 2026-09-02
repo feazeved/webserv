@@ -30,9 +30,8 @@ CONNECTION_INL
 	readFd = open(pathBuffer, O_RDONLY | O_CLOEXEC | O_NONBLOCK);
 	if (readFd == -1)
 		return flush_setup_close(epoll, s_get_status());
-	status = Status::i200;
 	bodySize = (usize)st.st_size;
 	contentType = fn::match_mime(pathBuffer.get_span());
-	build_header();
+	build_header(Status::i200);
 	return upload_file(epoll);
 }

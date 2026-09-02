@@ -41,7 +41,8 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(void) build_header() {
+(void) build_header(Status::Code code) {
+	status = code;
 	Span str = status.status_str();
 
 	sendBuffer.clear();

@@ -25,10 +25,6 @@ struct Location {
 	u8		methods;
 	bool	autoindex;
 
-	// Location()
-	// 	: uri(), root(), index(), uploadStore(), cgiBlock(), redirectTarget(),
-	// 	  redirectStatus(), methods(0), autoindex(false) {}
-
 	Span extract(const Span16 &span) {
 		Span result = {(char*)this + span.index, span.size};
 		ASSERT(result.ptr[result.size] == '\0', "Location span is not null terminated");
