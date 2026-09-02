@@ -44,7 +44,7 @@ Status::Code s_get_status() {
 
 CONNECTION_INL
 (isize) init(int fd, VirtualServer* serverConfig) {
-	ASSERT(clientFd != -1, "Assigned a connection already in use");
+	ASSERT(clientFd == -1, "Assigned a connection already in use");
 	clientFd = fd;
 	cfg = serverConfig;
 	readFd = -1;

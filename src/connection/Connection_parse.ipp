@@ -7,17 +7,20 @@ CONNECTION_INL
 		status = lineLength < 2 ? Status::i400 : Status::i431;
 		return -1;
 	}
-
+	isize fieldIndex;
 	char* lineEnd = recvBuffer.rptr() + lineLength;
-	const isize fieldIndex = recvBuffer.match_field();
-	if (fieldIndex < 0 || !recvBuffer.skip_spaces())	// Reject empty values
+	Span field = sendBuffer.find_char(':');
+	if (field.ptr == NULL)
+		goto Error;
+	fieldIndex = fn::match_field(field);
+	if (!recvBuffer.skip_spaces())	// Reject empty values
 		goto Error;
 	switch (fieldIndex) {
 		default:
 			recvBuffer.readPos = (usize)(lineEnd - (char*)recvBuffer.data);
 			break;
 
-		case Field::CONNECTION:	// TODO: Add keep alive
+		case Field::CONNECTION:
 			if (recvBuffer.strcasecmp("keep-alive"))	// not adding another bit just to check
 				options |= Options::KEEP_ALIVE;			// if had been set already
 			else if (recvBuffer.strcasecmp("close"))	// last setting counts
@@ -57,6 +60,10 @@ CONNECTION_INL
 		case Field::HOST:
 			if (options & Options::HOST)
 				goto Error;	// ERROR: Multiple hosts
+			while ((lineEnd[-1] == ' ' || lineEnd[-1] == '\t'))
+				lineEnd--;
+			req.host.ptr = (char*)recvBuffer.rptr();
+			req.host.size = (usize)(lineEnd - recvBuffer.rptr());
 			recvBuffer.readPos = (usize)(lineEnd - (char*)recvBuffer.data);
 			options |= Options::HOST;
 			break;
@@ -85,30 +92,32 @@ Error:
 */
 CONNECTION_INL
 (isize) parse_cgi_line(Buffer64 &dst) {
-	const char* const field = (char*)sendBuffer.rptr();
 	const char* const lineEnd = (char*)sendBuffer.sptr() - 2;
 	const usize totalLength = (usize)(lineEnd - (char*)sendBuffer.rptr());
 
-	const isize fieldIndex = sendBuffer.match_field();
+	Span field = sendBuffer.find_char(':');
+	if (field.ptr == NULL) {
+		status = Status::i500;
+		return -1;
+	}
+
+	const isize fieldIndex = fn::match_field(field);
 	if (fieldIndex <= 0) {
-		if (fieldIndex < 0)
-			status = Status::i500;
-		else
-			dst.append(field, totalLength);
-		// sendBuffer.rptr() = sendBuffer.sptr();
+		dst.append(field.ptr, totalLength);
+		dst.append("\r\n");
 		return fieldIndex;
 	}
 
 	if (fieldIndex == Field::STATUS) {
-		status = (char*) sendBuffer.rptr();
+		sendBuffer.skip_spaces();
+		status = sendBuffer.rptr();
 		isize rvalue = status.is_valid() == true ? 0 : -1;
 		if (rvalue == -1)
 			status = Status::i500;	// CGI output an invalid status, should be server error
-		dst.prepend(status.status_str());
 		return rvalue;
 	}
 
-	dst.append(field, totalLength);
-	// sendBuffer.rptr() = sendBuffer.sptr();
+	dst.append(field.ptr, totalLength);
+	dst.append("\r\n");
 	return fieldIndex;
 }

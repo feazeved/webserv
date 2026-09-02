@@ -15,7 +15,8 @@
 template <usize bufferSize>
 struct Buffer {
 	static const usize minReadSize = 4;
-	u8 data[bufferSize - (3 * sizeof(usize))];	// Trailing storage pads unbounded memory loads
+	u8 data[bufferSize - (4 * sizeof(usize))];	// Trailing storage pads unbounded memory loads
+	usize clobber;
 	usize writePos, readPos, scanPos;
 
 	ALWAYS_INLINE
@@ -112,7 +113,7 @@ struct Buffer {
 	// Search
 	usize find_line_end();
 	usize find_header_end();
-	isize match_field();
+	Span find_char(u8 c);
 
 	// String
 	static usize s_itoa10(usize number, char *bufferEnd);

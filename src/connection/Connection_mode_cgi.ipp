@@ -50,7 +50,7 @@ CONNECTION_INL
 }
 
 static inline
-pid_t s_exec_script(char *const argv[3], char **envp, int fdIn[2], int fdOut[2], char* cwdPath) {
+void s_exec_script(char *const argv[3], char **envp, int fdIn[2], int fdOut[2], char* cwdPath) {
 	bool fail = dup2(fdOut[1], STDOUT_FILENO) == -1;
 	fail = fail || dup2(fdIn[0], STDIN_FILENO) == -1;
 
@@ -58,13 +58,13 @@ pid_t s_exec_script(char *const argv[3], char **envp, int fdIn[2], int fdOut[2],
 	close(fdIn[0]), close(fdIn[1]);
 	if (fail || chdir(cwdPath) == -1) {
 		close(STDOUT_FILENO), close(STDIN_FILENO);
-		std::exit(1);
+		_exit(1);
 	}
 
 	execve(argv[0], argv, envp);
 	if (errno != ENOENT && errno != ENOTDIR)
-		std::exit(126);
-	std::exit(127);
+		_exit(126);
+	_exit(127);
 }
 
 static inline
@@ -99,19 +99,22 @@ CONNECTION_INL
 
 	Environment::reset();
 
-	argv[0] = buffer.append(req.interpreter);			// /bin/python3
+	argv[0] = buffer.append(req.interpreter.ptr, req.interpreter.size + 1);			// /bin/python3
 	char* scriptName = buffer.append("SCRIPT_NAME=");	// SCRIPTNAME=
-	buffer.append(req.target);							// SCRIPTNAME=/images/cgi/process.py
+	buffer.append(req.target.ptr, req.target.size + 1);							// SCRIPTNAME=/images/cgi/process.py
 	argv[1] = append_target_path(buffer);
 	argv[2] = NULL;
 	
 	const usize scriptPathLength = (usize)(buffer.wptr() - argv[1]);
-	char* cwdPath = buffer.append(argv[1], scriptPathLength);
+	buffer.writePos++;
+	char* cwdPath = buffer.append(argv[1], scriptPathLength + 1);
 	s_chdir(cwdPath, scriptPathLength);							// /home/webserv/www/images/cgi
 
 	Environment::append(STRPREP(req.query.ptr, "QUERY_STRING="));
 	if (req.cookies.size != 0)
 		Environment::append(STRPREP(req.cookies.ptr, "HTTP_COOKIE="));	// TODO: Reminder to null terminate cookies and query
+	Environment::append(buffer.append("HTTP_HOST="));
+	buffer.append(req.host.ptr, req.host.size + 1);
 
 	if (options & Options::FIXED_LENGTH) {
 		char* lengthStr = buffer.append("CONTENT_LENGTH=");
@@ -148,8 +151,8 @@ CONNECTION_INL
 		goto Error;
 	if (pipe(fdOut) == -1)
 		goto ErrorCloseInput;
-	VirtualServer::s_set_stream_mode(fdIn[1]);
-	VirtualServer::s_set_stream_mode(fdOut[0]);
+	if (VirtualServer::s_set_stream_mode(fdIn[1]) || VirtualServer::s_set_stream_mode(fdOut[0]))
+		goto ErrorCloseOutput;
 	processId = fork();
 	if (processId < 0)
 		goto ErrorCloseOutput;

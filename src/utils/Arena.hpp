@@ -40,8 +40,6 @@ struct Arena {
 		return index;
 	}
 
-	// TODO: we could do different instatiation given a smaller range
-	// For example, if size of elements is lower than 64k, indexes could be u16
 	template <typename Type>
 	ArrayView<Type> alloc_array(usize numElements, usize alignSize = 16) {
 		if (numElements > SIZE_MAX / sizeof(Type)) {

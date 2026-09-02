@@ -4,16 +4,15 @@
 CONNECTION_INL
 (bool) match_location() {
 	ArrayView<Location> &locations = cfg->locations;
-	usize cmpLength = *req.target.ptr == '/';
-	while (cmpLength < req.target.size && req.target.ptr[cmpLength] != '/')
-		cmpLength++;
-	usize matchLength = 0;
+	usize matchLength = *req.target.ptr == '/';
+	while (matchLength < req.target.size && req.target.ptr[matchLength] != '/')
+		matchLength++;
 
 	for (usize i = 0; i < locations.count; i++) {
 		Span srcUri = locations[i].get_uri();
-		if (cmpLength != srcUri.size || matchLength > srcUri.size)
+		if (matchLength > srcUri.size)
 			continue;
-		if (MEMCMP(req.target.ptr, srcUri.ptr, cmpLength) == 0) {
+		if (MEMCMP(req.target.ptr, srcUri.ptr, matchLength) == 0) {
 			if (srcUri.size > matchLength) {
 				matchLength = srcUri.size;
 				req.location = &locations[i];
@@ -61,6 +60,8 @@ bool s_validate_path(char* str, char* end) {
 	while (str < end) {
 		if (g_asciiLut[(u8)*str] > ASCII_RFC_SYMBOLS)
 			return true;
+		if (*str == '/' && str[1] == '.' && str[2] == '.')
+			return true;
 		if (*str == '%') {
 			if (g_asciiLut[(u8)str[1]] > ASCII_HEX)
 				return true;
@@ -98,8 +99,9 @@ CONNECTION_INL
 	req.uri = req.location->get_uri();
 	req.cgi = req.location->get_cgi_block();
 	*targetEnd = '\0';
+	*end = '\0';
 	req.relativeTarget.ptr = req.target.ptr + req.uri.size;			// /images/cats/meow.jpg
-	req.relativeTarget.size += req.target.size - req.uri.size;		// /cats/meow.jpg
+	req.relativeTarget.size += req.target.size - req.uri.size;		// cats/meow.jpg
 	req.interpreter = check_cgi();
 	return 0;
 }
@@ -125,7 +127,7 @@ CONNECTION_INL
 	}
 	char* targetStart = recvBuffer.rptr();
 	recvBuffer.readPos = readPosEnd;
-	if (recvBuffer.strcmp(" HTTP/1.1\r\n")) {
+	if (!recvBuffer.strcmp(" HTTP/1.1\r\n")) {
 		status = Status::i505;
 		return -1;
 	}

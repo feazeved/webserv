@@ -4,25 +4,50 @@
 CONNECTION_INL
 (isize) build_cgi_header() {
 	Buffer64 tmpBuffer = {};
-
 	tmpBuffer.writePos += 256;
 	tmpBuffer.readPos += 256;
+	tmpBuffer.scanPos += 256;
+	const usize headerEnd = sendBuffer.scanPos;
+	sendBuffer.scanPos = sendBuffer.readPos;
+	status = Status::i200;
 
-	while (sendBuffer.find_line_end() == 1) {
+	while (sendBuffer.readPos < headerEnd) {
+		const usize lineLength = sendBuffer.find_line_end();
+		if (lineLength == SIZE_MAX)
+			return -1;
+		if (lineLength == 0) {
+			sendBuffer.readPos = sendBuffer.scanPos;
+			break;
+		}
 		if (parse_cgi_line(tmpBuffer) == -1) {
 			return -1;
 		}
+		sendBuffer.readPos = sendBuffer.scanPos;
 	}
+	if (sendBuffer.readPos != headerEnd)
+		return -1;
+
+	tmpBuffer.append("Connection: close\r\n\r\n");
+	tmpBuffer.append(sendBuffer.rptr(), sendBuffer.size());
+	tmpBuffer.prepend("\r\n");
+	tmpBuffer.prepend(status.status_str());
+	tmpBuffer.prepend("HTTP/1.1 ");
+	if (tmpBuffer.size() > sendBuffer.capacity())
+		return -1;
+	sendBuffer.clear();
+	sendBuffer.append(tmpBuffer.rptr(), tmpBuffer.size());
+	options &= ~(u16)Options::KEEP_ALIVE;
+	return 0;
 }
 
 CONNECTION_INL
 (void) build_header() {
 	Span str = status.status_str();
 
-	// sendBuffer.clear();	// Should not be needed
+	sendBuffer.clear();
 	sendBuffer.append("HTTP/1.1 ");
-	sendBuffer.append_inline<3>(str.ptr, 3);
-	sendBuffer.append(" OK\r\nContent-Type: ");
+	sendBuffer.append(str);
+	sendBuffer.append("\r\nContent-Type: ");
 	sendBuffer.append_mime(contentType);
 	sendBuffer.append("\r\nContent-Length: ");
 	sendBuffer.append_digit10(bodySize);

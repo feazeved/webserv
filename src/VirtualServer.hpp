@@ -31,6 +31,7 @@ struct Location {
 
 	Span extract(const Span16 &span) {
 		Span result = {(char*)this + span.index, span.size};
+		ASSERT(result.ptr[result.size] == '\0', "Location span is not null terminated");
 		return result;
 	}
 
@@ -126,4 +127,3 @@ public:
 		return invalid;
 	}
 };
-

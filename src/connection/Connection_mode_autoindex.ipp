@@ -40,7 +40,7 @@ usize s_append_entry(HTTP_Buffer &src, DIR* directory, struct dirent *dirEntry) 
 
 	struct stat st;
 
-	if (STRCMP(entry.ptr, ".") == 0 || STRCMP(entry.ptr, "..") == 0)
+	if (STRCMP(entry.ptr, ".\0") == 0 || STRCMP(entry.ptr, "..\0") == 0)
 		return 0;
 	if (fstatat(dirfd(directory), dirEntry->d_name, &st, 0)) {
 		src.append(HTTP_INDEX_PERMISSION);
@@ -92,7 +92,9 @@ CONNECTION_INL
 			if (errno != 0)
 				return -1;
 			closedir(directory);
+			directory = NULL;
 			readFd = -1;
+			sendBuffer.append("</pre></body></html>");
 			return flush_setup(epoll, Status::i200);
 		}
 		bytesTotal += s_append_entry(sendBuffer, directory, entry);
@@ -121,10 +123,15 @@ CONNECTION_INL
 	*pathBuffer = 0;
 	readFd = open(pathBuffer, O_RDONLY | O_CLOEXEC | O_NONBLOCK);
 	if (readFd >= 0) {
-		if (stat(pathBuffer, &st) == -1) {	// TODO: Use fstat
+		if (stat(pathBuffer, &st) == -1) {
 			close(readFd);
 			readFd = -1;
 			return flush_setup_close(epoll, s_get_status());
+		}
+		if (!S_ISREG(st.st_mode)) {
+			close(readFd);
+			readFd = -1;
+			return flush_setup_close(epoll, Status::i403);
 		}
 		contentType = fn::match_mime(pathBuffer.get_span());
 		status = Status::i200;
@@ -137,14 +144,14 @@ CONNECTION_INL
 	if (req.location->autoindex == false)
 		return flush_setup_close(epoll, Status::i403);
 	directory = opendir(pathBuffer);
-	if (directory == NULL) {
-		status = s_get_status();
+	if (directory == NULL) 
 		return flush_setup_close(epoll, s_get_status());
-	}
 	status = Status::i200;
 	contentType = Mime::HTML;
 	mode = Mode::AUTOINDEX;
-	build_header();
+	options &= ~(u16)Options::KEEP_ALIVE;
+	sendBuffer.clear();
+	sendBuffer.append("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n");
 	sendBuffer.append(HTTP_INDEX_HEADER);
 	sendBuffer.append(req.target);
 	sendBuffer.append(HTTP_INDEX_MIDDLE);

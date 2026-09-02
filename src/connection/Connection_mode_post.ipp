@@ -5,17 +5,8 @@ CONNECTION_INL
 (isize) post_setup(Epoll &epoll) {
 	Buffer64 pathBuffer = {};
 	const Span uploadStore = req.location->get_upload_store();
-	usize filename = req.target.size;
-	while (filename > 0 && req.target.ptr[filename - 1] != '/')
-		filename--;
-	if (filename == req.target.size) {
-		status = Status::i400;
-		return -1;
-	}
 	pathBuffer.append(uploadStore);
-	if (uploadStore.ptr[uploadStore.size - 1] != '/')
-		pathBuffer.append("/");
-	pathBuffer.append(req.target.ptr + filename, req.target.size - filename);
+	pathBuffer.append(req.relativeTarget);
 	*pathBuffer = 0;
 
 	writeFd = open(pathBuffer, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NONBLOCK, 0644);
@@ -38,16 +29,15 @@ CONNECTION_INL
 	}
 
 	if (bytesWritten == -1) {
-		close(writeFd);
-		writeFd = -1;
 		bool isChunked = options & Options::CHUNKED_LENGTH;
 		Status::Code code = isChunked ? Status::i400 : Status::i500;
 		return flush_setup_close(epoll, code);
 	}
 
-	if (!status.is_set() && bodySize == 0) {	// Must guarantee that bodySize is 0
+	if (!status.is_set() && bodySize == 0) {
 		close(writeFd);
 		writeFd = -1;	// Finished reading
+		status = Status::i201;
 		build_header();
 		return flush_setup(epoll, Status::i201);
 	}

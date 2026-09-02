@@ -78,6 +78,18 @@ BUFFER_INL_T
 }
 
 BUFFER_INL
+(char*) append_mime(u8 mimeIndex) {
+	static const u8 mimeStrings[][32] = MIME_STRINGS;
+
+	const u8 *str = mimeStrings[mimeIndex];
+	const usize length = *str;
+	char *optr = (char*)data + writePos;
+	MEMCPY_INLINE(optr, str + 1, 24);
+	writePos += length;
+	return optr;
+}
+
+BUFFER_INL
 (char*) append_digit10(usize number) {
 	const usize maxLengthAligned = 24;
 	char buffer[maxLengthAligned * 2];

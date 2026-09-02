@@ -38,32 +38,25 @@ namespace fn {
 	static inline
 	isize match_field(Span field) {
 		static const u8 ltable[][32] = FIELD_TABLE;
-	
+
 		return s_match((u8*)field.ptr, field.size, ltable);
 	}
 
 	static inline
 	Span find_dot(Span span) {
-		u8 tmp[2];
-		char* dotPos = NULL;
-		Span ext = {span.ptr, 0};
-		char* end = span.ptr + span.size;
-		char* padEnd = span.ptr + span.size + 2;
+		char* const end = span.ptr + span.size;
+		Span ext = {end, 0};
 
-		MEMCPY_INLINE(tmp, padEnd, 2);
-		MEMCPY_INLINE(padEnd, "/.", 2);		// TODO: needs to find app.min.js for example
-
-		while (true) {
-			while (*ext.ptr != '/')
-				ext.ptr++;
-			while (*ext.ptr != '.')
-				ext.ptr++;
-			if (ext.ptr >= padEnd)
-				break;
-			dotPos = ext.ptr++;
+		for (char* ptr = span.ptr; ptr < end; ptr++) {
+			if (*ptr == '/') {
+				ext.ptr = end;
+				ext.size = 0;
+			}
+			else if (*ptr == '.') {
+				ext.ptr = ptr + 1;
+				ext.size = (usize)(end - ext.ptr);
+			}
 		}
-		MEMCPY_INLINE(padEnd, tmp, 2);
-		ext.size = (usize)(end - dotPos);
 		return ext;
 	}
 
@@ -75,6 +68,31 @@ namespace fn {
 		return s_match((u8*)ext.ptr, ext.size, ltable);
 	}
 }
+
+// static inline
+// Span find_dot(Span span) {
+// 	u8 tmp[2];
+// 	char* dotPos = NULL;
+// 	Span ext = {span.ptr, 0};
+// 	char* end = span.ptr + span.size;
+// 	char* padEnd = span.ptr + span.size + 2;
+
+// 	MEMCPY_INLINE(tmp, padEnd, 2);
+// 	MEMCPY_INLINE(padEnd, "/.", 2);		// TODO: needs to find app.min.js for example
+
+// 	while (true) {
+// 		while (*ext.ptr != '/')
+// 			ext.ptr++;
+// 		while (*ext.ptr != '.')
+// 			ext.ptr++;
+// 		if (ext.ptr >= padEnd)
+// 			break;
+// 		dotPos = ext.ptr++;
+// 	}
+// 	MEMCPY_INLINE(padEnd, tmp, 2);
+// 	ext.size = (usize)(end - dotPos);
+// 	return ext;
+// }
 
 // static inline
 // Span find_dot(Span span) {

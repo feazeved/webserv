@@ -5,13 +5,14 @@
 CONNECTION_INL
 (isize) upload_file(Epoll &epoll) {
 	isize bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
-	if (bytesRead == 0) {
+	if (bytesRead <= 0 && (bytesRead == -1 || bodySize != 0))
+		return -1;
+	bodySize -= (usize)bytesRead;
+	if (bodySize == 0) {
 		close(readFd);
 		readFd = -1;
 		return flush_setup(epoll, Status::i200);
 	}
-	else if (bytesRead == -1)
-		return -1;
 	return write_to_client(epoll);
 }
 
@@ -31,6 +32,7 @@ CONNECTION_INL
 		return flush_setup_close(epoll, s_get_status());
 	status = Status::i200;
 	bodySize = (usize)st.st_size;
+	contentType = fn::match_mime(pathBuffer.get_span());
 	build_header();
 	return upload_file(epoll);
 }

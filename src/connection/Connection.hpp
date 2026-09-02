@@ -25,7 +25,7 @@ typedef Buffer<bufferSize> HTTP_Buffer;
 
 struct Connection {
 	struct Request {
-		Span target, query, cookies, interpreter;
+		Span target, query, host, cookies, interpreter;
 		Span contentTypeHeader, contentSize;	// relativeTarget (what comes after URI)
 		Location* location;
 		Span relativeTarget, targetName, targetExt;

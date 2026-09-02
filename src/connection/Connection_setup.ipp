@@ -25,15 +25,15 @@ CONNECTION_INL
 	const bool encodingSet = options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH);
 
 	if (status.is_set())
-		return !flush_setup_close(epoll, (Status::Code) status.index);	// An error caused early interruption
+		return flush_setup_close(epoll, (Status::Code) status.index);	// An error caused early interruption
 	if ((options & 0xF) == 0)
-		return !flush_setup_close(epoll, Status::i400);	// TODO: Method not set, should be impossible. Remove in future
+		return flush_setup_close(epoll, Status::i400);	// TODO: Method not set, should be impossible. Remove in future
 	if ((options & Options::HOST) == 0)
-		return !flush_setup_close(epoll, Status::i400);	// Host not set
+		return flush_setup_close(epoll, Status::i400);	// Host not set
 	if (!isBodyMethod && encodingSet)
-		return !flush_setup_close(epoll, Status::i400);	// Encoding set for non-body methods
+		return flush_setup_close(epoll, Status::i400);	// Encoding set for non-body methods
 	if (isBodyMethod && !encodingSet)
-		return !flush_setup_close(epoll, Status::i411);	// Transfer encoding not set
+		return flush_setup_close(epoll, Status::i411);	// Transfer encoding not set
 
 	if (options & Options::CHUNKED_LENGTH)
 		bodySize = cfg->maxBodySize;
