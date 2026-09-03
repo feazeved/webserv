@@ -59,7 +59,7 @@ public:
 
 	Parser(const char *filePath, VirtualServer (&servers)[MAX_VIRTUAL_SERVERS], Arena &srcAlpha, Arena &srcBeta)
 		: alpha(srcAlpha), beta(srcBeta), file(), serverCount(0) {
-		if (s_read_whole_file(alpha, filePath, file, 63, 16))
+		if (fn::read_whole_file(alpha, filePath, file, 63, 16))
 			std::exit(1);
 		ArrayView<Token> tokArray = tokenize();
 		for (usize serverIndex = 0; serverIndex < serverCount; serverIndex++) {
@@ -82,7 +82,6 @@ public:
 	void parse_location_directive(ParsedLocation &location, Directive &dir);
 	void parse_server_directive(VirtualServer &server, Directive &dir);
 	static Directive s_build_directive(Arena &arena, ArrayView<Token> &tokArray);
-	static bool s_read_whole_file(Arena &arena, const char *filePath, Span &file, usize padSize = 32, usize minSize = 0, usize maxSize = UINT32_MAX);
 };
 
 #include "Parser_common.ipp"

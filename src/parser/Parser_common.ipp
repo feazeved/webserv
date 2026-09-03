@@ -1,46 +1,6 @@
 #pragma once
 #include "Parser.hpp"
 
-static inline
-bool s_length_check(usize length) {
-	return length == 0 || length >= MAX_PATH_SIZE;
-}
-
-PARSER_INL
-(bool) s_read_whole_file(Arena &arena, const char *filePath, Span &file, usize padSize, usize minSize, usize maxSize) {
-	struct stat st;
-	if (stat(filePath, &st) == -1 || (usize)st.st_size < minSize || (usize)st.st_size >= maxSize)
-		PERR_RETURN(1, "Error: Invalid file");
-
-	int fd = open(filePath, O_RDONLY);
-	if (fd == -1)
-		PERR_RETURN(1, "Error: Failed to open file");
-
-	const usize fileSize = (usize)st.st_size;
-	const u32 fileOffset = arena.alloc(fileSize, 1 + padSize);
-	if (fileOffset == UINT32_MAX) {
-		close(fd);
-		PERR_RETURN(1, "Error: Out of memory");
-	}
-
-	u8* ptr = arena.mptr(fileOffset);
-	usize curBytes = 0;
-	while (curBytes < fileSize) {
-		usize bytesRemaining = fileSize - curBytes;
-		isize bytesRead = read(fd, ptr + curBytes, MIN(bytesRemaining, ATOMIC_IOSIZE));
-		if (bytesRead <= 0) {
-			close(fd);
-			PERR_RETURN(1, "Error: Read failure");
-		}
-		curBytes += (usize) bytesRead;
-	}
-	close(fd);
-	ptr[fileSize] = '\0';
-	file.ptr = (char*)ptr;
-	file.size = fileSize;
-	return 0;
-}
-
 PARSER_INL
 (Parser::Directive) s_build_directive(Arena &arena, ArrayView<Token> &tokArray) {
 	Directive dir;

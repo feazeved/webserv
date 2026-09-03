@@ -6,7 +6,7 @@ void s_directive_error_page(Parser::Directive &dir, VirtualServer &server) {
 	if (dir.args.count < 2)
 		PERR_EXIT(1, "Error: Invalid error page");
 	Span path = dir.args[dir.args.count - 1];
-	if (s_length_check(path.size))
+	if (path.size == 0 || path.size >= MAX_PATH_SIZE)
 		PERR_EXIT(1, "Error: Invalid error page");
 	for (usize index = 0; index + 1 < dir.args.count; index++) {
 		usize error = fn::strtol10(dir.args[index].ptr);
@@ -69,21 +69,25 @@ void s_directive_body_size(const Span &value, usize &bodySize) {
 
 PARSER_INL
 (void) parse_server_directive(VirtualServer &server, Directive &dir) {
-	if (dir.name == "error_page")
+	const Span &arg = dir.args[0];
+	const Span &name = dir.name;
+
+	if (name == "error_page")
 		return s_directive_error_page(dir, server);
-	if (dir.args.count != 1 || s_length_check(dir.args[0].size))
+	
+	if (dir.args.count != 1 || arg.size == 0 || arg.size >= MAX_PATH_SIZE)
 		PERR_EXIT(1, "Error: Invalid server directive");
-	const Span &value = dir.args[0];
-	if (dir.name == "listen")
+	const Span &value = arg;
+	if (name == "listen")
 		return s_directive_listen(beta, value, server);
-	else if (dir.name == "host") {
+	else if (name == "host") {
 		if (server.host.size != 0)
 			PERR_EXIT(1, "Error: Duplicate host definition");
 		server.host = beta.copy_span(value);
 	}
-	else if (dir.name == "client_max_body_size")
+	else if (name == "client_max_body_size")
 		s_directive_body_size(value, server.maxBodySize);
-	else if (dir.name == "root") {
+	else if (name == "root") {
 		if (server.serverRoot.size != 0)
 			PERR_EXIT(1, "Error: Duplicate root definition");
 		server.serverRoot = beta.copy_span(value);

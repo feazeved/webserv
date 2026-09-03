@@ -61,7 +61,7 @@ PARSER_INL
 	}
 	else
 		PERR_EXIT(1, "Error: Invalid location directive");
-	if (s_length_check(length))
+	if (length == 0 || length >= MAX_PATH_SIZE)
 		PERR_EXIT(1, "Error: Path size is too large");
 }
 
@@ -111,7 +111,7 @@ PARSER_INL
 
 	if (loc.uri.size == 0 || loc.uri.ptr[0] != '/')
 		PERR_EXIT(1, "Error: Invalid location path");
-	if (s_length_check(loc.uri.size))
+	if (loc.uri.size == 0 || loc.uri.size >= MAX_PATH_SIZE)
 		PERR_EXIT(1, "Error: Path size is too large");
 	tokArray.ptr += 2;
 	bool cgiDefined = false;

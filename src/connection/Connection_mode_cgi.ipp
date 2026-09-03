@@ -150,7 +150,7 @@ CONNECTION_INL
 		goto Error;
 	if (pipe(fdOut) == -1)
 		goto ErrorCloseInput;
-	if (VirtualServer::s_set_stream_mode(fdIn[1]) || VirtualServer::s_set_stream_mode(fdOut[0]))
+	if (fn::set_stream_mode(fdIn[1]) || fn::set_stream_mode(fdOut[0]))
 		goto ErrorCloseOutput;
 	processId = fork();
 	if (processId < 0)

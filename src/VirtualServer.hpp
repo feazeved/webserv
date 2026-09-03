@@ -6,6 +6,7 @@
 #include <netdb.h>
 
 #include "core.hpp"
+#include "pure_functions.hpp"
 #include "webserv.hpp"
 #include "Span.hpp"
 #include "Status.hpp"
@@ -79,7 +80,7 @@ public:
 		listenFd = socket(AF_INET, SOCK_STREAM, 0);
 		if (listenFd == -1)
 			PERR_EXIT(clear(), "Error: Failed to create listening socket");
-		if (s_set_stream_mode(listenFd))
+		if (fn::set_stream_mode(listenFd))
 			PERR_EXIT(clear(), "Error: Failed to configure listening socket");
 
 		int reuse = 1;
@@ -93,12 +94,6 @@ public:
 			PERR_EXIT(clear(), "Error: Failed to bind listening socket");
 		if (listen(listenFd, SOMAXCONN) == -1)
 			PERR_EXIT(clear(), "Error: Failed to listen on socket");
-	}
-
-	static bool s_set_stream_mode(int fd) {
-		bool result = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
-		result = result || fcntl(fd, F_SETFD, fcntl(fd, F_GETFD, 0) | FD_CLOEXEC);
-		return result;
 	}
 
 	static bool s_resolve_host_and_port(const Span& host, usize port, sockaddr_in& address) {

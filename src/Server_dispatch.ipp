@@ -12,7 +12,7 @@ SERVER_INL
 			return;
 		PERR_RETURN((void)0, "Error: Failed to accept connection");
 	}
-	if (VirtualServer::s_set_stream_mode(clientFd)) {
+	if (fn::set_stream_mode(clientFd)) {
 		close(clientFd);
 		PERR_RETURN((void)0, "Error: Failed to make client socket non-blocking");
 	}

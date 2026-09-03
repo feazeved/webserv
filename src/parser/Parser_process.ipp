@@ -129,7 +129,7 @@ PARSER_INL
 			continue;
 		}
 		s_build_error_page_path(pathBuffer, server.serverRoot, path);
-		if (s_read_whole_file(beta, pathBuffer, page, 0, 0))
+		if (fn::read_whole_file(beta, pathBuffer, page, 0, 0))
 			std::exit(1);
 	}
 }
