@@ -13,7 +13,7 @@
 #include "Environment.hpp"
 #include "Epoll.hpp"
 
-#include "match.hpp"
+#include "pure_functions.hpp"
 
 #define CONNECTION_INL(ret_type) inline ret_type Connection::
 
@@ -37,7 +37,7 @@ struct Connection {
 			MEMSET_INLINE(this, 0, sizeof(*this));
 		}
 	};
-
+/* ========== Attributes ======================== */
 	VirtualServer* cfg;
 	Status status;
 	u16 options;	// TODO: Change this to a bitmap
@@ -72,11 +72,12 @@ struct Connection {
 	void clear();
 
 	// Parsing
-	isize parse_line(usize lineLength);
-	isize parse_first_line(usize lineLength);
-	isize parse_cgi_line(Buffer64 &tmpBuffer);
-	isize validate_target(char* str, char* end);
-	bool match_location();
+	Status::Code parse_line(Span line);
+	Status::Code parse_first_line(Span line);
+	Status::Code parse_cgi_line(Buffer64 &tmpBuffer);
+	Status::Code validate_target(char* str, char* end);
+	Status::Code validate_path(char* str, char* end);
+	Status::Code match_location();
 	Span check_cgi();
 
 	// Configuration
@@ -85,9 +86,9 @@ struct Connection {
 	isize end_connection();
 
 	// Response
-	void build_error_header();
+	void build_error_header(Status::Code code);
 	void build_header(Status::Code code);
-	isize build_cgi_header();
+	Status::Code build_cgi_header(Status::Code code);
 
 	// Common
 	isize flush(Epoll &epoll);

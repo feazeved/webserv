@@ -2,7 +2,7 @@
 #include "Connection.hpp"
 
 CONNECTION_INL
-(bool) match_location() {
+(Status::Code) match_location() {
 	ArrayView<Location> &locations = cfg->locations;
 	usize matchLength = *req.target.ptr == '/';
 	while (matchLength < req.target.size && req.target.ptr[matchLength] != '/')
@@ -19,16 +19,14 @@ CONNECTION_INL
 			}
 		}
 	}
-	if (req.location == NULL) {
-		status = Status::i404;
-		return true;
-	}
-	if ((req.location->methods & (options & 7)))
-		return false;
-	status = Status::i405;
-	return true;
+	if (req.location == NULL)
+		return Status::i404;
+	if (!((req.location->methods & (options & 7))))
+		return Status::i405;
+	return Status::unset;
 }
 
+// REVIEW: CGI cant fail?
 CONNECTION_INL
 (Span) check_cgi() {
 	char *cgiEnd = req.cgi.end();
@@ -55,32 +53,31 @@ CONNECTION_INL
 	return result;
 }
 
-static inline
-bool s_validate_path(char* str, char* end) {
+CONNECTION_INL
+(Status::Code) validate_path(char* str, char* end) {
 	while (str < end) {
 		if (g_asciiLut[(u8)*str] > ASCII_RFC_SYMBOLS)
-			return true;
+			return Status::i400;
 		if (*str == '/' && str[1] == '.' && str[2] == '.')
-			return true;
+			return Status::i400;
 		if (*str == '%') {
 			if (g_asciiLut[(u8)str[1]] > ASCII_HEX)
-				return true;
+				return Status::i400;
 			if (g_asciiLut[(u8)str[2]] > ASCII_HEX)
-				return true;
+				return Status::i400;
 			str += 2;
 		}
 		str++;
 	}
-	return false;
+	return match_location();
 }
 
 CONNECTION_INL
-(isize) validate_target(char* str, char* end) {
+(Status::Code) validate_target(char* str, char* end) {
 	const usize targetLength = (usize)(end - str);
-	// const char* lineStart = str;
 
 	if (*str != '/')	// /images/cats/meow.jpg?FILTER=yes,ORDER=ascending\0
-		return -1;
+		return Status::i400;
 	char* queryPtr = (char*) MEMCHR(str, '?', targetLength);
 	char* targetEnd = queryPtr == NULL ? end : (queryPtr + 1);
 	req.target = Span::create(str, (usize)(targetEnd - str));		// /images/cats/meow.jpg
@@ -91,10 +88,9 @@ CONNECTION_INL
 		req.targetName.ptr--;
 	req.targetName.size = (usize)(targetEnd - req.targetName.ptr);
 
-	if (s_validate_path(req.target, targetEnd))
-		return -1;
-	if (match_location())											// /images
-		return -1;
+	Status::Code code = validate_path(req.target, targetEnd);
+	if (code != Status::unset)
+		return code;
 
 	req.uri = req.location->get_uri();
 	req.cgi = req.location->get_cgi_block();
@@ -103,37 +99,27 @@ CONNECTION_INL
 	req.relativeTarget.ptr = req.target.ptr + req.uri.size;			// /images/cats/meow.jpg
 	req.relativeTarget.size += req.target.size - req.uri.size;		// cats/meow.jpg
 	req.interpreter = check_cgi();
-	return 0;
+	return Status::unset;
 }
 
 CONNECTION_INL
-(isize) parse_first_line(usize lineLength) {
-	if (lineLength < 14 || lineLength >= 8000) {
-		status = lineLength < 14 ? Status::i400 : Status::i431;
-		return -1;	// ERROR: Bad request "GET / HTTP/1.1" shortest possible
-	}
+(Status::Code) parse_first_line(Span line) {
+	if (line.size < 14 || line.size >= 8000)	// ERROR: Bad request "GET / HTTP/1.1" shortest possible
+		return line.size < 14 ? Status::i400 : Status::i431;
 
-	const usize readPosEnd = recvBuffer.readPos + lineLength - 9;
-	char* targetEnd = recvBuffer.rptr() + lineLength - 9;
+	const usize readPosEnd = recvBuffer.readPos + line.size - 9;
+	char* targetEnd = line.ptr + line.size - 9;
 	if (recvBuffer.strcmp("GET "))
 		options |= Options::GET;
 	else if (recvBuffer.strcmp("POST "))
 		options |= Options::POST;
 	else if (recvBuffer.strcmp("DELETE "))
 		options |= Options::DELETE;
-	else {
-		status = Status::i501;
-		return -1;
-	}
+	else
+		return Status::i501;
 	char* targetStart = recvBuffer.rptr();
 	recvBuffer.readPos = readPosEnd;
-	if (!recvBuffer.strcmp(" HTTP/1.1\r\n")) {
-		status = Status::i505;
-		return -1;
-	}
-	const isize result = validate_target(targetStart, targetEnd);
-	if (result < 0 && !status.is_set())
-		status = Status::i400;
-	recvBuffer.readPos = recvBuffer.scanPos;
-	return result;
+	if (!recvBuffer.strcmp(" HTTP/1.1\r\n"))
+		return Status::i505;
+	return validate_target(targetStart, targetEnd);
 }

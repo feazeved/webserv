@@ -35,7 +35,7 @@ CONNECTION_INL
 		return flush_setup_close(epoll, code);
 	}
 
-	if (!status.is_set() && bodySize == 0) {
+	if (bodySize == 0) {
 		close(writeFd);
 		writeFd = -1;	// Finished reading
 		build_header(Status::i201);

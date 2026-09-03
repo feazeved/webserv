@@ -4,9 +4,21 @@
 static inline
 Span16 s_store_location_span(Location &location, char* &wptr, const Span &source) {
 	Span16 result = {(u16)(wptr - (char*)&location.uri), (u16)source.size};
-	if (source.size != 0)
-		MEMCPY(wptr, source.ptr, source.size);
+	MEMCPY(wptr, source.ptr, source.size);
 	wptr += source.size;
+	*wptr++ = '\0';
+	return result;
+}
+
+static inline
+Span16 s_store_upload_span(Location &location, char* &wptr, const Span &source) {
+	Span16 result = {(u16)(wptr - (char*)&location.uri), (u16)source.size};
+	MEMCPY(wptr, source.ptr, source.size);
+	wptr += source.size;
+	if (*wptr != '/') {
+		*wptr++ = '/';
+		result.size++;
+	}
 	*wptr++ = '\0';
 	return result;
 }
@@ -35,7 +47,7 @@ void s_store_location(char* &wptr, const Parser::ParsedLocation &ploc, Location 
 		location.uri = s_store_location_span(location, wptr, ploc.uri);
 		location.root = s_store_location_span(location, wptr, ploc.root);
 		location.index = s_store_location_span(location, wptr, ploc.index);
-		location.uploadStore = s_store_location_span(location, wptr, ploc.uploadStore);
+		location.uploadStore = s_store_upload_span(location, wptr, ploc.uploadStore);
 		s_store_cgi(wptr, ploc.cgiBlock, location);
 		location.redirectTarget = s_store_location_span(location, wptr, ploc.redirectTarget);
 		location.redirectStatus = ploc.redirectStatus;
@@ -45,7 +57,7 @@ void s_store_location(char* &wptr, const Parser::ParsedLocation &ploc, Location 
 
 static inline
 usize s_location_size(const Parser::ParsedLocation &loc) {
-	usize packSize = 6 + loc.uri.size + loc.root.size + loc.index.size;
+	usize packSize = 12 + loc.uri.size + loc.root.size + loc.index.size;
 	packSize += loc.uploadStore.size + loc.cgiBlock.size + loc.redirectTarget.size;
 	return packSize;
 }

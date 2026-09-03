@@ -29,8 +29,7 @@ public:
 	}
 
 	// Does not call update time
-	ALWAYS_INLINE
-	static u32 time_elapsed() {
+	inl static u32 time_elapsed() {
 		return (u32)timeElapsed;
 	}
 

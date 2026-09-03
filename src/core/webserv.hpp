@@ -73,15 +73,3 @@ namespace Mime {
 		COUNT
 	};
 }
-
-enum e_ascii {
-	ASCII_DIGITS      = 9,   // value <= digits
-	ASCII_HEX         = 15,  // value <= hex
-	ASCII_LETTERS     = 35,  // A-Z / a-z map to 10-35
-	ASCII_IDENT       = 36,  // _
-	ASCII_RFC_SYMBOLS = 37,  // RFC 3986 path symbols
-	ASCII_SYMBOLS     = 38,  // other symbols
-	ASCII_SPACE       = 39,
-	ASCII_CONTROL     = 40,
-	ASCII_INVALID     = 255
-};

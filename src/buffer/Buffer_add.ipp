@@ -30,6 +30,13 @@ BUFFER_INL_T
 }
 
 BUFFER_INL
+(char*) append_char(char c) {
+	char* optr = (char*)data + writePos;
+	data[writePos++] = (u8) c;
+	return optr;
+}
+
+BUFFER_INL
 (char*) append(const char* ptr, usize length) {
 	char* optr = (char*)data + writePos;
 	MEMCPY(optr, ptr, length);
@@ -75,60 +82,4 @@ BUFFER_INL_T
 	MEMSET_INLINE(optr, byte, N);
 	writePos += length;
 	return optr;
-}
-
-BUFFER_INL
-(char*) append_mime(u8 mimeIndex) {
-	static const u8 mimeStrings[][32] = MIME_STRINGS;
-
-	const u8 *str = mimeStrings[mimeIndex];
-	const usize length = *str;
-	char *optr = (char*)data + writePos;
-	MEMCPY_INLINE(optr, str + 1, 24);
-	writePos += length;
-	return optr;
-}
-
-BUFFER_INL
-(char*) append_digit10(usize number) {
-	const usize maxLengthAligned = 24;
-	char buffer[maxLengthAligned * 2];
-	char *digitEnd = buffer + maxLengthAligned;
-	usize digitLength = s_itoa10(number, digitEnd);
-
-	char* digitStart = digitEnd - digitLength;
-	char* optr = (char*)data + writePos;
-	MEMCPY_INLINE(optr, digitStart, maxLengthAligned);
-	writePos += digitLength;
-	return optr;
-}
-
-BUFFER_INL
-(char*) append_digit16(usize number) {
-	const usize maxLengthAligned = 16;
-	char buffer[maxLengthAligned * 2];
-	char *digitEnd = buffer + maxLengthAligned;
-	usize digitLength = s_itoa16(number, digitEnd);
-
-	char* digitStart = digitEnd - digitLength;
-	char* optr = (char*)data + writePos;
-	MEMCPY_INLINE(optr, digitStart, maxLengthAligned);
-
-	writePos += digitLength;
-	return optr;
-}
-
-// Should be impossible for dst buffer to not fit
-// TODO: Might remove MIN3 and have it overflow to guarantee behavior
-BUFFER_INL
-(usize) append_buffer(Buffer &src, usize length) {
-	usize remainingSrc = src.writePos - src.readPos;	// How many bytes remain unread
-	usize remainingDst = sizeof(data) - writePos;	// How many bytes are free in the buffer
-	usize appendLength = MIN3(length, remainingSrc, remainingDst);
-
-	MEMCPY(data + writePos, src.data + src.readPos, appendLength);
-	src.readPos += appendLength;
-	src.scanPos = (src.scanPos >= src.readPos) ? src.scanPos : src.readPos;
-	writePos += appendLength;
-	return appendLength;
 }

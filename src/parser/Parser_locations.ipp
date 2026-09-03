@@ -52,8 +52,8 @@ PARSER_INL
 	else if (dir.name == "return") {
 		if (dir.args.count != 2)
 			PERR_EXIT(1, "Error: Invalid redirect");
-		const usize status = s_strtol10(dir.args[0].ptr, 3);
-		location.redirectStatus = status;
+		const usize status = fn::strtol10(dir.args[0].ptr);
+		location.redirectStatus.index = Status::s_num_to_code(status);
 		if (dir.args[0].size != 3 || status < 300 || status > 399 || !location.redirectStatus.is_valid())
 			PERR_EXIT(1, "Error: Invalid redirect status");
 		location.redirectTarget = dir.args[1];

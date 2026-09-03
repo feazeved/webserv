@@ -6,24 +6,6 @@ bool s_length_check(usize length) {
 	return length == 0 || length >= MAX_PATH_SIZE;
 }
 
-static inline
-usize s_strtol10(const char *str, usize length) {
-	usize value = 0;
-	usize digit = 0;
-	const char *end = str + length;
-
-	while (str < end) {
-		digit = (usize)(*str - '0');
-		if (digit > 9 || value > (SIZE_MAX - 9) / 10)
-			break;
-		value = value * 10 + digit;
-		str++;
-	}
-	if (str != end)
-		return SIZE_MAX;
-	return value;
-}
-
 PARSER_INL
 (bool) s_read_whole_file(Arena &arena, const char *filePath, Span &file, usize padSize, usize minSize, usize maxSize) {
 	struct stat st;

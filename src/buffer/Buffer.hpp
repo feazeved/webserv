@@ -5,6 +5,7 @@
 #include "tables.hpp"
 #include "webserv.hpp"
 #include "Span.hpp"
+#include "pure_functions.hpp"
 
 #define BUFFER_INL(ret_type) \
 	template <usize bufferSize> inline ret_type Buffer<bufferSize>::
@@ -19,53 +20,46 @@ struct Buffer {
 	usize clobber;
 	usize writePos, readPos, scanPos;
 
-	ALWAYS_INLINE
-	u8* get_end() {	// rename to mptr
+	inl u8* get_end() {	// rename to mptr
 		return data + sizeof(data);
 	}
 
-	ALWAYS_INLINE
-	Span get_span() {
+	inl Span get_span() {
 		Span result = {(char*)data + readPos, writePos - readPos};
 		return result;
 	}
 
-	ALWAYS_INLINE
-	const u8* get_end() const {
+	inl const u8* get_end() const {
 		return data + sizeof(data);
 	}
 
-	ALWAYS_INLINE
-	usize size() const {
+	inl usize size() const {
 		return writePos - readPos;
 	}
 
-	ALWAYS_INLINE
-	usize capacity() const {
+	inl usize capacity() const {
 		return sizeof(data);
 	}
 
-	ALWAYS_INLINE
-	usize bytes_free() const {
+	inl usize bytes_free() const {
 		return sizeof(data) - writePos;
 	}
 
-	ALWAYS_INLINE
-	usize reserve(usize bytes) {
+	inl usize reserve(usize bytes) {
 		usize bytesFree = bytes_free();
 		if (bytes >= bytesFree)
 			bytesFree = compact();
 		return bytesFree;
 	}
 
+	inl bool is_full() {
+		return writePos >= sizeof(data);
+	}
+
 	void clear() {
 		readPos = 0;
 		writePos = 0;
 		scanPos = 0;
-	}
-
-	bool is_full() {
-		return writePos >= sizeof(data);
 	}
 
 	usize compact() {
@@ -111,22 +105,18 @@ struct Buffer {
 	isize decode(int writeFd, usize &chunkSize, usize &bodySize);
 
 	// Search
-	usize find_line_end();
-	usize find_header_end();
+	Span find_line_end();
+	Span find_header_end();
 	Span find_char(u8 c);
 
-	// String
-	static usize s_itoa10(usize number, char *bufferEnd);
-	static usize s_itoa16(usize number, char *bufferEnd);
-	usize strtol10();
-	usize strtol16();
-
 	template <usize N> bool strcmp(const char (&string)[N]);
-	template <usize N> bool strcasecmp(const char (&string)[N]);
+	// template <usize N> bool strcasecmp(const char (&string)[N]);
 
 	bool skip_spaces();
+	Span get_field_value(usize readEnd);
 
 	// Appends and Prepends
+	char* append_char(char c);
 	template <usize N> char* append(const char (&string)[N]);				// Implicit
 	template <usize N> char* append_inline(const char* ptr, usize length);	// Explicit
 	char* append(const char* ptr, usize length);
@@ -137,11 +127,14 @@ struct Buffer {
 	char* prepend(const char* ptr, usize length);
 	char* prepend(const Span &span);
 
+	// Append Special
 	usize append_buffer(Buffer &src, usize length);
 	char* append_mime(u8 mimeIndex);
 
 	char* append_digit10(usize number);
 	char* append_digit16(usize number);
+	char* append_url_component(const char *ptr, usize length);
+	char* append_html(char *ptr, usize length);
 
 	char* memset(u8 byte, usize length);
 	template <usize N> char* memset_inline(u8 byte, usize length);
@@ -154,18 +147,14 @@ struct Buffer {
 		MEMCPY(data, other.data + other.readPos, bytesUsed);
 	}
 
-	operator char*() { return (char*)(data + readPos); }
-
-	char* rptr() { return (char*)(data + readPos); }
-	u8& rptr(usize index) { return *(data + readPos + index); }
-	char* wptr() { return (char*)(data + writePos); }
-	u8& wptr(usize index) { return *(data + writePos + index); }
-	char* sptr() { return (char*)(data + scanPos); }
-	u8& sptr(usize index) { return *(data + scanPos + index); }
-
-	u8& operator*() {
-		return data[writePos];
-	}
+	inl operator char*() { return (char*)(data + readPos); }
+	inl char* rptr() { return (char*)(data + readPos); }
+	inl u8& rptr(usize index) { return *(data + readPos + index); }
+	inl char* wptr() { return (char*)(data + writePos); }
+	inl u8& wptr(usize index) { return *(data + writePos + index); }
+	inl char* sptr() { return (char*)(data + scanPos); }
+	inl u8& sptr(usize index) { return *(data + scanPos + index); }
+	inl u8& operator*() { return data[writePos]; }
 };
 
 typedef Buffer<8 * 1024> Buffer8;
@@ -174,6 +163,7 @@ typedef Buffer<32 * 1024> Buffer32;
 typedef Buffer<64 * 1024> Buffer64;
 
 #include "Buffer_add.ipp"
+#include "Buffer_add_special.ipp"
 #include "Buffer_search.ipp"
 #include "Buffer_string.ipp"
 #include "Buffer_http.ipp"

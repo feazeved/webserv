@@ -1,6 +1,8 @@
 #pragma once
 #include "core.hpp"
 
+#define FN_ATTR(...) __attribute__((__VA_ARGS__))
+
 #define ALWAYS_INLINE	inline __attribute__((always_inline))
 #define NOINLINE		__attribute__((noinline))
 #define KPURE			__attribute__((const))			// Function depends only on its arguments (doesn't read from memory)
@@ -65,3 +67,4 @@
 #define BSWAP32(x)		__builtin_bswap32(x)
 #define BSWAP64(x)		__builtin_bswap64(x)
 #define BITREVERSE(x)	__builtin_bitreverse64(x)	// This is clang specific
+

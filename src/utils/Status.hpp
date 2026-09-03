@@ -29,7 +29,7 @@ public:
 	- sizeof(HTTP_STATUS_DEFAULT_PAGE(code)) - 2)
 
 enum Code {
-	i000 = 1, ixxx = 2, i511 = sizeof(HTTP_STATUS_STRINGS) - sizeof(HTTP_STATUS(511))
+	unset = 1, ok = 1, ixxx = 2, i511 = sizeof(HTTP_STATUS_STRINGS) - sizeof(HTTP_STATUS(511))
 		- sizeof(HTTP_STATUS_DEFAULT_PAGE(511)) - 2,
 	i510 = SUBP(510, 511), i508 = SUBP(508, 510), i507 = SUBP(507, 508), i506 = SUBP(506, 507),
 	i505 = SUBP(505, 506), i504 = SUBP(504, 505), i503 = SUBP(503, 504), i502 = SUBP(502, 503),
@@ -54,8 +54,7 @@ enum Code {
 
 STATIC_ASSERT(i100 == 9);
 
-	ALWAYS_INLINE
-	static u16 s_index(usize div, usize rem) {
+	inl static u16 s_index(usize div, usize rem) {
 		static const u16 s_offsets[160] = {
 			i100, i101, i102, i103, i104, ixxx, ixxx, ixxx,
 			ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx, ixxx,
@@ -83,16 +82,14 @@ STATIC_ASSERT(i100 == 9);
 		return s_offsets[div * 32 + rem];
 	}
 
-	ALWAYS_INLINE
-	static u16 s_num_to_code(usize number) {
+	inl static u16 s_num_to_code(usize number) {
 		if (number - 100 >= 500)
 			return ixxx;
 		const usize div = number / 100;
 		return s_index(div - 1, number - div * 100);
 	}
 
-	ALWAYS_INLINE
-	static u16 s_str_to_code(const char *str) {
+	inl static Code s_str_to_code(const char *str) {
 		if (str[0] < '1' || str[0] > '5' ||
 			str[1] < '0' || str[1] > '9' ||
 			str[2] < '0' || str[2] > '9')
@@ -100,11 +97,10 @@ STATIC_ASSERT(i100 == 9);
 		
 		const usize div = (usize)(str[0] - '1');
 		const usize rem = 10 * (usize)(str[1] - '0') + (usize)(str[2] - '0');
-		return s_index(div, rem);
+		return (Code)s_index(div, rem);
 	}
 
-	ALWAYS_INLINE
-	static usize s_code_to_index(Code code) {
+	inl static usize s_code_to_index(Code code) {
 		char* ptr = startPtr + (usize) code;
 		usize first = (u8)(ptr[0] - '0');
 		usize second = (u8)(ptr[1] - '0');
@@ -112,23 +108,27 @@ STATIC_ASSERT(i100 == 9);
 		return first * 32 + second * 10 + third;
 	}
 
-	ALWAYS_INLINE
-	usize get_page_index() const {
+	inl usize get_page_index() const {
 		if (index < Status::i400)
 			return SIZE_MAX;
 		return s_code_to_index((Code)index) - (32ul * 4);
 	}
 
-	ALWAYS_INLINE
-	Span status_str() const {
+	inl Span status_str() const {
 		Span result;
 		result.ptr = startPtr + (usize)index;
 		result.size = (u8) result.ptr[-1];
 		return result;
 	}
 
-	ALWAYS_INLINE
-	Span error_page() const {
+	inl static Span s_status_str(Status::Code code) {
+		Span result;
+		result.ptr = startPtr + (u16) code;
+		result.size = (u8) result.ptr[-1];
+		return result;
+	}
+
+	inl Span error_page() const {
 		Span result;
 		result.ptr = startPtr + (usize)index;
 		result.size = (u8) result.ptr[-1];
@@ -138,8 +138,7 @@ STATIC_ASSERT(i100 == 9);
 		return result;
 	}
 
-	ALWAYS_INLINE	// THIS SHOULD USE the index dumbass
-	static Span s_error_page(usize number) {
+	inl static Span s_error_page(usize number) {
 		const usize offset = s_index(3 + (number >= 32), number - (number >= 32 ? 32 : 0));
 
 		Span tmp;
@@ -150,14 +149,22 @@ STATIC_ASSERT(i100 == 9);
 		return tmp;
 	}
 
-	ALWAYS_INLINE
-	void clear() {
-		index = i000;
+	inl static Span s_error_page(Status::Code code) {
+		Span result;
+		result.ptr = startPtr + (u16) code;
+		result.size = (u8) result.ptr[-1];
+	
+		result.ptr += result.size + 2;
+		result.size = (u8)result.ptr[-1];
+		return result;
+	}
+
+	inl void clear() {
+		index = unset;
 	}
 
 	// Utilities
-	ALWAYS_INLINE
-	usize number() const {
+	inl usize number() const {
 		const char *str = status_str().ptr;
 		usize number = 100 * (usize)(str[0] - '0');
 		number += 10 * (usize)(str[1] - '0');
@@ -165,89 +172,55 @@ STATIC_ASSERT(i100 == 9);
 		return number;
 	}
 
-	ALWAYS_INLINE
-	bool is_valid() const {
+	inl bool is_valid() const {
 		return index > ixxx;
 	}
 
-	ALWAYS_INLINE
-	bool is_informational() const {
+	inl bool is_informational() const {
 		return index >= i100 && index < i200;
 	}
 
-	ALWAYS_INLINE
-	bool is_success() const {
+	inl bool is_success() const {
 		return index >= i200 && index < i300;
 	}
 
-	ALWAYS_INLINE
-	bool is_redirect() const {
+	inl bool is_redirect() const {
 		return index >= i300 && index < i400;
 	}
 
-	ALWAYS_INLINE
-	bool is_client_error() const {
+	inl bool is_client_error() const {
 		return index >= i400 && index < i500;
 	}
 
-	ALWAYS_INLINE
-	bool is_server_error() const {
+	inl bool is_server_error() const {
 		return index >= i500;
 	}
 
-	ALWAYS_INLINE
-	bool is_error() const {
+	inl bool is_error() const {
 		return index >= i400;
 	}
 
-	ALWAYS_INLINE
-	bool is_set() const {
-		return index != i000;
+	inl bool is_set() const {
+		return index != unset;
 	}
 
 	// Constructors and Overloads
-	ALWAYS_INLINE
-	Status() : index(i000) {}
+	inl Status() : index(unset) {}
+	inl Status(Code code) : index((u16)code) {}
 
-	ALWAYS_INLINE
-	Status(Code code) : index((u16)code) {}
+	inl explicit Status(usize number) : index(s_num_to_code(number)) {}
+	inl explicit Status(const char *str) : index((u16)s_str_to_code(str)) {}
 
-	ALWAYS_INLINE
-	explicit Status(usize number) : index(s_num_to_code(number)) {}
-
-	ALWAYS_INLINE
-	explicit Status(const char *str) : index(s_str_to_code(str)) {}
-
-	ALWAYS_INLINE
-	Status& operator=(Code code) {
+	inl Status& operator=(Code code) {
 		index = (u16)code;
 		return *this;
 	}
 
-	ALWAYS_INLINE
-	Status& operator=(usize number) {
-		index = s_num_to_code(number);
-		return *this;
-	}
-
-	ALWAYS_INLINE
-	Status& operator=(const char *str) {
-		index = s_str_to_code(str);
-		return *this;
-	}
-
-	ALWAYS_INLINE
-	Status& operator=(const u8 *str) {
-		return *this = (const char*)str;
-	}
-
-	ALWAYS_INLINE
-	bool operator==(Code code) const {
+	inl bool operator==(Code code) const {
 		return index == (u16)code;
 	}
 
-	ALWAYS_INLINE
-	bool operator!=(Code code) const {
+	inl bool operator!=(Code code) const {
 		return index != (u16)code;
 	}
 };

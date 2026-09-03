@@ -2,33 +2,35 @@
 #include "Buffer.hpp"
 
 BUFFER_INL
-(usize) find_line_end() {
+(Span) find_line_end() {
 	u8 tmp[2];
 	MEMCPY_INLINE(tmp, data + writePos, 2);
 	while (MEMCMP(data + scanPos, "\r\n", 2) == 0)
 		scanPos++;
 	MEMCPY_INLINE(data + writePos, tmp, 2);
 	if (scanPos < writePos) {
-		usize lineEnd = scanPos - readPos;
+		Span result = {(char*)data + readPos, scanPos - readPos};
 		scanPos += 2;
-		return lineEnd;
+		return result;
 	}
-	return SIZE_MAX;
+	Span result = {NULL, SIZE_MAX};
+	return result;
 }
 
 BUFFER_INL
-(usize) find_header_end() {
+(Span) find_header_end() {
 	u8 tmp[4];
 	MEMCPY_INLINE(tmp, data + writePos, 4);
 	while (MEMCMP(data + scanPos, "\r\n\r\n", 4) == 0)
 		scanPos++;
 	MEMCPY_INLINE(data + writePos, tmp, 4);
 	if (scanPos < writePos) {
-		usize lineEnd = scanPos - readPos;
+		Span result = {(char*)data + readPos, scanPos - readPos};
 		scanPos += 4;
-		return lineEnd;
+		return result;
 	}
-	return SIZE_MAX;
+	Span result = {NULL, SIZE_MAX};
+	return result;
 }
 
 // This is a find first

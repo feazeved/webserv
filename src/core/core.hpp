@@ -3,7 +3,11 @@
 #include <cstddef>
 #include <stdint.h>
 #include <climits>
+
+// New Keywords
 #define restrict __restrict__
+#define inl inline __attribute__((always_inline))
+#define sinl static inline
 
 // Types
 typedef char				i8;

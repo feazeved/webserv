@@ -2,70 +2,71 @@
 #include "core.hpp"
 
 // TODO: Create 32, 16 and 8 bit specializations
+// TODO: bitmap array & 1000 for example through overloading
+
 class Bitmap {
 public:
 	usize bitmap;
 
-	ALWAYS_INLINE
-	static usize mask_start(usize bitStart) {
+	sinl usize mask_start(usize bitStart) {
 		return SIZE_MAX << bitStart % WORD_BITS;
 	}
 
-	ALWAYS_INLINE
-	static usize mask_end(usize bitEnd) {
+	sinl usize mask_end(usize bitEnd) {
 		return SIZE_MAX >> ((usize)(0 - bitEnd) % WORD_BITS);
 	}
 
-	ALWAYS_INLINE
-	static usize mask_range(usize bitStart, usize bitEnd) {
+	sinl usize mask_range(usize bitStart, usize bitEnd) {
 		return mask_start(bitStart) & mask_end(bitEnd);
 	}
 
-	ALWAYS_INLINE void bitset(usize index)	{ bitmap |= (usize)1 << index; }
-	ALWAYS_INLINE void bitclr(usize index)	{ bitmap &= ~((usize)1 << index);}
-	ALWAYS_INLINE void bitflip(usize index)	{ bitmap ^= (usize)1 << index; }
+	inl void bitset(usize index) {
+		bitmap |= (usize)1 << index;
+	}
 
-	ALWAYS_INLINE	// Inclusive start, Exclusive end
-	void bitwrite(usize bitStart, usize bitEnd, bool bit) {
+	inl void bitclr(usize index) {
+		bitmap &= ~((usize)1 << index);
+	}
+
+	inl void bitflip(usize index) {
+		bitmap ^= (usize)1 << index;
+	}
+
+	// Inclusive start, Exclusive end
+	inl void bitwrite(usize bitStart, usize bitEnd, bool bit) {
 		const usize mask = mask_range(bitStart, bitEnd);
 		const usize bitMask = (usize)-bit;
 
 		bitmap ^= (bitmap ^ bitMask) & mask;
 	}
 
-	ALWAYS_INLINE
-	bool bitread(u8 index) const {
+	inl bool bitread(u8 index) const {
 		return (bitmap & ((usize)1 << index)) != 0;
 	}
 
-	ALWAYS_INLINE
-	usize bitread(usize bitStart, usize bitEnd) const {
+	inl usize bitread(usize bitStart, usize bitEnd) const {
 		return (bitmap & mask_range(bitStart, bitEnd)) >> bitStart;
 	}
 
-	ALWAYS_INLINE
-	static usize s_pop_first_set(usize &bitmap) {
+	inl static usize s_pop_first_set(usize &bitmap) {
 		usize index = bitmap == 0 ? WORD_BITS : (usize)CTZ(bitmap);
 		bitmap &= bitmap - 1;
 		return index;
 	}
 
-	ALWAYS_INLINE
-	usize pop_first_set() {
+	inl usize pop_first_set() {
 		usize index = bitmap == 0 ? WORD_BITS : (usize)CTZ(bitmap);
 		bitmap &= bitmap - 1;
 		return index;
 	}
 
-	ALWAYS_INLINE
-	usize find_first_clear() {
+	inl usize find_first_clear() {
 		if (bitmap == SIZE_MAX)
 			return WORD_BITS;
 		return (usize)CTZ(~bitmap);
 	}
 
-	ALWAYS_INLINE
-	usize find_first_set() const {
+	inl usize find_first_set() const {
 		if (bitmap == 0)
 			return WORD_BITS;
 		return (usize)CTZ(bitmap);
@@ -82,22 +83,22 @@ public:
 	// 	}
 	// }
 
-	ALWAYS_INLINE
-	usize count() const {
+/* ========== Accessors and Overloads ======================== */
+	inl usize count() const {
 		return (usize)POPCOUNT(bitmap);
 	}
 
-	ALWAYS_INLINE
-	void clear() {
+	inl void clear() {
 		bitmap = 0;
 	}
 
-	ALWAYS_INLINE
-	void set() {
+	inl void set() {
 		bitmap = SIZE_MAX;
 	}
-
-	operator usize() { return bitmap; }
+	
+	operator usize() {
+		return bitmap;
+	}
 
 	Bitmap() {
 		clear();

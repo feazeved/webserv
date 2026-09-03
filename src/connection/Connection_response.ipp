@@ -2,52 +2,52 @@
 #include "Connection.hpp"
 
 CONNECTION_INL
-(isize) build_cgi_header() {
+(Status::Code) build_cgi_header(Status::Code code) {
 	Buffer64 tmpBuffer = {};
 	tmpBuffer.writePos += 256;
 	tmpBuffer.readPos += 256;
 	tmpBuffer.scanPos += 256;
+
 	const usize headerEnd = sendBuffer.scanPos;
 	sendBuffer.scanPos = sendBuffer.readPos;
-	status = Status::i200;
 
 	while (sendBuffer.readPos < headerEnd) {
-		const usize lineLength = sendBuffer.find_line_end();
-		if (lineLength == SIZE_MAX)
-			return -1;
-		if (lineLength == 0) {
+		const Span line = sendBuffer.find_line_end();
+		if (line.ptr == NULL)
+			return Status::i500;
+		if (line.size == 0) {
 			sendBuffer.readPos = sendBuffer.scanPos;
 			break;
 		}
-		if (parse_cgi_line(tmpBuffer) == -1) {
-			return -1;
-		}
+		if (parse_cgi_line(tmpBuffer) != Status::ok)
+			return Status::i500;
 		sendBuffer.readPos = sendBuffer.scanPos;
 	}
 	if (sendBuffer.readPos != headerEnd)
-		return -1;
+		return Status::i500;
 
+	Span statusStr = Status::s_status_str(code);
+	
 	tmpBuffer.append("Connection: close\r\n\r\n");
 	tmpBuffer.append(sendBuffer.rptr(), sendBuffer.size());
 	tmpBuffer.prepend("\r\n");
-	tmpBuffer.prepend(status.status_str());
+	tmpBuffer.prepend(statusStr);
 	tmpBuffer.prepend("HTTP/1.1 ");
 	if (tmpBuffer.size() > sendBuffer.capacity())
-		return -1;
+		return Status::i500;
 	sendBuffer.clear();
 	sendBuffer.append(tmpBuffer.rptr(), tmpBuffer.size());
 	options &= ~(u16)Options::KEEP_ALIVE;
-	return 0;
+	return code;
 }
 
 CONNECTION_INL
 (void) build_header(Status::Code code) {
-	status = code;
-	Span str = status.status_str();
+	Span statusStr = Status::s_status_str(code);
 
 	sendBuffer.clear();
 	sendBuffer.append("HTTP/1.1 ");
-	sendBuffer.append(str);
+	sendBuffer.append(statusStr);		// TODO: Make htis not depend on setting status
 	sendBuffer.append("\r\nContent-Type: ");
 	sendBuffer.append_mime(contentType);
 	sendBuffer.append("\r\nContent-Length: ");
@@ -64,13 +64,12 @@ CONNECTION_INL
 // Connection: close
 // 404 Not Found
 
-// This can be moved to buffer
 CONNECTION_INL
-(void) build_error_header() {
-	Span statusStr = status.status_str();
-	Span errorPage = status.error_page();
+(void) build_error_header(Status::Code code) {
+	Span statusStr = Status::s_status_str(code);
+	Span errorPage = Status::s_error_page(code);
 
-	options &= ~(u16)Options::KEEP_ALIVE;	// Should not be needed
+	options &= ~(u16)Options::KEEP_ALIVE;
 	sendBuffer.clear();
 	sendBuffer.append("HTTP/1.1 ");
 	sendBuffer.append(statusStr);

@@ -9,7 +9,7 @@ void s_directive_error_page(Parser::Directive &dir, VirtualServer &server) {
 	if (s_length_check(path.size))
 		PERR_EXIT(1, "Error: Invalid error page");
 	for (usize index = 0; index + 1 < dir.args.count; index++) {
-		usize error = s_strtol10(dir.args[index].ptr, dir.args[index].size);
+		usize error = fn::strtol10(dir.args[index].ptr);
 		Status status(error);
 		if (dir.args[index].size != 3 || !status.is_error())
 			PERR_EXIT(1, "Error: Invalid error number");
@@ -33,7 +33,7 @@ void s_directive_listen(Arena &arena, const Span &value, VirtualServer &server) 
 		port = separator + 1;
 		portLength -= hostLength + 1;
 	}
-	server.port = s_strtol10(port, portLength);
+	server.port = fn::strtol10(port);
 	if (server.port < 1 || server.port > 65535)
 		PERR_EXIT(1, "Error: Invalid port");
 }
@@ -61,7 +61,7 @@ void s_directive_body_size(const Span &value, usize &bodySize) {
 	if (digitLength == 0)
 		PERR_EXIT(1, "Error: Invalid max body size");
 
-	const usize bytes = s_strtol10(str, digitLength);
+	const usize bytes = fn::strtol10(str);
 	if (bytes == SIZE_MAX || bytes > (SIZE_MAX >> factor))
 		PERR_EXIT(1, "Error: Invalid max body size");
 	bodySize = bytes << factor;

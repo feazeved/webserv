@@ -3,22 +3,22 @@
 
 CONNECTION_INL
 (isize) parse(Epoll &epoll) {
-	usize lineLength;
-	isize rvalue;
+	Span line;
+	Status::Code code;
 
 	if (read_from_client(epoll) < 0)
 		return -1;
-	while ((lineLength = recvBuffer.find_line_end()) != SIZE_MAX) {
-		if (lineLength == 0) {
+	while ((line = recvBuffer.find_line_end()) != NULL) {
+		if (line.size == 0) {
 			recvBuffer.readPos = recvBuffer.scanPos;
 			return setup(epoll);
 		}
 		if ((options & 7) == 0)	// Methods are not set
-			rvalue = parse_first_line(lineLength);
+			code = parse_first_line(line);
 		else
-			rvalue = parse_line(lineLength);
-		if (rvalue == -1)
-			return flush_setup_close(epoll, (Status::Code)status.index);
+			code = parse_line(line);
+		if (code != Status::unset)
+			return flush_setup_close(epoll, code);
 	}
 	if (recvBuffer.bytes_free() < recvBuffer.minReadSize)
 		return flush_setup_close(epoll, Status::i431);

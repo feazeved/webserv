@@ -16,57 +16,57 @@ TODO:	Finding can be two operations, Setting or can be one operation
 */
 
 namespace fn {
+// 
+FN_ATTR(pure) static inline
+Span find_dot(Span span) {
+	char* const end = span.ptr + span.size;
+	Span ext = {end, 0};
 
-	template <usize count, usize size>
-	static inline
-	isize s_match(const u8 *ptr, usize length, const u8 (&ltable)[count][size]) {
-		u8 buffer[size * 2];
-	
-		length = length >= size ? 0 : length;
-		MEMCPY_INLINE(buffer, ptr, size);
-		for (usize i = 0; i < size; i++)
-			buffer[i] |= 32;
-		MEMSET_INLINE(buffer + length, 0, size);
-	
-		for (usize i = 0; i < count; i++) {
-			if (MEMCMP(ltable[i], buffer, size) == 0)
-				return (isize)i + 1;
+	for (char* ptr = span.ptr; ptr < end; ptr++) {
+		if (*ptr == '/') {
+			ext.ptr = end;
+			ext.size = 0;
 		}
-		return 0;
-	}
-	
-	static inline
-	isize match_field(Span field) {
-		static const u8 ltable[][32] = FIELD_TABLE;
-
-		return s_match((u8*)field.ptr, field.size, ltable);
-	}
-
-	static inline
-	Span find_dot(Span span) {
-		char* const end = span.ptr + span.size;
-		Span ext = {end, 0};
-
-		for (char* ptr = span.ptr; ptr < end; ptr++) {
-			if (*ptr == '/') {
-				ext.ptr = end;
-				ext.size = 0;
-			}
-			else if (*ptr == '.') {
-				ext.ptr = ptr + 1;
-				ext.size = (usize)(end - ext.ptr);
-			}
+		else if (*ptr == '.') {
+			ext.ptr = ptr + 1;
+			ext.size = (usize)(end - ext.ptr);
 		}
-		return ext;
 	}
+	return ext;
+}
 
-	static inline
-	isize match_mime(Span target) {
-		static const u8 ltable[][8] = MIME_TABLE;
-		Span ext = find_dot(target);
+template <usize count, usize size>
+FN_ATTR(pure, always_inline) static inline
+isize s_match(const u8 *ptr, usize length, const u8 (&ltable)[count][size]) {
+	u8 buffer[size * 2];
 
-		return s_match((u8*)ext.ptr, ext.size, ltable);
+	length = length >= size ? 0 : length;
+	MEMCPY_INLINE(buffer, ptr, size);
+	for (usize i = 0; i < size; i++)
+		buffer[i] |= 32;
+	MEMSET_INLINE(buffer + length, 0, size);
+
+	for (usize i = 0; i < count; i++) {
+		if (MEMCMP(ltable[i], buffer, size) == 0)
+			return (isize)i + 1;
 	}
+	return 0;
+}
+
+FN_ATTR(pure, flatten) static inline
+isize match_field(Span field) {
+	static const u8 ltable[][32] = FIELD_TABLE;
+
+	return s_match((u8*)field.ptr, field.size, ltable);
+}
+
+FN_ATTR(pure, flatten) static inline
+isize match_mime(Span target) {
+	static const u8 ltable[][8] = MIME_TABLE;
+	Span ext = find_dot(target);
+
+	return s_match((u8*)ext.ptr, ext.size, ltable);
+}
 }
 
 // static inline

@@ -20,13 +20,7 @@ CONNECTION_INL
 	if (bytesWritten == -1) {
 		close(writeFd);
 		writeFd = -1;
-		status = Status::i500;
-		return -1;
-	}
-
-	if (bodySize == 0) {	// Must guarantee that bodySize is 0
-		close(writeFd);
-		writeFd = -1;	// Finished reading
+		return flush_setup_close(epoll, Status::i500);
 	}
 
 	bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
@@ -37,14 +31,19 @@ CONNECTION_INL
 
 	// isize delta = ((bytesWritten < 0 || bytesRead < 0) ? -1 : 1);
 
-	if (!status.is_set()) {
-		if (sendBuffer.find_header_end() != SIZE_MAX) {
+	if (bodySize == 0) {
+		Span header = sendBuffer.find_header_end();
+		if (header.ptr == NULL) {
 			if (sendBuffer.is_full())
 				return -1;
 			return 0;	// Still no CGI Header
 		}
-		build_cgi_header();
-		flush_setup(epoll, (Status::Code) status.index);
+		Status::Code code = build_cgi_header(Status::i200);
+		close(writeFd);
+		writeFd = -1;	// Finished reading
+		if (code >= Status::i400)
+			flush_setup_close(epoll, code);
+		flush_setup(epoll, code);
 	}
 	return bytesRead;
 }
@@ -112,7 +111,7 @@ CONNECTION_INL
 
 	Environment::append(STRPREP(req.query.ptr, "QUERY_STRING="));
 	if (req.cookies.size != 0)
-		Environment::append(STRPREP(req.cookies.ptr, "HTTP_COOKIE="));	// TODO: Reminder to null terminate cookies and query
+		Environment::append(STRPREP(req.cookies.ptr, "HTTP_COOKIE="));
 	Environment::append(buffer.append("HTTP_HOST="));
 	buffer.append(req.host.ptr, req.host.size + 1);
 

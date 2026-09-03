@@ -8,6 +8,7 @@
 #include "Arena.hpp"
 #include "Span.hpp"
 #include "VirtualServer.hpp"
+#include "pure_functions.hpp"
 
 #define PARSER_INL(ret_type) ret_type inline Parser::
 

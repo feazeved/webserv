@@ -1,5 +1,8 @@
 #pragma once
+#include <unistd.h>
+
 #include "core.hpp"
+#include "tables.hpp"
 
 struct Span {
 	char* ptr;
@@ -12,6 +15,17 @@ struct Span {
 	template <usize length>
 	bool operator==(const char (&literal)[length]) const {
 		return size == length - 1 && STRCMP(ptr, literal) == 0;
+	}
+
+	template <usize length>
+	bool strcasecmp(const char (&string)[length]) {
+		u8 buffer[length];
+		const usize strLength = length - 1;
+
+		MEMCPY_INLINE(buffer, ptr, strLength);
+		for (usize i = 0; i < strLength; i++)
+			buffer[i] |= 32;
+		return MEMCMP(buffer, string, strLength) == 0;
 	}
 
 	template <usize length>
@@ -30,10 +44,10 @@ struct Span {
 	}
 };
 
-// struct Span32 {
-// 	u32 index;
-// 	u32 length;
-// };
+struct Span32 {
+	u32 index;
+	u32 length;
+};
 
 // A ZPtr could be an object that only contains its index
 // The length is encoded in the location, so extracting is ptr = *zptr + 8, length = *zptr[8]

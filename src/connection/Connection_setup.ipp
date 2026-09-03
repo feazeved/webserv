@@ -50,7 +50,7 @@ CONNECTION_INL
 	clear();
 	options &= ~(u16)Options::KEEP_ALIVE;
 	mode = Mode::FLUSH;
-	build_error_header();
+	build_error_header(code);
 	if (epoll.modify(clientFd, EPOLLOUT, epollState))
 		return -1;
 	return write_to_client(epoll);
@@ -61,10 +61,6 @@ CONNECTION_INL
 	const bool isBodyMethod = options & Options::POST;
 	const bool encodingSet = options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH);
 
-	if (status.is_set())
-		return flush_setup_close(epoll, (Status::Code) status.index);	// An error caused early interruption
-	if ((options & 0xF) == 0)
-		return flush_setup_close(epoll, Status::i400);	// TODO: Method not set, should be impossible. Remove in future
 	if ((options & Options::HOST) == 0)
 		return flush_setup_close(epoll, Status::i400);	// Host not set
 	if (!isBodyMethod && encodingSet)
@@ -76,7 +72,7 @@ CONNECTION_INL
 		bodySize = cfg->maxBodySize;
 
 	startTime = Clock::time_elapsed();	// Resets the clock on a valid response header
-	if (req.location->redirectStatus.is_valid()) {
+	if (req.location->redirectStatus.is_valid()) {		// TODO: Create a separate function for this
 		status = (Status::Code)req.location->redirectStatus.index;
 		bodySize = 0;
 		options &= ~(u16)Options::KEEP_ALIVE;
