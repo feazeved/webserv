@@ -86,13 +86,14 @@ public:
 		pid_t pidList[ConnectionPool::elementCount];
 
 		for (usize i = 0; i < connections.blockCount; i++) {
-			Bitmap bitmap = connections.delBitmap[i];
+			Bitmap &bitmap = connections.delBitmap[i];
 			usize outerIndex = 64 * i;
-			while ((elementIndex = bitmap.pop_first_set()) != WORD_BITS) {
+			while ((elementIndex = bitmap.pop_first_set()) != WORD_BITS) {	// Also clears the bitmap
 				usize linearIndex = outerIndex + elementIndex;
 				Connection& connection = connections.connections[linearIndex];
 				if (connection.processId != -1 && waitpid(connection.processId, NULL, WNOHANG))
 					pidList[failCount++] = connection.processId;
+				connections.free_slot(linearIndex);
 			}
 		}
 
@@ -111,6 +112,7 @@ public:
 	
 		for (usize i = 0; i < connections.blockCount; i++) {
 			Bitmap bitmap = connections.elementBitmap[i];
+			bitmap.bitmap &= ~connections.delBitmap[i];
 			usize outerIndex = 64 * i;
 			while ((elementIndex = bitmap.pop_first_set()) != WORD_BITS) {
 				usize linearIndex = outerIndex + elementIndex;

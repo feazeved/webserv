@@ -23,7 +23,6 @@ SERVER_INL
 		PERR_RETURN((void)0, "Error: Connection capacity reached");
 	}
 	if (epoll.add(clientFd, EPOLLIN, (u32)connectionIndex, serverIndex)) {
-		connections[connectionIndex].end_connection();
 		connections.free_slot(connectionIndex);
 		PERR_RETURN((void)0, "Error: Failed to add client event");
 	}
@@ -32,7 +31,6 @@ SERVER_INL
 SERVER_INL
 (void) remove_connection(u32 connectionIndex) {
 	epoll.remove(connections[connectionIndex].clientFd);
-	connections.free_slot(connectionIndex);
 	connections.mark_for_deletion(connectionIndex);
 }
 

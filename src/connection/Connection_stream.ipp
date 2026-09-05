@@ -33,25 +33,43 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(isize) write_to_server(Epoll &epoll) {
+(isize) write_to_server() {
 	isize bytesWritten = recvBuffer.write(writeFd, bodySize);
 	if (bytesWritten < 0)
 		return bytesWritten;
+	bodySize -= (usize) bytesWritten;
+	return bytesWritten;
 }
 
+// TODO: The buffer is only going to fill with data related to the chunks, decide if compaction is worth given current length
+// Optimization opportunity here to have src copy directly to itself
+// Otherwise just prepend the remainder to the end of what was read
 CONNECTION_INL
-(isize) write_to_server_chunked(Epoll &epoll) {
-	if (!epoll.is_readable())
+(isize) write_to_server_chunked() {
+	if (recvBuffer.readPos < recvBuffer.scanPos) {
+		if (recvBuffer.write(writeFd, MIN(recvBuffer.scanPos - recvBuffer.readPos, (usize)ATOMIC_IOSIZE)) < 0)
+			return -1;
 		return 0;
-	epoll.clr_read_flag();
-	isize bytesRead = recvBuffer.read(clientFd, ATOMIC_IOSIZE);
-
-	if (options & Options::CHUNKED_LENGTH) {
-		bytesWritten = recvBuffer.decode(writeFd, chunkSize, bodySize);
-		if (bytesWritten == -1)
-			return flush_setup_close(epoll, Status::i400);
-		if (bytesWritten == -3)
-			return flush_setup_close(epoll, Status::i413);
 	}
-	return bytesRead == 0 ? -1 : bytesRead;
+
+	HTTP_Buffer tmpBuffer = {};
+	isize result = recvBuffer.dechunk(tmpBuffer, chunkSize, bodySize);
+	if (result == -1)
+		return -1;
+	if (tmpBuffer.size() == 0) {
+		recvBuffer.scanPos = recvBuffer.readPos;
+		recvBuffer.compact();
+		return result;
+	}
+
+	if (tmpBuffer.write(writeFd, ATOMIC_IOSIZE) < 0)
+		return -1;
+
+	const usize decodedRemaining = tmpBuffer.size();
+	const usize rawRemaining = recvBuffer.size();
+	if (rawRemaining != 0)
+		tmpBuffer.append(recvBuffer.rptr(), rawRemaining);
+	recvBuffer.bufcpy(tmpBuffer);
+	recvBuffer.scanPos = decodedRemaining;
+	return result;
 }

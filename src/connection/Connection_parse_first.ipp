@@ -60,23 +60,26 @@ CONNECTION_INL
 (Status::Code) validate_path(char* str, char* end) {
 	char* writePtr = str;
 	while (str < end) {
-		if (g_asciiLut[(u8)*str] > ASCII_RFC_SYMBOLS)
-			return Status::i400;
+		u8 value = (u8)*str;
 		if (*str == '%') {
 			if (g_asciiLut[(u8)str[1]] > ASCII_HEX)
 				return Status::i400;
 			if (g_asciiLut[(u8)str[2]] > ASCII_HEX)
 				return Status::i400;
-			*writePtr++ = (char)(16u * (u8)str[1] + (u8)str[2]);
-			str += 3;
-			continue;
+			value = (u8)(g_asciiLut[(u8)str[1]] * 16 + g_asciiLut[(u8)str[2]]);
+			if (value == 0)
+				return Status::i400;
+			str += 2;
 		}
-		*writePtr++ = *str++;
+		else if (g_asciiLut[value] > ASCII_RFC_SYMBOLS)
+			return Status::i400;
+		*writePtr++ = (char)value;
+		str++;
 	}
 	req.target.size = (usize)(writePtr - req.target.ptr);
 	*writePtr = '\0';
 	for (char* ptr = req.target.ptr; ptr < writePtr; ptr++) {
-		if (STRCMP(ptr, "/..") == 0)
+		if (STRCMP(ptr, "/../") == 0 || STRCMP(ptr, "/..\0") == 0)
 			return Status::i400;
 	}
 	return match_location();

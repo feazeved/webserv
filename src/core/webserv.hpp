@@ -6,13 +6,21 @@
 // These are exclusive states
 namespace Mode {
 	enum e_http_mode {
-		PARSE = 0,
-		GET = 1 << 0,
-		POST = 1 << 1,
-		FLUSH = 1 << 2,	// Flushes whatever was in sendBuffer
-		CGI = 1 << 3,
-		SSE = 1 << 4,
-		AUTOINDEX = 1 << 5
+		FIRST_PARSE = 0,	// Changes to PARSE after first line
+		PARSE,				// Calls setup when finished
+
+		GET,				// Changes to FLUSH upon bodysize == 0
+		AUTOINDEX,			// Changes to FLUSH upon entry == NULL
+
+		POST,				// Does not read from client, changes to FLUSH upon bodySize == 0
+		POST_FIXED,			// Reads from client, changes to POST on recvBuffer.size() >= bodySize
+		POST_CHUNKED,		// Reads from client, changes to POST on chunk termination
+
+		CGI,				// Does not read from client, changes to FLUSH upon EOF on pipe end
+		CGI_FIXED,			// Reads from client, changes to CGI on recvBuffer.size() >= bodySize
+		CGI_CHUNKED,		// Reads from client, changes to CGI on chunk termination
+	
+		FLUSH				// Changes to FIRST_PARSE if keepalive is on. else terminates
 	};
 }
 

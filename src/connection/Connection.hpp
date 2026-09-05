@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <errno.h>
@@ -45,7 +46,7 @@ struct Connection {
 	Mode::e_http_mode mode;
 	u32 startTime;
 	u8 epollState;
-	usize bodySize;
+	usize bodySize;	// Remaining transfer bytes; maximum allowance while dechunking
 	i32 clientFd, readFd;
 	HTTP_Buffer recvBuffer;
 
@@ -63,7 +64,7 @@ struct Connection {
 	};
 
 	union {
-		usize chunkSize;
+		usize chunkSize;	// SIZE_MAX: header, SIZE_MAX - 1: trailers, SIZE_MAX - 2: complete
 		DIR* directory;
 	};
 
@@ -82,6 +83,7 @@ struct Connection {
 
 	// Configuration
 	isize dispatch(Epoll &epoll);
+	isize first_parse(Epoll &epoll);
 	isize parse(Epoll &epoll);
 	isize end_connection();
 
@@ -94,12 +96,18 @@ struct Connection {
 	isize flush(Epoll &epoll);
 	isize write_to_client(Epoll &epoll);
 	isize read_from_client(Epoll &epoll);
+	isize write_to_server();
+	isize write_to_server_chunked();
 	char* append_target_path(Buffer64 &buffer);
 
 	// Streaming
 	isize cgi(Epoll &epoll);
+	isize cgi_fixed(Epoll &epoll);
+	isize cgi_chunked(Epoll &epoll);
 	isize upload_file(Epoll &epoll);
 	isize download_file(Epoll &epoll);
+	isize download_file_fixed(Epoll &epoll);
+	isize download_file_chunked(Epoll &epoll);
 	isize upload_directory(Epoll &epoll);
 
 	// Setup

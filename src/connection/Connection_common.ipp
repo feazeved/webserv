@@ -55,7 +55,7 @@ CONNECTION_INL
 	contentType = Mime::OCTET_STREAM;
 	bodySize = 0;
 	chunkSize = SIZE_MAX;
-	mode = Mode::PARSE;
+	mode = Mode::FIRST_PARSE;
 	recvBuffer.clear();
 	req.clear();
 	sendBuffer.clear();

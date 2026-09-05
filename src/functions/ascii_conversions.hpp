@@ -22,7 +22,6 @@ FN_ATTR(always_inline) static inline
 Span itoa10(usize number, char* buffer, usize bufferSize) {
 	ASSERT(bufferSize >= 20, "Buffer isn't big enough for itoa");
 	char* ptr = buffer + bufferSize;
-	ptr += bufferSize;
 	*ptr = 0;
 	char *const optr = ptr;
 	do {
@@ -41,7 +40,6 @@ Span itoa16(usize number, char* buffer, usize bufferSize) {
 
 	ASSERT(bufferSize >= 16, "Buffer isn't big enough for itoa");
 	char* ptr = buffer + bufferSize;
-	ptr += bufferSize;
 	*ptr = 0;
 	char *const optr = ptr;
 	do {

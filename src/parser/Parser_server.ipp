@@ -140,7 +140,7 @@ PARSER_INL
 	while (tokArray[0].type != Token::CLOSE_BRACKET) {
 		if (tokArray[0].value == "location") {
 			tokArray.ptr++;
-			ParsedLocation loc = parse_location(tokArray, server);
+			ParsedLocation loc = parse_location(tokArray);
 			for (usize index = 0; index < locationIndex; index++) {
 				const Span &path = parsedLocations[index].uri;
 				if (path.size == loc.uri.size && MEMCMP(path.ptr, loc.uri.ptr, path.size) == 0)

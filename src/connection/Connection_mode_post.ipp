@@ -2,31 +2,50 @@
 #include "Connection.hpp"
 
 CONNECTION_INL
-(isize) download_file(Epoll &epoll) {
-	isize bytesWritten = 0;
+(isize) download_file_chunked(Epoll &epoll) {
+	isize result = write_to_server_chunked();
+	if (result == -1)
+		return -1;
+	if (result == 1) {
+		bodySize = recvBuffer.scanPos - recvBuffer.readPos;
+		mode = Mode::POST;
+		if (epoll.modify(clientFd, EPOLLOUT, epollState))
+			return -1;
+		return download_file(epoll);
+	}
 	if (read_from_client(epoll) == -1)
 		return -1;
-	if (options & Options::CHUNKED_LENGTH)
-		bytesWritten = recvBuffer.decode(writeFd, chunkSize, bodySize);
-	else {
-		bytesWritten = recvBuffer.write(writeFd, bodySize);
-		if (bytesWritten > 0)
-			bodySize -= (usize) bytesWritten;
-	}
+	return 0;
+}
 
-	if (bytesWritten == -1) {
-		bool isChunked = options & Options::CHUNKED_LENGTH;
-		Status::Code code = isChunked ? Status::i400 : Status::i500;
-		return flush_setup_close(epoll, code);
+CONNECTION_INL
+(isize) download_file_fixed(Epoll &epoll) {
+	isize bytesWritten = write_to_server();
+	if (bytesWritten < 0)
+		return flush_setup_close(epoll, Status::i500);
+	if (recvBuffer.size() < bodySize && read_from_client(epoll) == -1)
+		return -1;
+	if (recvBuffer.size() >= bodySize) {
+		mode = Mode::POST;
+		if (epoll.modify(clientFd, EPOLLOUT, epollState))
+			return -1;
+		return download_file(epoll);
 	}
+	return bytesWritten;
+}
 
+CONNECTION_INL
+(isize) download_file(Epoll &epoll) {
+	isize bytesWritten = write_to_server();
+	if (bytesWritten < 0)
+		return flush_setup_close(epoll, Status::i500);
 	if (bodySize == 0) {
 		close(writeFd);
 		writeFd = -1;	// Finished reading
 		build_header(Status::i201);
 		return flush_setup(epoll, Status::i201);
 	}
-	return write_to_client(epoll);
+	return bytesWritten;
 }
 
 CONNECTION_INL
@@ -40,5 +59,7 @@ CONNECTION_INL
 	writeFd = open(pathBuffer, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NONBLOCK, 0644);
 	if (writeFd == -1)
 		return flush_setup_close(epoll, s_get_status());
-	return download_file(epoll);
+	if (mode == Mode::POST_FIXED)
+		return download_file_fixed(epoll);
+	return download_file_chunked(epoll);
 }

@@ -6,46 +6,70 @@
 */
 
 CONNECTION_INL
+(isize) cgi_fixed(Epoll &epoll) {
+	write_to_server();
+	if (recvBuffer.size() < bodySize && read_from_client(epoll) == -1)
+		return -1;
+	if (recvBuffer.size() >= bodySize) {
+		mode = Mode::CGI;
+		if (epoll.modify(clientFd, EPOLLOUT, epollState))
+			return -1;
+	}
+	return cgi(epoll);
+}
+
+CONNECTION_INL
+(isize) cgi_chunked(Epoll &epoll) {
+	isize bytesWritten = write_to_server_chunked();
+	if (bytesWritten == -1)
+		return flush_setup_close(epoll, Status::i400);
+	if (bytesWritten == -3)
+		return flush_setup_close(epoll, Status::i413);
+	if (chunkSize == SIZE_MAX - 2) {
+		bodySize = recvBuffer.scanPos - recvBuffer.readPos;
+		mode = Mode::CGI;
+		if (epoll.modify(clientFd, EPOLLOUT, epollState))
+			return -1;
+	}
+	else if (read_from_client(epoll) == -1)
+		return -1;
+	return cgi(epoll);
+}
+
+CONNECTION_INL
 (isize) cgi(Epoll &epoll) {
-	isize bytesWritten, bytesRead;
-
-	if (options & Options::CHUNKED_LENGTH)
-		bytesWritten = recvBuffer.decode(writeFd, chunkSize, bodySize);
-	else {
-		bytesWritten = recvBuffer.write(writeFd, bodySize);
-		if (bytesWritten > 0)
-			bodySize -= (usize) bytesWritten;
+	if (mode == Mode::CGI && writeFd >= 0) {
+		write_to_server();
+		if (bodySize == 0) {
+			close(writeFd);
+			writeFd = -1;
+		}
 	}
 
-	if (bytesWritten == -1) {
-		close(writeFd);
-		writeFd = -1;
-		return flush_setup_close(epoll, Status::i500);
+	isize bytesRead = 0;
+	if (readFd >= 0) {
+		bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
+		if (bytesRead == 0) {
+			close(readFd);
+			readFd = -1;
+		}
 	}
 
-	bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
-	if (bytesRead == 0) {
-		close(readFd);
-		readFd = -1;
-	}
-
-	// isize delta = ((bytesWritten < 0 || bytesRead < 0) ? -1 : 1);
-
-	if (bodySize == 0) {
+	if (!status.is_set()) {
 		Span header = sendBuffer.find_header_end();
 		if (header.ptr == NULL) {
-			if (sendBuffer.is_full())
-				return -1;
+			if (bytesRead == -2 || readFd == -1)
+				return flush_setup_close(epoll, Status::i500);
 			return 0;	// Still no CGI Header
 		}
 		Status::Code code = build_cgi_header(Status::i200);
-		close(writeFd);
-		writeFd = -1;	// Finished reading
-		if (code >= Status::i400)
-			flush_setup_close(epoll, code);
-		flush_setup(epoll, code);
+		if (code == Status::ixxx)
+			return flush_setup_close(epoll, Status::i500);
+		status = code;
 	}
-	return bytesRead;
+	if (readFd == -1)
+		return flush_setup(epoll, (Status::Code)status.index);
+	return write_to_client(epoll);
 }
 
 static inline
@@ -162,6 +186,12 @@ CONNECTION_INL
 	close(fdOut[1]);
 	readFd = fdOut[0];
 	writeFd = fdIn[1];
+	sendBuffer.clear();
+	if (mode == Mode::CGI_FIXED)
+		return cgi_fixed(epoll);
+	if (mode == Mode::CGI_CHUNKED)
+		return cgi_chunked(epoll);
+	ASSERT(mode == Mode::CGI, "Invalid CGI mode");
 	return cgi(epoll);
 
 	ErrorCloseOutput:	close(fdOut[0]), close(fdOut[1]);

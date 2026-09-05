@@ -23,7 +23,7 @@ CONNECTION_INL
 	contentType = Mime::OCTET_STREAM;
 	bodySize = 0;
 	chunkSize = SIZE_MAX;
-	mode = Mode::PARSE;
+	mode = Mode::FIRST_PARSE;
 	req.clear();
 	sendBuffer.clear();
 	status.clear();
@@ -91,12 +91,19 @@ CONNECTION_INL
 	sendBuffer.clear();
 	if (req.location->redirectStatus.is_valid())
 		return redirect_setup(epoll, (Status::Code)req.location->redirectStatus.index);
-	mode = (options & Options::CGI) ? Mode::CGI : (Mode::e_http_mode)(options & 7);
+	if (options & Options::CGI && !(options & Options::POST))
+		mode = Mode::CGI;
+	else if (options & Options::CGI && (options & Options::POST))
+		mode = (options & Options::FIXED_LENGTH) ? Mode::CGI_FIXED : Mode::CGI_CHUNKED;
+	else if (options & Options::GET)
+		mode = Mode::GET;
+	else if (options & Options::POST)
+		mode = (options & Options::FIXED_LENGTH) ? Mode::POST_FIXED : Mode::POST_CHUNKED;
 	if (epoll.modify(clientFd, EPOLLIN | EPOLLOUT, epollState))
 		return -1;
-	if (mode == Mode::POST)
+	if (mode == Mode::POST_FIXED || mode == Mode::POST_CHUNKED)
 		return post_setup(epoll);
-	if (mode == Mode::CGI)
+	if (mode == Mode::CGI || mode == Mode::CGI_FIXED || mode == Mode::CGI_CHUNKED)
 		return cgi_setup(epoll);
 	if (mode == Mode::GET)
 		return get_setup(epoll);

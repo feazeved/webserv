@@ -84,7 +84,7 @@ CONNECTION_INL
 		return Status::ok;
 	}
 
-	Span value = recvBuffer.get_field_value(readEnd);
+	Span value = sendBuffer.get_field_value(readEnd);
 	if (value.ptr == NULL)
 		return Status::ixxx;	// Rejects empty values
 

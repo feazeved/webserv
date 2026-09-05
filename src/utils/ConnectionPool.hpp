@@ -70,7 +70,6 @@ public:
 		usize elementIndex = linearIndex % 64;
 		usize blockIndex = linearIndex / 64;
 
-		connections[linearIndex].end_connection();
 		blockBitmap.bitclr(blockIndex);
 		elementBitmap[blockIndex].bitclr(elementIndex);
 	}
@@ -79,6 +78,7 @@ public:
 		usize elementIndex = linearIndex % 64;
 		usize blockIndex = linearIndex / 64;
 
+		connections[linearIndex].end_connection();
 		delBitmap[blockIndex].bitset(elementIndex);
 	}
 

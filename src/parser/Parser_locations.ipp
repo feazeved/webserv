@@ -50,7 +50,7 @@ PARSER_INL
 		length = dir.args[0].size;
 	}
 	else if (dir.name == "return") {
-		if (dir.args[0].size != 3 || dir.args.count != 2)
+		if (dir.args.count != 2 || dir.args[0].size != 3)
 			PERR_EXIT(1, "Error: Invalid redirect");
 		const usize status = fn::strtol10(dir.args[0].ptr);
 		location.redirectStatus.index = Status::s_num_to_code(status);
@@ -105,7 +105,7 @@ PARSER_INL
 }
 
 PARSER_INL
-(Parser::ParsedLocation) parse_location(ArrayView<Token> &tokArray, VirtualServer &server) {
+(Parser::ParsedLocation) parse_location(ArrayView<Token> &tokArray) {
 	ParsedLocation loc;
 	loc.uri = tokArray[0].value;
 

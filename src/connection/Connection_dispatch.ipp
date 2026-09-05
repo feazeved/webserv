@@ -2,30 +2,44 @@
 #include "Connection.hpp"
 
 CONNECTION_INL
-(isize) parse(Epoll &epoll) {
-	Span line;
-	Status::Code code;
-
-	if (read_from_client(epoll) < 0)
+(isize) first_parse(Epoll &epoll) {
+	if (read_from_client(epoll) == -1)
 		return -1;
+
+	Span line = recvBuffer.find_line_end();
+	if (line == NULL) {
+		if (recvBuffer.capacity() - recvBuffer.size() < recvBuffer.minReadSize)
+			return flush_setup_close(epoll, Status::i431);
+		return 0;
+	}
+
+	Status::Code code = parse_first_line(line);
+	if (code != Status::unset)
+		return flush_setup_close(epoll, code);
+	mode = Mode::PARSE;
+	return parse(epoll);
+}
+
+CONNECTION_INL
+(isize) parse(Epoll &epoll) {
+	if (read_from_client(epoll) == -1)
+		return -1;
+
+	Span line;
 	while ((line = recvBuffer.find_line_end()) != NULL) {
 		if (line.size == 0) {
 			recvBuffer.readPos = recvBuffer.scanPos;
 			return setup(epoll);
 		}
-		if ((options & 7) == 0)	// Methods are not set
-			code = parse_first_line(line);
-		else
-			code = parse_line(line);
+		Status::Code code = parse_line(line);
 		if (code != Status::unset)
 			return flush_setup_close(epoll, code);
 	}
-	if (recvBuffer.bytes_free() < recvBuffer.minReadSize)
+	if (recvBuffer.capacity() - recvBuffer.size() < recvBuffer.minReadSize)
 		return flush_setup_close(epoll, Status::i431);
 	return 0;
 }
 
-// TODO: Create a separate state for parse_first. Makes things less messy
 /*
 	A mode is the state that the connection is in. It's an exclusive variable, not a bitfield
 	The connection starts in parse mode. When it is done parsing, it calls:
@@ -39,12 +53,17 @@ CONNECTION_INL
 CONNECTION_INL
 (isize) dispatch(Epoll &epoll) {
 	switch (mode) {
-		case Mode::PARSE:		return parse(epoll); break;
-		case Mode::GET:			return upload_file(epoll); break;
-		case Mode::POST:		return download_file(epoll); break;
-		case Mode::FLUSH:		return flush(epoll); break;
-		case Mode::CGI:			return cgi(epoll); break;
-		case Mode::AUTOINDEX:	return upload_directory(epoll); break;
+		case Mode::FIRST_PARSE:		return first_parse(epoll); break;
+		case Mode::PARSE:			return parse(epoll); break;
+		case Mode::GET:				return upload_file(epoll); break;
+		case Mode::POST:			return download_file(epoll); break;
+		case Mode::POST_FIXED:		return download_file_fixed(epoll); break;
+		case Mode::POST_CHUNKED:	return download_file_chunked(epoll); break;
+		case Mode::FLUSH:			return flush(epoll); break;
+		case Mode::CGI:				return cgi(epoll); break;
+		case Mode::CGI_FIXED:		return cgi_fixed(epoll); break;
+		case Mode::CGI_CHUNKED:		return cgi_chunked(epoll); break;
+		case Mode::AUTOINDEX:		return upload_directory(epoll); break;
 		default: return -1;
 	}
 }
