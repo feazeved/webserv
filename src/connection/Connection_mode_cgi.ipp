@@ -67,7 +67,7 @@ void s_exec_script(char *const argv[3], char **envp, int fdIn[2], int fdOut[2], 
 }
 
 static inline
-void s_chdir(char* cwdPath, usize length) {
+char* s_split_filename(char* cwdPath, usize length) {
 	char* slashPtr = NULL;
 	char* end = cwdPath + length;
 
@@ -79,8 +79,10 @@ void s_chdir(char* cwdPath, usize length) {
 			break;
 		slashPtr = cwdPath++;
 	}
-	*slashPtr = 0;
 	ASSERT(cwdPath != NULL, "cwdPath was NULL");
+	*slashPtr = 0;
+	*end = 0;
+	return slashPtr + 1;
 }
 
 /*
@@ -89,7 +91,7 @@ void s_chdir(char* cwdPath, usize length) {
 	QUERY_STRING=a=1, CONTENT_LENGTH=42, CONTENT_TYPE=application/x-www-form-urlencoded
 	HTTP_HOST=example.com:8080, HTTP_COOKIE=session=xyz
 */
-
+// TODO: Review and write what it is supposed to do
 CONNECTION_INL
 (char*) append_env(Buffer64 &buffer, char* argv[3]) {
 	static const char requestMethod[3][24] = 
@@ -98,22 +100,20 @@ CONNECTION_INL
 
 	Environment::reset();
 
-	argv[0] = buffer.append(req.interpreter.ptr, req.interpreter.size + 1);			// /bin/python3
 	char* scriptName = buffer.append("SCRIPT_NAME=");	// SCRIPTNAME=
-	buffer.append(req.target.ptr, req.target.size + 1);							// SCRIPTNAME=/images/cgi/process.py
-	argv[1] = append_target_path(buffer);
-	argv[2] = NULL;
-	
-	const usize scriptPathLength = (usize)(buffer.wptr() - argv[1]);
+	buffer.append(req.target.ptr, req.target.size + 1);	// SCRIPTNAME=/images/cgi/process.py
+	char* scriptPath = append_target_path(buffer);		// /home/webserv/www/images/cgi/process.py
+	const usize scriptPathLength = (usize)(buffer.wptr() - scriptPath);
 	buffer.writePos++;
-	char* cwdPath = buffer.append(argv[1], scriptPathLength + 1);
-	s_chdir(cwdPath, scriptPathLength);							// /home/webserv/www/images/cgi
-
+	char* cwdPath = buffer.append(scriptPath, scriptPathLength + 1);			// /home/webserv/www/images/cgi
+	argv[0] = buffer.append(req.interpreter.ptr, req.interpreter.size + 1);			// /bin/python3
+	argv[1] = s_split_filename(cwdPath, scriptPathLength);						// process.py
+	argv[2] = NULL;
+	Environment::append(buffer.append("HTTP_HOST="));
+	buffer.append(req.host.ptr, req.host.size + 1);
 	Environment::append(STRPREP(req.query.ptr, "QUERY_STRING="));
 	if (req.cookies.size != 0)
 		Environment::append(STRPREP(req.cookies.ptr, "HTTP_COOKIE="));
-	Environment::append(buffer.append("HTTP_HOST="));
-	buffer.append(req.host.ptr, req.host.size + 1);
 
 	if (options & Options::FIXED_LENGTH) {
 		char* lengthStr = buffer.append("CONTENT_LENGTH=");
@@ -162,7 +162,6 @@ CONNECTION_INL
 	close(fdOut[1]);
 	readFd = fdOut[0];
 	writeFd = fdIn[1];
-	sendBuffer.clear();
 	return cgi(epoll);
 
 	ErrorCloseOutput:	close(fdOut[0]), close(fdOut[1]);

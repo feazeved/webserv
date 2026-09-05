@@ -5,11 +5,24 @@
 namespace fn {
 // 
 
-FN_ATTR(always_inline, pure) static
+FN_ATTR(pure) static inline
+usize html_encoded_size(const char* src, usize length) {
+	static const u8 growthLut[6] = {4, 4, 5, 3, 3, 0};
+	usize result = length;
+
+	for (usize index = 0; index < length; index++) {
+		u8 lutIndex = g_asciiLut[(u8)src[index]] - ASCII_HTML_VALID;
+		lutIndex = MIN(5, lutIndex);
+		result += growthLut[lutIndex];
+	}
+	return result;
+}
+
+FN_ATTR(always_inline) static inline
 Span itoa10(usize number, char* buffer, usize bufferSize) {
-	ASSERT(bufferSize >= 24, "Buffer isn't big enough for itoa");
-	char* ptr = buffer + 24;
-	ptr += 24;
+	ASSERT(bufferSize >= 20, "Buffer isn't big enough for itoa");
+	char* ptr = buffer + bufferSize;
+	ptr += bufferSize;
 	*ptr = 0;
 	char *const optr = ptr;
 	do {
@@ -20,15 +33,15 @@ Span itoa10(usize number, char* buffer, usize bufferSize) {
 	return result;
 }
 
-FN_ATTR(always_inline, pure) static
+FN_ATTR(always_inline) static inline
 Span itoa16(usize number, char* buffer, usize bufferSize) {
 	static const char digits[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
-	ASSERT(bufferSize >= 24, "Buffer isn't big enough for itoa");
-	char* ptr = buffer + 24;
-	ptr += 24;
+	ASSERT(bufferSize >= 16, "Buffer isn't big enough for itoa");
+	char* ptr = buffer + bufferSize;
+	ptr += bufferSize;
 	*ptr = 0;
 	char *const optr = ptr;
 	do {
@@ -39,37 +52,11 @@ Span itoa16(usize number, char* buffer, usize bufferSize) {
 	return result;
 }
 
-FN_ATTR(always_inline, pure) static
-usize qnumlen10(const char* src) {
+FN_ATTR(always_inline, pure) static inline
+usize strtol10(const char* src, usize minLength = 1, usize maxLength = 19) {
 	char buffer[32] = {};
 	MEMCPY_INLINE(buffer, src, 24);
-
-	char* ptr = buffer;
-	while (*ptr >= '0' && *ptr <= '9')
-		ptr++;
-
-	const usize length = (usize)(ptr - buffer);
-	return length == 16 ? SIZE_MAX : length;
-}
-
-FN_ATTR(always_inline, pure) static
-usize qnumlen16(const char* src) {
-	char buffer[32] = {};
-	MEMCPY_INLINE(buffer, src, 24);
-
-	char* ptr = buffer;
-	while (g_asciiLut[(u8)*ptr] <= ASCII_HEX)
-		ptr++;
-
-	const usize length = (usize)(ptr - buffer);
-	return length == 16 ? SIZE_MAX : length;
-}
-
-FN_ATTR(always_inline, pure) static
-usize strtol10(const char* src) {
-	char buffer[32] = {};
-	MEMCPY_INLINE(buffer, src, 24);
-	usize value;
+	usize value = 0;
 	usize digit;
 
 	char* ptr = buffer;
@@ -78,14 +65,14 @@ usize strtol10(const char* src) {
 		ptr++;
 	}
 	const usize length = (usize)(ptr - buffer);
-	return length <= 19 ? value : SIZE_MAX;
+	return length >= minLength && length <= maxLength ? value : SIZE_MAX;
 }
 
-FN_ATTR(always_inline, pure) static
-usize strtol16(const char* src) {
+FN_ATTR(always_inline, pure) static inline
+usize strtol16(const char* src, usize minLength = 1, usize maxLength = 15) {
 	char buffer[32] = {};
-	MEMCPY_INLINE(buffer, src, 16);
-	usize value;
+	MEMCPY_INLINE(buffer, src, 24);
+	usize value = 0;
 	usize digit;
 
 	char* ptr = buffer;
@@ -94,39 +81,6 @@ usize strtol16(const char* src) {
 		ptr++;
 	}
 	const usize length = (usize)(ptr - buffer);
-	return length <= 15 ? value : SIZE_MAX;
+	return length >= minLength && length <= maxLength ? value : SIZE_MAX;
 }
-
-// FN_ATTR(always_inline, pure) static
-// usize strtol10(const char* src, usize &length) {
-// 	char buffer[32] = {};
-// 	MEMCPY_INLINE(buffer, src, 24);
-// 	usize value;
-// 	usize digit;
-
-// 	char* ptr = buffer;
-// 	while ((digit = (usize)(*ptr - '0')) <= 9) {
-// 		value = value * 10 + digit;
-// 		ptr++;
-// 	}
-// 	length = (usize)(ptr - buffer);
-// 	return length <= 19 ? value : SIZE_MAX;
-// }
-
-// FN_ATTR(always_inline, pure) static
-// usize strtol16(const char* src, usize &length) {
-// 	char buffer[32] = {};
-// 	MEMCPY_INLINE(buffer, src, 16);
-// 	usize value;
-// 	usize digit;
-
-// 	char* ptr = buffer;
-// 	while ((digit = (usize) g_asciiLut[(u8)*ptr]) <= ASCII_HEX) {
-// 		value = value * 16 + digit;
-// 		ptr++;
-// 	}
-// 	length = (usize)(ptr - buffer);
-// 	return length <= 15 ? value : SIZE_MAX;
-// }
-
 }

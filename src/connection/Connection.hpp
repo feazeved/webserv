@@ -106,13 +106,14 @@ struct Connection {
 	isize setup(Epoll &epoll);
 	isize del_setup(Epoll &epoll);
 	isize get_setup(Epoll &epoll);
-	isize get_directory_setup(Epoll &epoll, struct stat &st, Buffer64 &pathBuffer);
+	isize get_directory_setup(Epoll &epoll, Buffer64 &pathBuffer);
 	isize post_setup(Epoll &epoll);
 	isize cgi_setup(Epoll &epoll);
 	char* append_env(Buffer64 &buffer, char* argv[3]);
 	isize flush_setup(Epoll &epoll, Status::Code code);
 	isize flush_setup_close(Epoll &epoll, Status::Code code);
 	isize parse_setup(Epoll &epoll);
+	isize redirect_setup(Epoll &epoll, Status::Code code);
 };
 
 #include "Connection_common.ipp"

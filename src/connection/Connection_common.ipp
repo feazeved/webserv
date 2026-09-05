@@ -70,6 +70,8 @@ CONNECTION_INL
 	if (clientFd >= 0)
 		close(clientFd);
 	clientFd = -1;
+	if (processId != -1)
+		kill(processId, SIGKILL);
 	return -1;
 }
 
@@ -86,5 +88,4 @@ CONNECTION_INL
 		close(writeFd);
 	readFd = -1;
 	writeFd = -1;
-	processId = -1;
 }

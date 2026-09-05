@@ -4,7 +4,10 @@
 // <a href="filename[256]">filename[64]</a>    02-Dec-2004 18:46    241476
 // The filename (256) + filename display (64) + 17 date + 19 for digits + 6 tabs + 16 html stuff
 
-#define HTTP_INDEX_PERMISSION "<a href=\"\">--- Privileged access ---</a>"
+#define HTTP_INDEX_PERMISSION "<a href=\"\">--- Privileged access ---</a>\n"
+#define HTTP_INDEX_HEADER "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><head><title>Index of "
+#define HTTP_INDEX_MIDDLE "</title></head><body><h1>Index of "
+#define HTTP_INDEX_TAIL "</h1><hr><pre><a href=\"../\">../</a>"
 
 static inline
 usize s_append_entry(HTTP_Buffer &src, DIR* directory, struct dirent *dirEntry) {
@@ -37,6 +40,7 @@ usize s_append_entry(HTTP_Buffer &src, DIR* directory, struct dirent *dirEntry) 
 		src.append_html(entry.ptr, entry.size);
 		src.memset(' ', 64 - entry.size);
 	}
+	src.append("</a>");
 	src.memset('\t', 4);
 	src.append_inline<17>(buf, 17);
 	src.memset('\t', 2);
@@ -78,13 +82,8 @@ CONNECTION_INL
 	<a href="nginx-0.1.0.tar.gz">nginx-0.1.0.tar.gz</a>                                 05-Oct-2004 15:39              220038
 */
 
-#define HTTP_INDEX_HEADER "<html><head><title>Index of "
-#define HTTP_INDEX_MIDDLE "</title></head><body><h1>Index of "
-#define HTTP_INDEX_TAIL "</h1><hr><pre><a href=\"../\">../</a>"
-
 CONNECTION_INL
-(isize) get_directory_setup(Epoll &epoll, struct stat &st, Buffer64 &pathBuffer) {
-	(void)st;
+(isize) get_directory_setup(Epoll &epoll, Buffer64 &pathBuffer) {
 	const usize directoryLength = pathBuffer.writePos;
 	const Span index = req.location->get_index();
 	if (pathBuffer.writePos != 0 && pathBuffer.data[pathBuffer.writePos - 1] != '/')
@@ -93,15 +92,11 @@ CONNECTION_INL
 	*pathBuffer = 0;
 	readFd = open(pathBuffer, O_RDONLY | O_CLOEXEC | O_NONBLOCK);
 	if (readFd >= 0) {
-		if (stat(pathBuffer, &st) == -1) {
+		struct stat st;
+		if (fstat(readFd, &st) == -1) {
 			close(readFd);
 			readFd = -1;
 			return flush_setup_close(epoll, s_get_status());
-		}
-		if (!S_ISREG(st.st_mode)) {
-			close(readFd);
-			readFd = -1;
-			return flush_setup_close(epoll, Status::i403);
 		}
 		contentType = fn::match_mime(pathBuffer.get_span());
 		bodySize = (usize)st.st_size;
@@ -112,6 +107,11 @@ CONNECTION_INL
 	*pathBuffer = 0;
 	if (req.location->autoindex == false)
 		return flush_setup_close(epoll, Status::i403);
+	const usize targetSize = fn::html_encoded_size(req.target.ptr, req.target.size);
+	const usize fixedSize = sizeof(HTTP_INDEX_HEADER) + sizeof(HTTP_INDEX_MIDDLE) + sizeof(HTTP_INDEX_TAIL) - 3;
+	const usize headerSize = fixedSize + targetSize * 2;
+	if (headerSize > sendBuffer.capacity())
+		return flush_setup_close(epoll, Status::i414);
 	directory = opendir(pathBuffer);
 	if (directory == NULL) 
 		return flush_setup_close(epoll, s_get_status());
@@ -119,12 +119,10 @@ CONNECTION_INL
 	contentType = Mime::HTML;
 	mode = Mode::AUTOINDEX;
 	options &= ~(u16)Options::KEEP_ALIVE;
-	sendBuffer.clear();
-	sendBuffer.append("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n");
 	sendBuffer.append(HTTP_INDEX_HEADER);
-	sendBuffer.append(req.target);
+	sendBuffer.append_html(req.target.ptr, req.target.size);
 	sendBuffer.append(HTTP_INDEX_MIDDLE);
-	sendBuffer.append(req.target);
+	sendBuffer.append_html(req.target.ptr, req.target.size);
 	sendBuffer.append(HTTP_INDEX_TAIL);
 	return upload_directory(epoll);
 }

@@ -40,7 +40,7 @@ CONNECTION_INL
 	mode = Mode::FLUSH;
 	isize bytesWritten = write_to_client(epoll);
 	if (sendBuffer.size() > 0 && epoll.modify(clientFd, EPOLLOUT, epollState))
-		options &= ~(u16)Options::KEEP_ALIVE;
+		return -1;	// TODO: See if i can't just stream the output then close
 	return bytesWritten;
 }
 
@@ -51,6 +51,22 @@ CONNECTION_INL
 	options &= ~(u16)Options::KEEP_ALIVE;
 	mode = Mode::FLUSH;
 	build_error_header(code);
+	if (epoll.modify(clientFd, EPOLLOUT, epollState))
+		return -1;
+	return write_to_client(epoll);
+}
+
+CONNECTION_INL
+(isize) redirect_setup(Epoll &epoll, Status::Code code) {
+	status = code;
+	bodySize = 0;
+	options &= ~(u16)Options::KEEP_ALIVE;
+	mode = Mode::FLUSH;
+	sendBuffer.append("HTTP/1.1 ");
+	sendBuffer.append(status.status_str());
+	sendBuffer.append("\r\nLocation: ");
+	sendBuffer.append(req.location->get_redirect_target());
+	sendBuffer.append("\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
 	if (epoll.modify(clientFd, EPOLLOUT, epollState))
 		return -1;
 	return write_to_client(epoll);
@@ -72,19 +88,9 @@ CONNECTION_INL
 		bodySize = cfg->maxBodySize;
 
 	startTime = Clock::time_elapsed();	// Resets the clock on a valid response header
-	if (req.location->redirectStatus.is_valid()) {		// TODO: Create a separate function for this
-		status = (Status::Code)req.location->redirectStatus.index;
-		bodySize = 0;
-		options &= ~(u16)Options::KEEP_ALIVE;
-		mode = Mode::FLUSH;
-		sendBuffer.clear();
-		sendBuffer.append("HTTP/1.1 ");
-		sendBuffer.append(status.status_str());
-		sendBuffer.append("\r\nLocation: ");
-		sendBuffer.append(req.location->get_redirect_target());
-		sendBuffer.append("\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
-		return write_to_client(epoll);
-	}
+	sendBuffer.clear();
+	if (req.location->redirectStatus.is_valid())
+		return redirect_setup(epoll, (Status::Code)req.location->redirectStatus.index);
 	mode = (options & Options::CGI) ? Mode::CGI : (Mode::e_http_mode)(options & 7);
 	if (epoll.modify(clientFd, EPOLLIN | EPOLLOUT, epollState))
 		return -1;

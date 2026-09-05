@@ -80,16 +80,23 @@ public:
 		}
 	}
 
-	void reap_children(pid_t* pidList, usize count) {
+	void reap_children() {
 		usize failCount = 0;
+		usize elementIndex;
+		pid_t pidList[ConnectionPool::elementCount];
 
-		for (usize i = 0; i < count; i++) {
-			pid_t pid = waitpid(pidList[i], NULL, WNOHANG);
-			if (pid <= 0)
-				pidList[failCount++] = pidList[i];
+		for (usize i = 0; i < connections.blockCount; i++) {
+			Bitmap bitmap = connections.delBitmap[i];
+			usize outerIndex = 64 * i;
+			while ((elementIndex = bitmap.pop_first_set()) != WORD_BITS) {
+				usize linearIndex = outerIndex + elementIndex;
+				Connection& connection = connections.connections[linearIndex];
+				if (connection.processId != -1 && waitpid(connection.processId, NULL, WNOHANG))
+					pidList[failCount++] = connection.processId;
+			}
 		}
 
-		while (failCount > 0) {	// This shit is beautiful
+		while (failCount > 0) {
 			pid_t pid = waitpid(pidList[failCount - 1], NULL, WNOHANG);
 			if (pid == 0 || (pid == -1 && errno == EINTR))
 				continue;
@@ -99,8 +106,6 @@ public:
 
 	// connections.for_each_active<Connection::check_timeout(30)>;	// how the fuck do you do this
 	void check_timeouts() {
-		pid_t pidList[ConnectionPool::elementCount];
-		usize count = 0;
 		time_t timeNow = Clock::update();
 		usize elementIndex;
 	
@@ -109,19 +114,11 @@ public:
 			usize outerIndex = 64 * i;
 			while ((elementIndex = bitmap.pop_first_set()) != WORD_BITS) {
 				usize linearIndex = outerIndex + elementIndex;
-				Connection& connection = connections.connections[linearIndex];
-				if (timeNow - connection.startTime > HTTP_TIMEOUT) {
-					pid_t pid = connection.processId;
-					remove_connection(linearIndex);
-					if (pid != -1) {
-						pidList[count] = pid;
-						kill(pid, SIGKILL);
-						count++;
-					}
-				}
+				if (timeNow - connections.connections[linearIndex].startTime > HTTP_TIMEOUT)
+					connections.mark_for_deletion(linearIndex);
 			}
 		}
-		reap_children(pidList, count);
+		reap_children();
 	}
 
 	int clear() {

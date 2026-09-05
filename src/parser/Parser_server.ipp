@@ -33,7 +33,7 @@ void s_directive_listen(Arena &arena, const Span &value, VirtualServer &server) 
 		port = separator + 1;
 		portLength -= hostLength + 1;
 	}
-	server.port = fn::strtol10(port);
+	server.port = fn::strtol10(port, portLength, portLength);
 	if (server.port < 1 || server.port > 65535)
 		PERR_EXIT(1, "Error: Invalid port");
 }
@@ -60,24 +60,22 @@ void s_directive_body_size(const Span &value, usize &bodySize) {
 	}
 	if (digitLength == 0)
 		PERR_EXIT(1, "Error: Invalid max body size");
-
-	const usize bytes = fn::strtol10(str);
-	if (bytes == SIZE_MAX || bytes > (SIZE_MAX >> factor))
+	const usize bytes = fn::strtol10(str, digitLength, digitLength);
+	if (bytes > (SIZE_MAX >> factor))
 		PERR_EXIT(1, "Error: Invalid max body size");
 	bodySize = bytes << factor;
 }
 
 PARSER_INL
 (void) parse_server_directive(VirtualServer &server, Directive &dir) {
-	const Span &arg = dir.args[0];
 	const Span &name = dir.name;
 
 	if (name == "error_page")
 		return s_directive_error_page(dir, server);
 	
-	if (dir.args.count != 1 || arg.size == 0 || arg.size >= MAX_PATH_SIZE)
+	if (dir.args.count != 1 || dir.args[0].size == 0 || dir.args[0].size >= MAX_PATH_SIZE)
 		PERR_EXIT(1, "Error: Invalid server directive");
-	const Span &value = arg;
+	const Span &value = dir.args[0];
 	if (name == "listen")
 		return s_directive_listen(beta, value, server);
 	else if (name == "host") {
@@ -161,5 +159,14 @@ PARSER_INL
 		PERR_EXIT(1, "Error: Missing listen directive");
 	if (server.host.size == 0)
 		server.host = beta.copy_span(Span::create("localhost"));	// TODO: this is suspicious
+	Span defaultIndex = beta.copy_span(Span::create("index.html"));
+	for (usize index = 0; index < parsedLocations.count; index++) {
+		if (parsedLocations[index].root.size == 0)
+			parsedLocations[index].root = server.serverRoot;
+		if (parsedLocations[index].uploadStore.size == 0)
+			parsedLocations[index].uploadStore = parsedLocations[index].root;
+		if (parsedLocations[index].index.size == 0)
+			parsedLocations[index].index = defaultIndex;	// REVIEW: make sure no writes occur
+	}
 	server.locations = store_locations(parsedLocations);
 }

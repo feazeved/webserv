@@ -50,11 +50,11 @@ PARSER_INL
 		length = dir.args[0].size;
 	}
 	else if (dir.name == "return") {
-		if (dir.args.count != 2)
+		if (dir.args[0].size != 3 || dir.args.count != 2)
 			PERR_EXIT(1, "Error: Invalid redirect");
 		const usize status = fn::strtol10(dir.args[0].ptr);
 		location.redirectStatus.index = Status::s_num_to_code(status);
-		if (dir.args[0].size != 3 || status < 300 || status > 399 || !location.redirectStatus.is_valid())
+		if (status < 300 || status > 399 || !location.redirectStatus.is_valid())
 			PERR_EXIT(1, "Error: Invalid redirect status");
 		location.redirectTarget = dir.args[1];
 		length = dir.args[1].size;
@@ -129,11 +129,5 @@ PARSER_INL
 		}
 	}
 	tokArray.ptr++;
-	if (loc.root.size == 0)
-		loc.root = server.serverRoot;
-	if (loc.uploadStore.size == 0)
-		loc.uploadStore = loc.root;
-	if (loc.index.size == 0)
-		loc.index = Span::create("index.html");	// REVIEW: make sure no writes occur
 	return loc;
 }

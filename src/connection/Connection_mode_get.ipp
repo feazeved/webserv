@@ -25,7 +25,7 @@ CONNECTION_INL
 	if (stat(pathBuffer, &st) == -1)
 		return flush_setup_close(epoll, s_get_status());
 	if (S_ISDIR(st.st_mode))
-		return get_directory_setup(epoll, st, pathBuffer);
+		return get_directory_setup(epoll, pathBuffer);
 	readFd = open(pathBuffer, O_RDONLY | O_CLOEXEC | O_NONBLOCK);
 	if (readFd == -1)
 		return flush_setup_close(epoll, s_get_status());

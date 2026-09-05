@@ -15,7 +15,7 @@ Span16 s_store_upload_span(Location &location, char* &wptr, const Span &source) 
 	Span16 result = {(u16)(wptr - (char*)&location.uri), (u16)source.size};
 	MEMCPY(wptr, source.ptr, source.size);
 	wptr += source.size;
-	if (*wptr != '/') {
+	if (wptr[-1] != '/') {
 		*wptr++ = '/';
 		result.size++;
 	}
@@ -129,7 +129,7 @@ PARSER_INL
 			continue;
 		}
 		s_build_error_page_path(pathBuffer, server.serverRoot, path);
-		if (fn::read_whole_file(beta, pathBuffer, page, 0, 0))
+		if (fn::read_whole_file(beta, pathBuffer, page, 0, 0, HTTP_ERROR_PAGE_MAX_SIZE))
 			std::exit(1);
 	}
 }

@@ -2,24 +2,9 @@
 #include "Connection.hpp"
 
 CONNECTION_INL
-(isize) post_setup(Epoll &epoll) {
-	Buffer64 pathBuffer = {};
-	const Span uploadStore = req.location->get_upload_store();
-	pathBuffer.append(uploadStore);
-	pathBuffer.append(req.relativeTarget);
-	*pathBuffer = 0;
-
-	writeFd = open(pathBuffer, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NONBLOCK, 0644);
-	if (writeFd == -1)
-		return flush_setup_close(epoll, s_get_status());
-	return download_file(epoll);
-}
-
-CONNECTION_INL
 (isize) download_file(Epoll &epoll) {
 	isize bytesWritten = 0;
-	isize bytesRead = read_from_client(epoll);
-	if (bytesRead == -1)
+	if (read_from_client(epoll) == -1)
 		return -1;
 	if (options & Options::CHUNKED_LENGTH)
 		bytesWritten = recvBuffer.decode(writeFd, chunkSize, bodySize);
@@ -42,4 +27,18 @@ CONNECTION_INL
 		return flush_setup(epoll, Status::i201);
 	}
 	return write_to_client(epoll);
+}
+
+CONNECTION_INL
+(isize) post_setup(Epoll &epoll) {
+	Buffer64 pathBuffer = {};
+	const Span uploadStore = req.location->get_upload_store();
+	pathBuffer.append(uploadStore);
+	pathBuffer.append(req.relativeTarget);
+	*pathBuffer = 0;
+
+	writeFd = open(pathBuffer, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NONBLOCK, 0644);
+	if (writeFd == -1)
+		return flush_setup_close(epoll, s_get_status());
+	return download_file(epoll);
 }

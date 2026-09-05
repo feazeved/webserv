@@ -74,18 +74,20 @@ struct Epoll {
 	bool modify(i32 targetFd, u8 newState, u8 &curState) {
 		if (newState == curState)
 			return false;
-		curState = newState;
-		struct epoll_event newEvent = {};
+		struct epoll_event newEvent = eventList[index];
 		newEvent.events = (u32) newState;
-		return epoll_ctl(fd, EPOLL_CTL_MOD, targetFd, &newEvent) == -1;
+		if (epoll_ctl(fd, EPOLL_CTL_MOD, targetFd, &newEvent) == -1)
+			return true;
+		curState = newState;
+		return false;
 	}
 
 	void clr_read_flag() {
-		eventList[index].events &= ~(u32)EPOLLOUT;
+		eventList[index].events &= ~(u32)EPOLLIN;
 	}
 
 	void clr_write_flag() {
-		eventList[index].events &= ~(u32)EPOLLIN;
+		eventList[index].events &= ~(u32)EPOLLOUT;
 	}
 
 	bool is_writeable() {

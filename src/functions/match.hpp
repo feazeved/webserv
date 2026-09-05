@@ -55,7 +55,7 @@ isize s_match(const u8 *ptr, usize length, const u8 (&ltable)[count][size]) {
 
 FN_ATTR(pure, flatten) static inline
 isize match_field(Span field) {
-	static const u8 ltable[][32] = FIELD_TABLE;
+	static const u8 ltable[][24] = FIELD_TABLE;
 
 	return s_match((u8*)field.ptr, field.size, ltable);
 }

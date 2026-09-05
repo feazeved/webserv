@@ -14,6 +14,7 @@ public:
 	Connection connections[elementCount];
 	Bitmap blockBitmap;
 	Bitmap elementBitmap[blockCount];	// Metadata for each 64 Connection Block
+	Bitmap delBitmap[blockCount];		// Connections marked for closure
 
 	Connection* get_ptr(usize linearIndex) {
 		return connections + linearIndex;
@@ -46,6 +47,7 @@ public:
 				elementBlock.bitclr(elementIndex);
 			}
 			blockBitmap.bitclr(blockIndex);
+			delBitmap[blockIndex].clear();
 		}
 	}
 
@@ -68,9 +70,16 @@ public:
 		usize elementIndex = linearIndex % 64;
 		usize blockIndex = linearIndex / 64;
 
-		connections[linearIndex].clear();
+		connections[linearIndex].end_connection();
 		blockBitmap.bitclr(blockIndex);
 		elementBitmap[blockIndex].bitclr(elementIndex);
+	}
+
+	void mark_for_deletion(usize linearIndex) {
+		usize elementIndex = linearIndex % 64;
+		usize blockIndex = linearIndex / 64;
+
+		delBitmap[blockIndex].bitset(elementIndex);
 	}
 
 	Connection& operator[](usize index) {

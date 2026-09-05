@@ -14,17 +14,17 @@
 // }
 
 enum e_ascii {
-	ASCII_DIGITS      = 9,   // value <= digits
-	ASCII_HEX         = 15,  // value <= hex
-	ASCII_LETTERS     = 35,  // A-Z / a-z map to 10-35
-	ASCII_IDENT       = 36,  // _
-	ASCII_URL_VALID   = 39,  // 
-	ASCII_HTML_VALID  = 53,	// 53 ~ 57
-	ASCII_RFC_SYMBOLS = 54,  // RFC 3986 path symbols
-	ASCII_SYMBOLS     = 67,
-	ASCII_SPACE       = 98,
-	ASCII_CONTROL     = 99,
-	ASCII_INVALID     = 255
+	ASCII_DIGITS      = 9u,   // value <= digits
+	ASCII_HEX         = 15u,  // value <= hex
+	ASCII_LETTERS     = 35u,  // A-Z / a-z map to 10-35
+	ASCII_IDENT       = 36u,  // _
+	ASCII_URL_VALID   = 39u,  // 
+	ASCII_HTML_VALID  = 53u,	// 53 ~ 57
+	ASCII_RFC_SYMBOLS = 54u,  // RFC 3986 path symbols
+	ASCII_SYMBOLS     = 67u,
+	ASCII_SPACE       = 98u,
+	ASCII_CONTROL     = 99u,
+	ASCII_INVALID     = 255u
 };
 
 // HTML VALID: 53,54,55,56,57, (&) (') (") (<) (>)

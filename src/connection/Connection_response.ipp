@@ -14,17 +14,20 @@ CONNECTION_INL
 	while (sendBuffer.readPos < headerEnd) {
 		const Span line = sendBuffer.find_line_end();
 		if (line.ptr == NULL)
-			return Status::i500;
+			return Status::ixxx;
 		if (line.size == 0) {
 			sendBuffer.readPos = sendBuffer.scanPos;
 			break;
 		}
-		if (parse_cgi_line(tmpBuffer) != Status::ok)
-			return Status::i500;
+		Status::Code lineCode = parse_cgi_line(tmpBuffer);
+		if (lineCode == Status::ixxx)
+			return Status::ixxx;
+		if (lineCode != Status::ok)
+			code = lineCode;
 		sendBuffer.readPos = sendBuffer.scanPos;
 	}
 	if (sendBuffer.readPos != headerEnd)
-		return Status::i500;
+		return Status::ixxx;
 
 	Span statusStr = Status::s_status_str(code);
 	
@@ -34,8 +37,8 @@ CONNECTION_INL
 	tmpBuffer.prepend(statusStr);
 	tmpBuffer.prepend("HTTP/1.1 ");
 	if (tmpBuffer.size() > sendBuffer.capacity())
-		return Status::i500;
-	sendBuffer.clear();
+		return Status::ixxx;
+	sendBuffer.clear();	// TODO: THIS IS VERY WRONG
 	sendBuffer.append(tmpBuffer.rptr(), tmpBuffer.size());
 	options &= ~(u16)Options::KEEP_ALIVE;
 	return code;
@@ -45,7 +48,6 @@ CONNECTION_INL
 (void) build_header(Status::Code code) {
 	Span statusStr = Status::s_status_str(code);
 
-	sendBuffer.clear();
 	sendBuffer.append("HTTP/1.1 ");
 	sendBuffer.append(statusStr);		// TODO: Make htis not depend on setting status
 	sendBuffer.append("\r\nContent-Type: ");
@@ -67,7 +69,7 @@ CONNECTION_INL
 CONNECTION_INL
 (void) build_error_header(Status::Code code) {
 	Span statusStr = Status::s_status_str(code);
-	Span errorPage = Status::s_error_page(code);
+	Span errorPage = cfg->errorPages[status.get_page_index()];
 
 	options &= ~(u16)Options::KEEP_ALIVE;
 	sendBuffer.clear();

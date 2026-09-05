@@ -16,8 +16,9 @@
 template <usize bufferSize>
 struct Buffer {
 	static const usize minReadSize = 4;
-	u8 data[bufferSize - (4 * sizeof(usize))];	// Trailing storage pads unbounded memory loads
-	usize clobber;
+	u64 clobberPre;
+	u8 data[bufferSize - 16 - (3 * sizeof(usize))];	// Trailing storage pads unbounded memory loads
+	u64 clobberPost;
 	usize writePos, readPos, scanPos;
 
 	inl u8* get_end() {	// rename to mptr

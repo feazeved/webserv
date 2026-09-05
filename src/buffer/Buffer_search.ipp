@@ -1,11 +1,14 @@
 #pragma once
 #include "Buffer.hpp"
 
+// TODO: Create a 2 byte linear search
+
 BUFFER_INL
 (Span) find_line_end() {
 	u8 tmp[2];
 	MEMCPY_INLINE(tmp, data + writePos, 2);
-	while (MEMCMP(data + scanPos, "\r\n", 2) == 0)
+	MEMCPY_INLINE(data + writePos, "\r\n", 2);
+	while (MEMCMP(data + scanPos, "\r\n", 2) != 0)
 		scanPos++;
 	MEMCPY_INLINE(data + writePos, tmp, 2);
 	if (scanPos < writePos) {
@@ -13,6 +16,7 @@ BUFFER_INL
 		scanPos += 2;
 		return result;
 	}
+	scanPos -= scanPos > readPos;
 	Span result = {NULL, SIZE_MAX};
 	return result;
 }
@@ -21,14 +25,16 @@ BUFFER_INL
 (Span) find_header_end() {
 	u8 tmp[4];
 	MEMCPY_INLINE(tmp, data + writePos, 4);
-	while (MEMCMP(data + scanPos, "\r\n\r\n", 4) == 0)
+	MEMCPY_INLINE(data + writePos, "\r\n\r\n", 4);
+	while (MEMCMP(data + scanPos, "\r\n\r\n", 4) != 0)
 		scanPos++;
 	MEMCPY_INLINE(data + writePos, tmp, 4);
-	if (scanPos < writePos) {
+	if (scanPos + 4 <= writePos) {
 		Span result = {(char*)data + readPos, scanPos - readPos};
 		scanPos += 4;
 		return result;
 	}
+	scanPos -= MIN(scanPos - readPos, (usize)3);
 	Span result = {NULL, SIZE_MAX};
 	return result;
 }

@@ -7,7 +7,7 @@ CONNECTION_INL
 		return line.size < 2 ? Status::i400 : Status::i431;
 
 	const usize readEnd = recvBuffer.readPos + line.size;
-	Span field = sendBuffer.find_char(':');
+	Span field = recvBuffer.find_char(':');
 	if (field.ptr == NULL)
 		return Status::i400;
 
@@ -16,9 +16,7 @@ CONNECTION_INL
 	if (value.ptr == NULL)
 		return Status::i400;	// Rejects empty values
 	switch (fieldIndex) {
-		default:
-			recvBuffer.readPos = readEnd;
-			break;
+		default: break;
 // ============================================================================
 		case Field::TRANSFER_ENCODING:
 			if (options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH))
@@ -31,7 +29,7 @@ CONNECTION_INL
 		case Field::CONTENT_LENGTH:
 			if (options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH))
 				return Status::i400; // ERROR: bad request, transfer method had already been set
-			bodySize = fn::strtol10(value.ptr);
+			bodySize = fn::strtol10(value.ptr, value.size, value.size);
 			if (bodySize == SIZE_MAX)
 				return Status::i400;
 			if (bodySize > cfg->maxBodySize)
@@ -74,24 +72,22 @@ CONNECTION_INL
 	const char* const lineEnd = (char*)sendBuffer.sptr() - 2;
 	const usize totalLength = (usize)(lineEnd - (char*)sendBuffer.rptr());
 
+	const usize readEnd = sendBuffer.readPos + totalLength;
 	Span field = sendBuffer.find_char(':');
 	if (field.ptr == NULL)
-		return Status::i500;
+		return Status::ixxx;
 
 	const isize fieldIndex = fn::match_field(field);
-	if (fieldIndex <= 0) {
+	if (fieldIndex != Field::STATUS) {
 		dst.append(field.ptr, totalLength);
 		dst.append("\r\n");
 		return Status::ok;
 	}
 
-	if (fieldIndex == Field::STATUS) {
-		sendBuffer.skip_spaces();
-		Status::Code code = Status::s_str_to_code(sendBuffer.rptr());	// TODO: change the check to be if OK not if error
-		return (code == Status::ixxx) ? Status::i500 : Status::ok;	// CGI output an invalid status, should be server error
-	}
+	Span value = recvBuffer.get_field_value(readEnd);
+	if (value.ptr == NULL)
+		return Status::ixxx;	// Rejects empty values
 
-	dst.append(field.ptr, totalLength);
-	dst.append("\r\n");
-	return Status::ok;
+	Status::Code code = Status::s_str_to_code(value.ptr);	// TODO: change the check to be if OK not if error
+	return code;
 }

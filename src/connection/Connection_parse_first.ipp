@@ -4,20 +4,18 @@
 CONNECTION_INL
 (Status::Code) match_location() {
 	ArrayView<Location> &locations = cfg->locations;
-	usize matchLength = *req.target.ptr == '/';
-	while (matchLength < req.target.size && req.target.ptr[matchLength] != '/')
-		matchLength++;
+	usize matchLength = 0;
 
 	for (usize i = 0; i < locations.count; i++) {
 		Span srcUri = locations[i].get_uri();
-		if (matchLength > srcUri.size)
+		if (srcUri.size <= matchLength || srcUri.size > req.target.size)	// TODO: Review and write what it is suppsoed to do
 			continue;
-		if (MEMCMP(req.target.ptr, srcUri.ptr, matchLength) == 0) {
-			if (srcUri.size > matchLength) {
-				matchLength = srcUri.size;
-				req.location = &locations[i];
-			}
-		}
+		if (MEMCMP(req.target.ptr, srcUri.ptr, srcUri.size) != 0)
+			continue;
+		if (srcUri.size != req.target.size && srcUri.ptr[srcUri.size - 1] != '/' && req.target.ptr[srcUri.size] != '/')
+			continue;
+		matchLength = srcUri.size;
+		req.location = &locations[i];
 	}
 	if (req.location == NULL)
 		return Status::i404;
@@ -30,14 +28,19 @@ CONNECTION_INL
 CONNECTION_INL
 (Span) check_cgi() {
 	char *cgiEnd = req.cgi.end();
+	char *targetEnd = req.target.end();
 	u16 lengths[2];
 	Span result = {};
 
-	req.targetExt.ptr = req.target.ptr + req.target.size;
+	req.targetExt.ptr = targetEnd;
 	req.targetName.ptr[-1] = '.';
 	while (req.targetExt[-1] != '.')
 		req.targetExt.ptr--;
 	req.targetName.ptr[-1] = '/';
+	if (req.targetExt.ptr == req.targetName.ptr)
+		return result;
+	req.targetExt.ptr--;
+	req.targetExt.size = (usize)(targetEnd - req.targetExt.ptr);
 
 	while (req.cgi.ptr < cgiEnd) {
 		MEMCPY_INLINE(lengths, req.cgi.ptr, sizeof(lengths));
@@ -55,19 +58,26 @@ CONNECTION_INL
 
 CONNECTION_INL
 (Status::Code) validate_path(char* str, char* end) {
+	char* writePtr = str;
 	while (str < end) {
 		if (g_asciiLut[(u8)*str] > ASCII_RFC_SYMBOLS)
-			return Status::i400;
-		if (*str == '/' && str[1] == '.' && str[2] == '.')
 			return Status::i400;
 		if (*str == '%') {
 			if (g_asciiLut[(u8)str[1]] > ASCII_HEX)
 				return Status::i400;
 			if (g_asciiLut[(u8)str[2]] > ASCII_HEX)
 				return Status::i400;
-			str += 2;
+			*writePtr++ = (char)(16u * (u8)str[1] + (u8)str[2]);
+			str += 3;
+			continue;
 		}
-		str++;
+		*writePtr++ = *str++;
+	}
+	req.target.size = (usize)(writePtr - req.target.ptr);
+	*writePtr = '\0';
+	for (char* ptr = req.target.ptr; ptr < writePtr; ptr++) {
+		if (STRCMP(ptr, "/..") == 0)
+			return Status::i400;
 	}
 	return match_location();
 }
@@ -79,25 +89,25 @@ CONNECTION_INL
 	if (*str != '/')	// /images/cats/meow.jpg?FILTER=yes,ORDER=ascending\0
 		return Status::i400;
 	char* queryPtr = (char*) MEMCHR(str, '?', targetLength);
-	char* targetEnd = queryPtr == NULL ? end : (queryPtr + 1);
+	char* targetEnd = queryPtr == NULL ? end : queryPtr;
+	char* queryStart = queryPtr == NULL ? end : queryPtr + 1;
 	req.target = Span::create(str, (usize)(targetEnd - str));		// /images/cats/meow.jpg
-	req.query = Span::create(queryPtr, (usize)(end - targetEnd));	// FILTER=yes,ORDER=ascending\0
-																	//		<---V
+	Status::Code code = validate_path(req.target, targetEnd);
+	if (code != Status::unset)
+		return code;
+	targetEnd = req.target.end();
+	req.query = Span::create(queryStart, (usize)(end - queryStart));	// FILTER=yes,ORDER=ascending\0
+																			//		<---V
 	req.targetName = Span::create(targetEnd, 0);					// /meow.jpg?FILTER=yes,ORDER=ascending\0
 	while (req.targetName.ptr[-1] != '/')							// meow.jpg
 		req.targetName.ptr--;
 	req.targetName.size = (usize)(targetEnd - req.targetName.ptr);
-
-	Status::Code code = validate_path(req.target, targetEnd);
-	if (code != Status::unset)
-		return code;
-
 	req.uri = req.location->get_uri();
 	req.cgi = req.location->get_cgi_block();
 	*targetEnd = '\0';
 	*end = '\0';
 	req.relativeTarget.ptr = req.target.ptr + req.uri.size;			// /images/cats/meow.jpg
-	req.relativeTarget.size += req.target.size - req.uri.size;		// cats/meow.jpg
+	req.relativeTarget.size = req.target.size - req.uri.size;		// cats/meow.jpg
 	req.interpreter = check_cgi();
 	return Status::unset;
 }

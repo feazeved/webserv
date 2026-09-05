@@ -32,8 +32,8 @@ SERVER_INL
 SERVER_INL
 (void) remove_connection(u32 connectionIndex) {
 	epoll.remove(connections[connectionIndex].clientFd);
-	connections[connectionIndex].end_connection();
 	connections.free_slot(connectionIndex);
+	connections.mark_for_deletion(connectionIndex);
 }
 
 SERVER_INL
