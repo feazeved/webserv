@@ -1,49 +1,6 @@
 #pragma once
 #include "Connection.hpp"
 
-// <a href="filename[256]">filename[64]</a>    02-Dec-2004 18:46    241476
-// The filename (256) + filename display (64) + 17 date + 19 for digits + 6 tabs + 16 html stuff
-
-#define HTTP_INDEX_PERMISSION "<a href=\"\">--- Privileged access ---</a>\n"
-
-static inline
-usize s_append_entry(HTTP_Buffer &src, DIR* directory, struct dirent *dirEntry) {
-	Span entry = {dirEntry->d_name, STRLEN(dirEntry->d_name)};
-
-	struct stat st;
-	if (LITCMP(entry.ptr, ".\0") == 0 || LITCMP(entry.ptr, "..\0") == 0)
-		return 0;
-	if (fstatat(dirfd(directory), dirEntry->d_name, &st, 0)) {
-		src.append(HTTP_INDEX_PERMISSION);
-		errno = 0;
-		return sizeof(HTTP_INDEX_PERMISSION) - 1;
-	}
-
-	usize fileSize = S_ISDIR(st.st_mode) ? 0 : (usize) st.st_size;
-	char buf[32];
-	Clock::format_time(&st.st_mtim, buf);
-
-	char* start = src.append("<a href=\"");
-	src.append_url_component(entry.ptr, entry.size);
-	src.append("\">");
-
-	if (entry.size >= 64) {
-		src.append_html(entry.ptr, 61);
-		src.append("...");
-	}
-	else {
-		src.append_html(entry.ptr, entry.size);
-		src.memset(' ', 64 - entry.size);
-	}
-	src.append("</a>");
-	src.memset('\t', 4);
-	src.append_inline<17>(buf, 17);
-	src.memset('\t', 2);
-	src.append_digit10(fileSize);
-	src.append("\n");
-	return (usize)(src.wptr() - start);
-}
-
 // Finished state means everything is read to the send buffer and it only needs flushing of the send buffer
 CONNECTION_INL
 (isize) upload_directory(Epoll &epoll) {
@@ -63,7 +20,7 @@ CONNECTION_INL
 			sendBuffer.append("</pre></body></html>");
 			return flush_setup(epoll, Status::i200);
 		}
-		bytesTotal += s_append_entry(sendBuffer, directory, entry);
+		bytesTotal += sendBuffer.append_entry(directory, entry);
 	}
 	return write_to_client(epoll);
 }

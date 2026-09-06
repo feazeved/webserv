@@ -1,11 +1,14 @@
 #pragma once
 #include <unistd.h>
+#include <dirent.h>
 
 #include "core.hpp"
 #include "tables.hpp"
 #include "webserv.hpp"
 #include "Span.hpp"
 #include "pure_functions.hpp"
+#include "Clock.hpp"
+#include <errno.h>
 
 #define BUFFER_INL(ret_type) \
 	template <usize bufferSize> inline ret_type Buffer<bufferSize>::
@@ -134,7 +137,7 @@ struct Buffer {
 	char* append_digit16(usize number);
 	char* append_url_component(const char *ptr, usize length);
 	char* append_html(char *ptr, usize length);
-
+	usize append_entry(DIR* directory, struct dirent *dirEntry);
 	char* memset(u8 byte, usize length);
 	template <usize N> char* memset_inline(u8 byte, usize length);
 

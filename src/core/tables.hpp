@@ -60,6 +60,11 @@ enum e_ascii {
 	extern const u8 g_asciiLut[256];
 #endif
 
+#define HTTP_INDEX_HEADER "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><head><title>Index of "
+#define HTTP_INDEX_MIDDLE "</title></head><body><h1>Index of "
+#define HTTP_INDEX_TAIL "</h1><hr><pre><a href=\"../\">../</a>"
+#define HTTP_INDEX_PERMISSION "<a href=\"\">--- Privileged access ---</a>\n"
+
 #define HTTP_STATUS_100 "100 Continue"
 #define HTTP_STATUS_101 "101 Switching Protocols"
 #define HTTP_STATUS_102 "102 Processing"

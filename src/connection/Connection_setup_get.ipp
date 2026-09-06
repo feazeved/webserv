@@ -20,10 +20,6 @@ CONNECTION_INL
 	return upload_file(epoll);
 }
 
-#define HTTP_INDEX_HEADER "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><head><title>Index of "
-#define HTTP_INDEX_MIDDLE "</title></head><body><h1>Index of "
-#define HTTP_INDEX_TAIL "</h1><hr><pre><a href=\"../\">../</a>"
-
 CONNECTION_INL
 (isize) get_directory_setup(Epoll &epoll, Buffer64 &pathBuffer) {
 	const usize directoryLength = pathBuffer.writePos;
