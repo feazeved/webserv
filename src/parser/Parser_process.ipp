@@ -1,6 +1,8 @@
 #pragma once
 #include "Parser.hpp"
 
+// Guarantee that it doesnt overflow u16
+
 static inline
 Span16 s_store_location_span(Location &location, char* &wptr, const Span &source) {
 	Span16 result = {(u16)(wptr - (char*)&location.uri), (u16)source.size};

@@ -40,7 +40,7 @@ void s_directive_listen(Arena &arena, const Span &value, VirtualServer &server) 
 
 static inline
 void s_directive_body_size(const Span &value, usize &bodySize) {
-	if (bodySize != SIZE_MAX || value.size == 0)
+	if (bodySize != LONG_MAX || value.size == 0)
 		PERR_EXIT(1, "Error: Invalid max body size");
 
 	u8 factor = 0;
