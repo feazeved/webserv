@@ -3,13 +3,15 @@
 
 CONNECTION_INL
 (isize) first_parse(Epoll &epoll) {
-	isize bytesRead = read_from_client(epoll);
-	if (bytesRead <= 0)
-		return bytesRead;
-
 	Span line = recvBuffer.find_line_end();
-	if (line == NULL)
-		return 0;
+	if (line == NULL) {
+		const isize result = read_from_client(epoll);
+		if (result <= 0)
+			return result;
+		line = recvBuffer.find_line_end();
+		if (line == NULL)
+			return 0;
+	}
 
 	Status::Code code = parse_first_line(line);
 	if (code != Status::unset)
@@ -20,21 +22,22 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) parse(Epoll &epoll) {
-	isize bytesRead = read_from_client(epoll);
-	if (bytesRead <= 0)
-		return bytesRead;
-
-	Span line;
-	while ((line = recvBuffer.find_line_end()) != NULL) {
-		if (line.size == 0) {
-			recvBuffer.readPos = recvBuffer.scanPos;
-			return setup(epoll);
+	while (true) {
+		Span line;
+		while ((line = recvBuffer.find_line_end()) != NULL) {
+			if (line.size == 0) {
+				recvBuffer.readPos = recvBuffer.scanPos;
+				return setup(epoll);
+			}
+			Status::Code code = parse_line(line);
+			if (code != Status::unset)
+				return flush_setup_close(epoll, code);
 		}
-		Status::Code code = parse_line(line);
-		if (code != Status::unset)
-			return flush_setup_close(epoll, code);
+
+		const isize result = read_from_client(epoll);
+		if (result <= 0)
+			return result;
 	}
-	return 0;
 }
 
 /*
@@ -53,7 +56,6 @@ CONNECTION_INL
 		case Mode::FIRST_PARSE:		return first_parse(epoll); break;
 		case Mode::PARSE:			return parse(epoll); break;
 		case Mode::GET:				return upload_file(epoll); break;
-		case Mode::POST:			return download_file(epoll); break;
 		case Mode::POST_FIXED:		return download_file_fixed(epoll); break;
 		case Mode::POST_CHUNKED:	return download_file_chunked(epoll); break;
 		case Mode::FLUSH:			return flush(epoll); break;

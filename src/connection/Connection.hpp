@@ -64,7 +64,7 @@ struct Connection {
 	};
 
 	union {
-		usize chunkSize;	// SIZE_MAX: header, SIZE_MAX - 1: trailers, SIZE_MAX - 2: complete
+		usize chunkSize;	// 0 means chunk header; otherwise remaining chunk bytes
 		DIR* directory;
 	};
 
@@ -96,8 +96,7 @@ struct Connection {
 	isize flush(Epoll &epoll);
 	isize write_to_client(Epoll &epoll);
 	isize read_from_client(Epoll &epoll);
-	// Status::Code write_to_server(HTTP_Buffer &src, usize bytes, bool isCgi);
-	// Status::Code write_to_server_chunked(bool isCgi);
+	Status::Code write_chunked();
 	char* append_target_path(Buffer64 &buffer);
 
 	// Streaming
@@ -106,10 +105,8 @@ struct Connection {
 	isize cgi_chunked(Epoll &epoll);
 	isize switch_to_cgi(Epoll &epoll);
 
-	isize download_file(Epoll &epoll);
 	isize download_file_fixed(Epoll &epoll);
 	isize download_file_chunked(Epoll &epoll);
-	isize switch_to_post(Epoll &epoll);
 
 	isize upload_file(Epoll &epoll);
 	isize upload_directory(Epoll &epoll);

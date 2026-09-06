@@ -52,7 +52,7 @@ public:
 	int 			listenFd;
 
 	VirtualServer()
-		: serverRoot(), host(), locations(), port(SIZE_MAX),
+		: serverRoot(Span::create("")), host(), locations(), port(SIZE_MAX),
 		maxBodySize(LONG_MAX), gameState(NULL), listenFd(-1) {
 		MEMSET_INLINE(errorPages, 0, sizeof(errorPages));
 	}

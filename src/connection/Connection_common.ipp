@@ -44,7 +44,6 @@ Status::Code s_get_status() {
 
 CONNECTION_INL
 (isize) init(int fd, VirtualServer* serverConfig) {
-	ASSERT(clientFd == -1, "Assigned a connection already in use");
 	clientFd = fd;
 	cfg = serverConfig;
 	readFd = -1;
@@ -54,7 +53,7 @@ CONNECTION_INL
 	options = 0;
 	contentType = Mime::OCTET_STREAM;
 	bodySize = 0;
-	chunkSize = SIZE_MAX;
+	chunkSize = 0;
 	mode = Mode::FIRST_PARSE;
 	recvBuffer.clear();
 	req.clear();

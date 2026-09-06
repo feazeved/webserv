@@ -12,14 +12,13 @@ namespace Mode {
 		GET,				// Changes to FLUSH upon bodysize == 0
 		AUTOINDEX,			// Changes to FLUSH upon entry == NULL
 
-		POST,				// Does not read from client, changes to FLUSH upon bodySize == 0
-		POST_FIXED,			// Reads from client, changes to POST on recvBuffer.size() >= bodySize
-		POST_CHUNKED,		// Reads from client, changes to POST on chunk termination
+		POST_FIXED,			// Reads from client, changes to FLUSH upon bodySize == 0
+		POST_CHUNKED,		// Reads from client, changes to POST_FIXED on chunk termination
 
-		CGI,				// Does not read from client, changes to FLUSH upon EOF on pipe end
-		CGI_FIXED,			// Reads from client, changes to CGI on recvBuffer.size() >= bodySize
-		CGI_CHUNKED,		// Reads from client, changes to CGI on chunk termination
-	
+		CGI,				// Reads from CGI, writes to client, changes to FLUSH upon EOF
+		CGI_FIXED,			// Reads from client, changes to CGI upon bodySize == 0
+		CGI_CHUNKED,		// Reads from client, changes to CGI_FIXED on chunk termination
+
 		FLUSH				// Changes to FIRST_PARSE if keepalive is on. else terminates
 	};
 }

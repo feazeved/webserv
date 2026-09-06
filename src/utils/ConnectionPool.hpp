@@ -27,6 +27,14 @@ public:
 	Bitmap elementBitmap[blockCount];	// Metadata for each 64 Connection Block
 	Bitmap delBitmap[blockCount];		// Connections marked for closure
 
+	void reset() {
+		blockBitmap.clear();
+		for (usize blockIndex = 0; blockIndex < blockCount; blockIndex++) {
+			elementBitmap[blockIndex].clear();
+			delBitmap[blockIndex].clear();
+		}
+	}
+
 	Connection* get_ptr(usize linearIndex) {
 		return connections + linearIndex;
 	}

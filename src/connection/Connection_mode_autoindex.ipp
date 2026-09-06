@@ -93,7 +93,7 @@ CONNECTION_INL
 	readFd = open(pathBuffer, O_RDONLY | O_CLOEXEC | O_NONBLOCK);
 	if (readFd >= 0) {
 		struct stat st;
-		if (fstat(readFd, &st) == -1 || (usize)st.st_size >= MAX_FILE_SIZE) {
+		if (fstat(readFd, &st) == -1 || (usize)st.st_size >= MAX_FILE_SIZE || !S_ISREG(st.st_mode)) {
 			close(readFd);
 			readFd = -1;
 			return flush_setup_close(epoll, s_get_status());

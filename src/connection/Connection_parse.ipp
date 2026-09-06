@@ -8,7 +8,7 @@ CONNECTION_INL
 
 	const usize readEnd = recvBuffer.readPos + line.size;
 	Span field = recvBuffer.find_char(':');
-	if (field.ptr == NULL)
+	if (field.ptr == NULL || field.size == 0)
 		return Status::i400;
 
 	isize fieldIndex = fn::match_field(field);

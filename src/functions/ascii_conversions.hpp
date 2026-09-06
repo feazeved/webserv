@@ -50,6 +50,12 @@ Span itoa16(usize number, char* buffer, usize bufferSize) {
 	return result;
 }
 
+/*
+	These two functions only check overflow through the range checks
+	15 and 19 correspond to the maximum safely representable digit length
+	for base10 and 16 respectively. If exact length strtol is required,
+	just use minlength = maxlength
+*/
 FN_ATTR(always_inline, pure) static inline
 usize strtol10(const char* src, usize minLength = 1, usize maxLength = 19) {
 	char buffer[32] = {};

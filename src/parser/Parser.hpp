@@ -48,7 +48,7 @@ public:
 		bool autoindex;
 
 		ParsedLocation()
-			: uri(), root(), index(), uploadStore(), cgiBlock(), redirectTarget(),
+			: uri(), root(), index(), uploadStore(), cgiBlock(), redirectTarget(Span::create("")),
 			  redirectStatus(), methods(0), autoindex(false) {}
 	};
 

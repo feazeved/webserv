@@ -91,7 +91,7 @@ struct Buffer {
 	}
 
 	isize write(int fd, usize bytes) {
-		usize bytesCapped = MIN(bytes, writePos - readPos);
+		usize bytesCapped = MIN3(ATOMIC_IOSIZE, bytes, writePos - readPos);
 		isize bytesWritten = ::write(fd, data + readPos, bytesCapped);
 
 		if (bytesWritten > 0) {
@@ -101,17 +101,6 @@ struct Buffer {
 		return bytesWritten;
 	}
 
-	isize atomic_write(int fd, usize bytes, usize &bytesOut) {
-		usize bytesCapped = MIN3(bytes, writePos - readPos, ATOMIC_IOSIZE);
-		isize bytesWritten = ::write(fd, data + readPos, bytesCapped);
-
-		if (bytesWritten > 0) {
-			readPos += (usize) bytesWritten;
-			scanPos = (scanPos >= readPos) ? scanPos : readPos;
-			bytesOut -= (usize)bytesWritten;
-		}
-		return bytesWritten;
-	}
 
 	// HTTP
 	Status::Code dechunk(Buffer& tmp, usize &chunkSize, usize &bodySize);
@@ -139,7 +128,6 @@ struct Buffer {
 	char* prepend(const Span &span);
 
 	// Append Special
-	usize append_buffer(Buffer &src, usize length);
 	char* append_mime(u8 mimeIndex);
 
 	char* append_digit10(usize number);

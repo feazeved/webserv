@@ -22,7 +22,7 @@ CONNECTION_INL
 	options = 0;
 	contentType = Mime::OCTET_STREAM;
 	bodySize = 0;
-	chunkSize = SIZE_MAX;
+	chunkSize = 0;
 	mode = Mode::FIRST_PARSE;
 	req.clear();
 	sendBuffer.clear();

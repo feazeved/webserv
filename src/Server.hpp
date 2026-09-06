@@ -45,6 +45,7 @@ public:
 
 	Server(const char *filePath) : alpha((u8*)&connections, sizeof(connections)), 
 		beta(storage, sizeof(storage)), parser(filePath, servers, alpha, beta), epoll(servers) {
+		connections.reset();
 		if (epoll.fd == -1)
 			PERR_EXIT(clear(), "Error: Failed to create epoll");
 
@@ -91,17 +92,21 @@ public:
 			while ((elementIndex = bitmap.pop_first_set()) != WORD_BITS) {	// Also clears the bitmap
 				usize linearIndex = outerIndex + elementIndex;
 				Connection& connection = connections.connections[linearIndex];
-				if (connection.processId != -1 && waitpid(connection.processId, NULL, WNOHANG))
+				if (connection.processId != -1 && waitpid(connection.processId, NULL, WNOHANG) <= 0)
 					pidList[failCount++] = connection.processId;
 				connections.free_slot(linearIndex);
 			}
 		}
 
 		while (failCount > 0) {
-			pid_t pid = waitpid(pidList[failCount - 1], NULL, WNOHANG);
-			if (pid == 0 || (pid == -1 && errno == EINTR))
-				continue;
-			failCount--;
+			usize writeIndex = 0;
+			for (usize i = 0; i < failCount; i++) {
+				const pid_t processId = pidList[i];
+				const pid_t result = waitpid(processId, NULL, WNOHANG);
+				if (result == 0 || (result == -1 && errno == EINTR))
+					pidList[writeIndex++] = processId;
+			}
+			failCount = writeIndex;
 		}
 	}
 
