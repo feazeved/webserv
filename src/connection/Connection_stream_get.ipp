@@ -5,9 +5,6 @@
 // The filename (256) + filename display (64) + 17 date + 19 for digits + 6 tabs + 16 html stuff
 
 #define HTTP_INDEX_PERMISSION "<a href=\"\">--- Privileged access ---</a>\n"
-#define HTTP_INDEX_HEADER "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><head><title>Index of "
-#define HTTP_INDEX_MIDDLE "</title></head><body><h1>Index of "
-#define HTTP_INDEX_TAIL "</h1><hr><pre><a href=\"../\">../</a>"
 
 static inline
 usize s_append_entry(HTTP_Buffer &src, DIR* directory, struct dirent *dirEntry) {
@@ -27,7 +24,6 @@ usize s_append_entry(HTTP_Buffer &src, DIR* directory, struct dirent *dirEntry) 
 	Clock::format_time(&st.st_mtim, buf);
 
 	char* start = src.append("<a href=\"");
-	// src.append(entry);
 	src.append_url_component(entry.ptr, entry.size);
 	src.append("\">");
 
@@ -64,9 +60,6 @@ CONNECTION_INL
 		if (entry == NULL) {
 			if (errno != 0)
 				return -1;
-			closedir(directory);
-			directory = NULL;
-			readFd = -1;
 			sendBuffer.append("</pre></body></html>");
 			return flush_setup(epoll, Status::i200);
 		}
@@ -84,10 +77,7 @@ CONNECTION_INL
 	if (bytesRead <= 0 && (bytesRead == -1 || bodySize != 0))
 		return -1;
 	bodySize -= (usize)bytesRead;
-	if (bodySize == 0) {
-		close(readFd);
-		readFd = -1;
+	if (bodySize == 0)
 		return flush_setup(epoll, Status::i200);
-	}
 	return write_to_client(epoll);
 }

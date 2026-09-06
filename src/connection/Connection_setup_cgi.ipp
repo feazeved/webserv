@@ -32,7 +32,6 @@ char* s_split_filename(char* cwdPath, usize length) {
 			break;
 		slashPtr = cwdPath++;
 	}
-	ASSERT(cwdPath != NULL, "cwdPath was NULL");
 	*slashPtr = 0;
 	*end = 0;
 	return slashPtr + 1;

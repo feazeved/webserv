@@ -30,9 +30,9 @@ CONNECTION_INL
 		return code;
 
 	const usize bytesToWrite = tmpBuffer.size();
-	if (bytesToWrite <= 0)
+	if (bytesToWrite == 0)
 		return code;
-	if (tmpBuffer.write(writeFd, bytesToWrite) == -1)
+	if (tmpBuffer.write(writeFd, bytesToWrite) != (isize)bytesToWrite)
 		return Status::i500;
 	return code;
 }
@@ -57,9 +57,6 @@ CONNECTION_INL
 		bodySize -= (usize)bytesWritten;
 	}
 	if (bodySize == 0) {
-		close(writeFd);
-		writeFd = -1;
-		bodySize = 0;
 		build_header(Status::i201);
 		return flush_setup(epoll, Status::i201);
 	}
@@ -74,8 +71,6 @@ CONNECTION_INL
 	if (code >= Status::i400)
 		return flush_setup_close(epoll, code);
 	if (code == Status::ok) {
-		close(writeFd);
-		writeFd = -1;
 		bodySize = 0;
 		build_header(Status::i201);
 		return flush_setup(epoll, Status::i201);
