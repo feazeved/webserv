@@ -128,12 +128,16 @@ struct Connection {
 #include "Connection_common.ipp"
 #include "Connection_dispatch.ipp"
 #include "Connection_response.ipp"
-#include "Connection_stream.ipp"
-#include "Connection_setup.ipp"
+
 #include "Connection_parse.ipp"
 #include "Connection_parse_first.ipp"
 
-#include "Connection_mode_get.ipp"
-#include "Connection_mode_autoindex.ipp"
-#include "Connection_mode_post.ipp"
-#include "Connection_mode_cgi.ipp"
+#include "Connection_stream.ipp"
+#include "Connection_stream_cgi.ipp"
+#include "Connection_stream_get.ipp"
+#include "Connection_stream_post.ipp"
+
+#include "Connection_setup.ipp"
+#include "Connection_setup_simple.ipp"
+#include "Connection_setup_cgi.ipp"
+#include "Connection_setup_get.ipp"

@@ -36,19 +36,3 @@ CONNECTION_INL
 	}
 	return read_from_client(epoll);
 }
-
-CONNECTION_INL
-(isize) post_setup(Epoll &epoll) {
-	Buffer64 pathBuffer = {};
-	const Span uploadStore = req.location->get_upload_store();
-	pathBuffer.append(uploadStore);
-	pathBuffer.append(req.relativeTarget);
-	*pathBuffer = 0;
-
-	writeFd = open(pathBuffer, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NONBLOCK, 0644);
-	if (writeFd == -1)
-		return flush_setup_close(epoll, s_get_status());
-	if (mode == Mode::POST_FIXED)
-		return download_file_fixed(epoll);
-	return download_file_chunked(epoll);
-}
