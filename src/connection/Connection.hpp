@@ -18,9 +18,8 @@
 
 #define CONNECTION_INL(ret_type) inline ret_type Connection::
 
-static const usize metadataSize = 160;	// TODO: adjust size on final pass
+static const usize metadataSize = 64;
 static const usize metasizeAlign = ALIGN_UP(metadataSize / 2, 8ul);
-static const usize bytesFree = 2 * metasizeAlign - metadataSize;	// Debug only
 static const usize bufferSize = HTTP_BUFFERSIZE - metasizeAlign;
 typedef Buffer<bufferSize> HTTP_Buffer;
 
@@ -125,6 +124,8 @@ struct Connection {
 	isize parse_setup(Epoll &epoll);
 	isize redirect_setup(Epoll &epoll, Status::Code code);
 };
+
+STATIC_ASSERT(sizeof(Connection) == 16384);
 
 #include "Connection_common.ipp"
 #include "Connection_dispatch.ipp"
