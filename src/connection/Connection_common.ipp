@@ -1,33 +1,6 @@
 #pragma once
 #include "Connection.hpp"
 
-/*
-	A mode is the state that the connection is in. It's an exclusive variable, not a bitfield
-	The connection starts in parse mode. When it is done parsing, it calls:
-
-	Setup configures each mode and calls the execution of a method.
-	When a method is done (GET, POST, CGI, AUTOINDEX) or when a non fatal error happens, it enters Flush mode
-
-	Flush mode writes all the remaining bytes in sendBuffer, then either closes or goes back to parsing mode
-	Whether it closes or not depends on if there was an error, or if it specified a keep-alive option
-*/
-CONNECTION_INL
-(isize) dispatch(Epoll &epoll) {
-	switch (mode) {
-		case Mode::PARSE_FIRST:		return parse_first(epoll); break;
-		case Mode::PARSE:			return parse(epoll); break;
-		case Mode::GET:				return upload_file(epoll); break;
-		case Mode::POST_FIXED:		return download_file_fixed(epoll); break;
-		case Mode::POST_CHUNKED:	return download_file_chunked(epoll); break;
-		case Mode::FLUSH:			return flush(epoll); break;
-		case Mode::CGI:				return cgi(epoll); break;
-		case Mode::CGI_FIXED:		return cgi_fixed(epoll); break;
-		case Mode::CGI_CHUNKED:		return cgi_chunked(epoll); break;
-		case Mode::AUTOINDEX:		return upload_directory(epoll); break;
-		default: return -1;
-	}
-}
-
 CONNECTION_INL
 (char*) append_target_path(Buffer64 &buffer) {
 	const Span root = req.location->get_root();

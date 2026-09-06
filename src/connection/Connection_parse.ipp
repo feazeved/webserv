@@ -2,23 +2,25 @@
 #include "Connection.hpp"
 
 CONNECTION_INL
-(isize) parse(Epoll &epoll) {
-	while (true) {
-		Span line;
-		while ((line = recvBuffer.find_line_end()) != NULL) {
-			if (line.size == 0) {
-				recvBuffer.readPos = recvBuffer.scanPos;
-				return setup(epoll);
-			}
-			Status::Code code = parse_line(line);
-			if (code != Status::unset)
-				return flush_setup_close(epoll, code);
-		}
+(Status::Code) parse_first_line(Span line) {
+	if (line.size < 14 || line.size >= 8000)	// ERROR: Bad request "GET / HTTP/1.1" shortest possible
+		return line.size < 14 ? Status::i400 : Status::i431;
 
-		const isize result = read_from_client(epoll);
-		if (result <= 0)
-			return result;
-	}
+	const usize readPosEnd = recvBuffer.readPos + line.size - 9;
+	char* targetEnd = line.ptr + line.size - 9;
+	if (recvBuffer.strcmp("GET "))
+		options |= Options::GET;
+	else if (recvBuffer.strcmp("POST "))
+		options |= Options::POST;
+	else if (recvBuffer.strcmp("DELETE "))
+		options |= Options::DELETE;
+	else
+		return Status::i501;
+	char* targetStart = recvBuffer.rptr();
+	recvBuffer.readPos = readPosEnd;
+	if (!recvBuffer.strcmp(" HTTP/1.1\r\n"))
+		return Status::i505;
+	return parse_validate(targetStart, targetEnd);
 }
 
 CONNECTION_INL

@@ -77,8 +77,8 @@ struct Connection {
 	Status::Code parse_line(Span line);
 	Status::Code parse_first_line(Span line);
 	Status::Code parse_cgi_line(Buffer64 &tmpBuffer);
+	Status::Code parse_validate(char* str, char* end);
 	Status::Code validate_target(char* str, char* end);
-	Status::Code validate_path(char* str, char* end);
 	Status::Code match_location();
 	Span check_cgi();
 
@@ -113,7 +113,7 @@ struct Connection {
 	isize upload_directory(Epoll &epoll);
 
 	// Setup
-	isize setup(Epoll &epoll);
+	isize setup_dispatch(Epoll &epoll);
 	isize del_setup(Epoll &epoll);
 	isize get_setup(Epoll &epoll);
 	isize get_directory_setup(Epoll &epoll, Buffer64 &pathBuffer);
@@ -127,17 +127,15 @@ struct Connection {
 };
 
 #include "Connection_common.ipp"
-#include "Connection_response.ipp"
-
+#include "Connection_dispatch.ipp"
 #include "Connection_parse.ipp"
-#include "Connection_parse_first.ipp"
+#include "Connection_parse_validate.ipp"
+#include "Connection_response.ipp"
 
 #include "Connection_stream.ipp"
 #include "Connection_stream_cgi.ipp"
 #include "Connection_stream_get.ipp"
-#include "Connection_stream_post.ipp"
 
 #include "Connection_setup.ipp"
-#include "Connection_setup_simple.ipp"
 #include "Connection_setup_cgi.ipp"
 #include "Connection_setup_get.ipp"

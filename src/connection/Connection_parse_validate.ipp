@@ -2,48 +2,6 @@
 #include "Connection.hpp"
 
 CONNECTION_INL
-(isize) parse_first(Epoll &epoll) {
-	Span line = recvBuffer.find_line_end();
-	if (line == NULL) {
-		const isize result = read_from_client(epoll);
-		if (result <= 0)
-			return result;
-		line = recvBuffer.find_line_end();
-		if (line == NULL)
-			return 0;
-	}
-
-	Status::Code code = parse_first_line(line);
-	if (code != Status::unset)
-		return flush_setup_close(epoll, code);
-	mode = Mode::PARSE;
-	return parse(epoll);
-}
-
-CONNECTION_INL
-(Status::Code) parse_first_line(Span line) {
-	if (line.size < 14 || line.size >= 8000)	// ERROR: Bad request "GET / HTTP/1.1" shortest possible
-		return line.size < 14 ? Status::i400 : Status::i431;
-
-	const usize readPosEnd = recvBuffer.readPos + line.size - 9;
-	char* targetEnd = line.ptr + line.size - 9;
-	if (recvBuffer.strcmp("GET "))
-		options |= Options::GET;
-	else if (recvBuffer.strcmp("POST "))
-		options |= Options::POST;
-	else if (recvBuffer.strcmp("DELETE "))
-		options |= Options::DELETE;
-	else
-		return Status::i501;
-	char* targetStart = recvBuffer.rptr();
-	recvBuffer.readPos = readPosEnd;
-	if (!recvBuffer.strcmp(" HTTP/1.1\r\n"))
-		return Status::i505;
-	return validate_target(targetStart, targetEnd);
-}
-
-
-CONNECTION_INL
 (Status::Code) match_location() {
 	ArrayView<Location> &locations = cfg->locations;
 	usize matchLength = 0;
@@ -99,7 +57,7 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(Status::Code) validate_path(char* str, char* end) {
+(Status::Code) validate_target(char* str, char* end) {
 	char* writePtr = str;
 	while (str < end) {
 		u8 value = (u8)*str;
@@ -128,7 +86,7 @@ CONNECTION_INL
 }
 
 CONNECTION_INL
-(Status::Code) validate_target(char* str, char* end) {
+(Status::Code) parse_validate(char* str, char* end) {
 	const usize targetLength = (usize)(end - str);
 
 	if (*str != '/')	// /images/cats/meow.jpg?FILTER=yes,ORDER=ascending\0
@@ -137,7 +95,7 @@ CONNECTION_INL
 	char* targetEnd = queryPtr == NULL ? end : queryPtr;
 	char* queryStart = queryPtr == NULL ? end : queryPtr + 1;
 	req.target = Span::create(str, (usize)(targetEnd - str));		// /images/cats/meow.jpg
-	Status::Code code = validate_path(req.target, targetEnd);
+	Status::Code code = validate_target(req.target, targetEnd);
 	if (code != Status::unset)
 		return code;
 	targetEnd = req.target.end();

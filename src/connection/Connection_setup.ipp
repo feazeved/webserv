@@ -2,6 +2,54 @@
 #include "Connection.hpp"
 
 CONNECTION_INL
+(isize) del_setup(Epoll &epoll) {
+	Buffer64 pathBuffer = {};
+	append_target_path(pathBuffer);
+
+	struct stat st;
+	if (stat(pathBuffer, &st) == -1)
+		return flush_setup_close(epoll, s_get_status());
+	if (S_ISDIR(st.st_mode))
+		return flush_setup_close(epoll, Status::i403);	// Forbids deleting directories
+	if (unlink(pathBuffer) == -1)
+		return flush_setup_close(epoll, s_get_status());
+	build_header(Status::i204);
+	return flush_setup(epoll, Status::i204);
+}
+
+CONNECTION_INL
+(isize) post_setup(Epoll &epoll) {
+	Buffer64 pathBuffer = {};
+	const Span uploadStore = req.location->get_upload_store();
+	pathBuffer.append(uploadStore);
+	pathBuffer.append(req.relativeTarget);
+	*pathBuffer = 0;
+
+	writeFd = open(pathBuffer, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NONBLOCK, 0644);
+	if (writeFd == -1)
+		return flush_setup_close(epoll, s_get_status());
+	if (mode == Mode::POST_FIXED)
+		return download_file_fixed(epoll);
+	return download_file_chunked(epoll);
+}
+
+CONNECTION_INL
+(isize) redirect_setup(Epoll &epoll, Status::Code code) {
+	status = code;
+	bodySize = 0;
+	options &= ~(u16)Options::KEEP_ALIVE;
+	mode = Mode::FLUSH;
+	sendBuffer.append("HTTP/1.1 ");
+	sendBuffer.append(status.status_str());
+	sendBuffer.append("\r\nLocation: ");
+	sendBuffer.append(req.location->get_redirect_target());
+	sendBuffer.append("\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+	if (epoll.modify(clientFd, EPOLLOUT, epollState))
+		return -1;
+	return write_to_client(epoll);
+}
+
+CONNECTION_INL
 (isize) parse_setup(Epoll &epoll) {
 	options = 0;
 	contentType = Mime::OCTET_STREAM;
@@ -38,42 +86,4 @@ CONNECTION_INL
 	if (epoll.modify(clientFd, EPOLLOUT, epollState))
 		return -1;
 	return write_to_client(epoll);
-}
-
-CONNECTION_INL
-(isize) setup(Epoll &epoll) {
-	const bool isBodyMethod = options & Options::POST;
-	const bool encodingSet = options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH);
-
-	if ((options & Options::HOST) == 0)
-		return flush_setup_close(epoll, Status::i400);	// Host not set
-	if (!isBodyMethod && encodingSet)
-		return flush_setup_close(epoll, Status::i400);	// Encoding set for non-body methods
-	if (isBodyMethod && !encodingSet)
-		return flush_setup_close(epoll, Status::i411);	// Transfer encoding not set
-
-	if (options & Options::CHUNKED_LENGTH)
-		bodySize = cfg->maxBodySize;
-
-	startTime = Clock::time_elapsed();	// Resets the clock on a valid response header
-	sendBuffer.clear();
-	if (req.location->redirectStatus.is_valid())
-		return redirect_setup(epoll, (Status::Code)req.location->redirectStatus.index);
-	if (options & Options::CGI && !(options & Options::POST))
-		mode = Mode::CGI;
-	else if (options & Options::CGI && (options & Options::POST))
-		mode = (options & Options::FIXED_LENGTH) ? Mode::CGI_FIXED : Mode::CGI_CHUNKED;
-	else if (options & Options::GET)
-		mode = Mode::GET;
-	else if (options & Options::POST)
-		mode = (options & Options::FIXED_LENGTH) ? Mode::POST_FIXED : Mode::POST_CHUNKED;
-	if (epoll.modify(clientFd, EPOLLIN | EPOLLOUT, epollState))
-		return -1;
-	if (mode == Mode::POST_FIXED || mode == Mode::POST_CHUNKED)
-		return post_setup(epoll);
-	if (mode == Mode::CGI || mode == Mode::CGI_FIXED || mode == Mode::CGI_CHUNKED)
-		return cgi_setup(epoll);
-	if (mode == Mode::GET)
-		return get_setup(epoll);
-	return del_setup(epoll);
 }
