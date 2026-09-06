@@ -71,7 +71,6 @@ BUFFER_INL
 }
 
 // <a href="filename[256]">filename[64]</a>    02-Dec-2004 18:46    241476
-// The filename (256) + filename display (64) + 17 date + 19 for digits + 6 tabs + 16 html stuff
 
 BUFFER_INL
 (usize) append_entry(DIR* directory, struct dirent *dirEntry) {
@@ -82,7 +81,6 @@ BUFFER_INL
 		return 0;
 	if (fstatat(dirfd(directory), dirEntry->d_name, &st, 0)) {
 		append(HTTP_INDEX_PERMISSION);
-		errno = 0;
 		return sizeof(HTTP_INDEX_PERMISSION) - 1;
 	}
 
@@ -90,22 +88,26 @@ BUFFER_INL
 	char buf[32];
 	Clock::format_time(&st.st_mtim, buf);
 
+	// 0 visible, 776 bytes (11 + 3 * 255)
 	char* start = append("<a href=\"");
 	append_url_component(entry.ptr, entry.size);
 	append("\">");
 
-	if (entry.size >= 64) {
-		append_html(entry.ptr, 61);
+	// 52 visible, 297 bytes (3 + (52 - 3) * 6 bytes) (52 = HTTP_INDEX_NAME_LENGTH)
+	if (entry.size >= HTTP_INDEX_NAME_LENGTH) {
+		append_html(entry.ptr, HTTP_INDEX_NAME_LENGTH - 3);
 		append("...");
 	}
 	else {
 		append_html(entry.ptr, entry.size);
-		memset(' ', 64 - entry.size);
+		memset(' ', HTTP_INDEX_NAME_LENGTH - entry.size);
 	}
+
+	// 48 visible, 53 bytes
 	append("</a>");
-	memset('\t', 4);
+	memset(' ', 8);
 	append_inline<17>(buf, 17);
-	memset('\t', 2);
+	memset(' ', 4);
 	append_digit10(fileSize);
 	append("\n");
 	return (usize)(wptr() - start);
