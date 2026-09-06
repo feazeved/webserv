@@ -14,13 +14,15 @@ struct Span {
 
 	template <usize length>
 	bool operator==(const char (&literal)[length]) const {
-		return size == length - 1 && STRCMP(ptr, literal) == 0;
+		return size == length - 1 && LITCMP(ptr, literal) == 0;
 	}
 
 	template <usize length>
 	bool strcasecmp(const char (&string)[length]) {
 		u8 buffer[length];
 		const usize strLength = length - 1;
+		if (size != strLength)	// Review: remove this
+			return false;
 
 		MEMCPY_INLINE(buffer, ptr, strLength);
 		for (usize i = 0; i < strLength; i++)

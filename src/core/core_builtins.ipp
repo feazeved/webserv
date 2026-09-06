@@ -37,7 +37,7 @@
 #define MEMCMP(s1, s2, n)		__builtin_memcmp(s1, s2, n)
 
 #define STRLEN(str) 			__builtin_strlen(str)
-#define STRCMP(s1, s2)			__builtin_memcmp(s1, s2, sizeof(s2) - 1)
+#define LITCMP(s1, s2)			__builtin_memcmp(s1, s2, sizeof(s2) - 1)
 #define STRCPY(dst, src)		__builtin_memcpy(dst, src, sizeof(src) - 1)
 
 // TODO: find better names

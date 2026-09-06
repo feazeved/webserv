@@ -29,47 +29,47 @@ CONNECTION_INL
 		return 0;
 	epoll.clr_read_flag();
 	isize bytesRead = recvBuffer.read(clientFd, ATOMIC_IOSIZE);
-	return bytesRead == 0 ? -1 : bytesRead;
-}
-
-CONNECTION_INL
-(isize) write_to_server() {
-	isize bytesWritten = recvBuffer.write(writeFd, bodySize);
-	if (bytesWritten < 0)
-		return bytesWritten;
-	bodySize -= (usize) bytesWritten;
-	return bytesWritten;
-}
-
-// TODO: The buffer is only going to fill with data related to the chunks, decide if compaction is worth given current length
-// Optimization opportunity here to have src copy directly to itself
-// Otherwise just prepend the remainder to the end of what was read
-CONNECTION_INL
-(isize) write_to_server_chunked() {
-	if (recvBuffer.readPos < recvBuffer.scanPos) {
-		if (recvBuffer.write(writeFd, MIN(recvBuffer.scanPos - recvBuffer.readPos, (usize)ATOMIC_IOSIZE)) < 0)
-			return -1;
-		return 0;
-	}
-
-	HTTP_Buffer tmpBuffer = {};
-	isize result = recvBuffer.dechunk(tmpBuffer, chunkSize, bodySize);
-	if (result == -1)
+	if (bytesRead <= 0) {
+		if (bytesRead == -2)
+			return flush_setup_close(epoll, Status::i413);
 		return -1;
-	if (tmpBuffer.size() == 0) {
-		recvBuffer.scanPos = recvBuffer.readPos;
-		recvBuffer.compact();
-		return result;
 	}
-
-	if (tmpBuffer.write(writeFd, ATOMIC_IOSIZE) < 0)
-		return -1;
-
-	const usize decodedRemaining = tmpBuffer.size();
-	const usize rawRemaining = recvBuffer.size();
-	if (rawRemaining != 0)
-		tmpBuffer.append(recvBuffer.rptr(), rawRemaining);
-	recvBuffer.bufcpy(tmpBuffer);
-	recvBuffer.scanPos = decodedRemaining;
-	return result;
+	return bytesRead;
 }
+
+// CONNECTION_INL
+// (Status::Code) write_to_server(HTTP_Buffer &src, usize bytes, bool isCgi) {
+// 	bytes = MIN(bytes, ATOMIC_IOSIZE);
+// 	isize bytesWritten = src.write(writeFd, bodySize);
+// 	if (bytesWritten < 0)
+// 		return isCgi ? Status::unset : Status::i500;
+// 	bodySize -= (usize) bytesWritten;
+// 	return Status::ok;
+// }
+
+// CONNECTION_INL
+// (Status::Code) write_to_server_chunked(bool isCgi) {
+// 	Status::Code code = Status::ok;
+
+// 	if (recvBuffer.readPos < recvBuffer.scanPos) {
+// 		const usize bytesLeft = recvBuffer.scanPos - recvBuffer.readPos;
+// 		code = write_to_server(recvBuffer, bytesLeft, isCgi);
+// 		if (code != Status::ok)
+// 			return code;
+// 		if (recvBuffer.readPos < recvBuffer.scanPos)
+// 			return Status::unset;
+// 	}
+
+// 	HTTP_Buffer tmpBuffer = {};
+// 	code = recvBuffer.dechunk(tmpBuffer, chunkSize, bodySize);
+// 	if (tmpBuffer.size() != 0) {
+// 		code = write_to_server(tmpBuffer, ATOMIC_IOSIZE, isCgi);
+// 		const usize decodedRemaining = tmpBuffer.size();
+// 		const usize rawRemaining = recvBuffer.size();
+// 		if (rawRemaining != 0)
+// 			tmpBuffer.append(recvBuffer.rptr(), rawRemaining);
+// 		recvBuffer.bufcpy(tmpBuffer);
+// 		recvBuffer.scanPos = decodedRemaining;
+// 	}
+// 	return code;
+// }

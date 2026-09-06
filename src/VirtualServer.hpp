@@ -53,7 +53,7 @@ public:
 
 	VirtualServer()
 		: serverRoot(), host(), locations(), port(SIZE_MAX),
-		maxBodySize(SIZE_MAX), gameState(NULL), listenFd(-1) {
+		maxBodySize(LONG_MAX), gameState(NULL), listenFd(-1) {
 		MEMSET_INLINE(errorPages, 0, sizeof(errorPages));
 	}
 

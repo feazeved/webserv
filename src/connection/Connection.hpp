@@ -96,18 +96,22 @@ struct Connection {
 	isize flush(Epoll &epoll);
 	isize write_to_client(Epoll &epoll);
 	isize read_from_client(Epoll &epoll);
-	isize write_to_server();
-	isize write_to_server_chunked();
+	// Status::Code write_to_server(HTTP_Buffer &src, usize bytes, bool isCgi);
+	// Status::Code write_to_server_chunked(bool isCgi);
 	char* append_target_path(Buffer64 &buffer);
 
 	// Streaming
 	isize cgi(Epoll &epoll);
 	isize cgi_fixed(Epoll &epoll);
 	isize cgi_chunked(Epoll &epoll);
-	isize upload_file(Epoll &epoll);
+	isize switch_to_cgi(Epoll &epoll);
+
 	isize download_file(Epoll &epoll);
 	isize download_file_fixed(Epoll &epoll);
 	isize download_file_chunked(Epoll &epoll);
+	isize switch_to_post(Epoll &epoll);
+
+	isize upload_file(Epoll &epoll);
 	isize upload_directory(Epoll &epoll);
 
 	// Setup

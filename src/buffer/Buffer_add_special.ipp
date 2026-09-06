@@ -37,21 +37,6 @@ BUFFER_INL
 	return optr;
 }
 
-// Should be impossible for dst buffer to not fit
-// TODO: Might remove MIN3 and have it overflow to guarantee behavior
-BUFFER_INL
-(usize) append_buffer(Buffer &src, usize length) {
-	usize remainingSrc = src.writePos - src.readPos;	// How many bytes remain unread
-	usize remainingDst = sizeof(data) - writePos;	// How many bytes are free in the buffer
-	usize appendLength = MIN3(length, remainingSrc, remainingDst);
-
-	MEMCPY(data + writePos, src.data + src.readPos, appendLength);
-	src.readPos += appendLength;
-	src.scanPos = (src.scanPos >= src.readPos) ? src.scanPos : src.readPos;
-	writePos += appendLength;
-	return appendLength;
-}
-
 BUFFER_INL
 (char*) append_url_component(const char *ptr, usize length) {
 	static const u8 hex[] = "0123456789ABCDEF";

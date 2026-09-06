@@ -6,46 +6,55 @@
 */
 
 CONNECTION_INL
-(isize) cgi_fixed(Epoll &epoll) {
-	write_to_server();
-	if (recvBuffer.size() < bodySize && read_from_client(epoll) == -1)
+(isize) switch_to_cgi(Epoll &epoll) {
+	close(writeFd);
+	writeFd = -1;
+	bodySize = recvBuffer.scanPos - recvBuffer.readPos;
+	mode = Mode::CGI;
+	if (epoll.modify(clientFd, EPOLLOUT, epollState))
 		return -1;
-	if (recvBuffer.size() >= bodySize) {
-		mode = Mode::CGI;
-		if (epoll.modify(clientFd, EPOLLOUT, epollState))
-			return -1;
-	}
-	return cgi(epoll);
+	return read_from_client(epoll);
 }
 
 CONNECTION_INL
 (isize) cgi_chunked(Epoll &epoll) {
-	isize bytesWritten = write_to_server_chunked();
-	if (bytesWritten == -1)
-		return flush_setup_close(epoll, Status::i400);
-	if (bytesWritten == -3)
-		return flush_setup_close(epoll, Status::i413);
-	if (chunkSize == SIZE_MAX - 2) {
-		bodySize = recvBuffer.scanPos - recvBuffer.readPos;
-		mode = Mode::CGI;
-		if (epoll.modify(clientFd, EPOLLOUT, epollState))
-			return -1;
+	if (recvBuffer.readPos < recvBuffer.scanPos) {
+		usize bytesLeft = recvBuffer.scanPos - recvBuffer.readPos;
+		if (recvBuffer.atomic_write(writeFd, bytesLeft, bodySize) == -1)
+			return 0;
+		if (recvBuffer.readPos < recvBuffer.scanPos)
+			return 0;
 	}
-	else if (read_from_client(epoll) == -1)
+
+	HTTP_Buffer tmpBuffer = {};
+	Status::Code code = recvBuffer.dechunk(tmpBuffer, chunkSize, bodySize);
+	if (tmpBuffer.size() != 0) {
+		tmpBuffer.atomic_write(writeFd, bodySize, bodySize);
+		const usize decodedRemaining = tmpBuffer.size();
+		const usize rawRemaining = recvBuffer.size();
+		if (rawRemaining != 0)
+			tmpBuffer.append(recvBuffer.rptr(), rawRemaining);
+		recvBuffer.bufcpy(tmpBuffer);
+		recvBuffer.scanPos = decodedRemaining;
+	}
+
+	if (code == Status::ok)
+		switch_to_cgi(epoll);
+	return read_from_client(epoll);
+}
+
+CONNECTION_INL
+(isize) cgi_fixed(Epoll &epoll) {
+	recvBuffer.atomic_write(writeFd, bodySize, bodySize);
+	if (recvBuffer.size() < bodySize)
 		return -1;
-	return cgi(epoll);
+	if (recvBuffer.size() >= bodySize)
+		switch_to_cgi(epoll);
+	return read_from_client(epoll);
 }
 
 CONNECTION_INL
 (isize) cgi(Epoll &epoll) {
-	if (mode == Mode::CGI && writeFd >= 0) {
-		write_to_server();
-		if (bodySize == 0) {
-			close(writeFd);
-			writeFd = -1;
-		}
-	}
-
 	isize bytesRead = 0;
 	if (readFd >= 0) {
 		bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
@@ -129,6 +138,11 @@ CONNECTION_INL
 	char* scriptPath = append_target_path(buffer);		// /home/webserv/www/images/cgi/process.py
 	const usize scriptPathLength = (usize)(buffer.wptr() - scriptPath);
 	buffer.writePos++;
+	struct stat st;
+	if (stat(scriptPath, &st) == -1 || access(scriptPath, R_OK) == -1)
+		return NULL;
+	// if (!S_ISREG(st.st_mode))
+	// 	return flush_setup_close(epoll, Status::i403);
 	char* cwdPath = buffer.append(scriptPath, scriptPathLength + 1);			// /home/webserv/www/images/cgi
 	argv[0] = buffer.append(req.interpreter.ptr, req.interpreter.size + 1);			// /bin/python3
 	argv[1] = s_split_filename(cwdPath, scriptPathLength);						// process.py
@@ -164,12 +178,8 @@ CONNECTION_INL
 	int fdIn[2], fdOut[2];
 
 	chdirPath = append_env(pathBuffer, argv);
-	struct stat scriptStat;
-	if (stat(argv[1], &scriptStat) == -1 || access(argv[1], R_OK) == -1)
+	if (chdirPath == NULL)
 		goto Error;
-	if (!S_ISREG(scriptStat.st_mode))
-		return flush_setup_close(epoll, Status::i403);
-
 	if (pipe(fdIn) == -1)
 		goto Error;
 	if (pipe(fdOut) == -1)

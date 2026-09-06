@@ -29,7 +29,7 @@ public:
 	- sizeof(HTTP_STATUS_DEFAULT_PAGE(code)) - 2)
 
 enum Code {
-	unset = 1, ok = 1, ixxx = 2, i511 = sizeof(HTTP_STATUS_STRINGS) - sizeof(HTTP_STATUS(511))
+	ok = 0, unset = 1, ixxx = 2, i511 = sizeof(HTTP_STATUS_STRINGS) - sizeof(HTTP_STATUS(511))
 		- sizeof(HTTP_STATUS_DEFAULT_PAGE(511)) - 2,
 	i510 = SUBP(510, 511), i508 = SUBP(508, 510), i507 = SUBP(507, 508), i506 = SUBP(506, 507),
 	i505 = SUBP(505, 506), i504 = SUBP(504, 505), i503 = SUBP(503, 504), i502 = SUBP(502, 503),

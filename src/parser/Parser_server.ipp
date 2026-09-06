@@ -61,7 +61,7 @@ void s_directive_body_size(const Span &value, usize &bodySize) {
 	if (digitLength == 0)
 		PERR_EXIT(1, "Error: Invalid max body size");
 	const usize bytes = fn::strtol10(str, digitLength, digitLength);
-	if (bytes > (SIZE_MAX >> factor))
+	if (bytes >= (SIZE_MAX >> factor))
 		PERR_EXIT(1, "Error: Invalid max body size");
 	bodySize = bytes << factor;
 }

@@ -79,7 +79,7 @@ CONNECTION_INL
 	req.target.size = (usize)(writePtr - req.target.ptr);
 	*writePtr = '\0';
 	for (char* ptr = req.target.ptr; ptr < writePtr; ptr++) {
-		if (STRCMP(ptr, "/../") == 0 || STRCMP(ptr, "/..\0") == 0)
+		if (LITCMP(ptr, "/../") == 0 || LITCMP(ptr, "/..\0") == 0)
 			return Status::i400;
 	}
 	return match_location();

@@ -30,7 +30,7 @@ CONNECTION_INL
 	startTime = Clock::time_elapsed();
 	if (epoll.modify(clientFd, EPOLLIN, epollState))
 		return -1;
-	return parse(epoll);		// Keep the connection alive until header is flushed
+	return first_parse(epoll);		// Keep the connection alive until header is flushed
 }
 
 CONNECTION_INL

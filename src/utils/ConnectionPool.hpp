@@ -4,6 +4,17 @@
 #include "Bitmap.hpp"
 #include "Connection.hpp"
 
+/*
+	Connection Pool uses a two-layer metadata bitmap to efficiently index its 4096 connections
+	It is split in 64 blocks, each of which contains 64 connections (aka elements)
+	- blockBitmap indexes entire blocks, so it is only set when all connections within it are used
+	- elementBitmap represents the use state of a connection
+	- delBitmap represents connections marked for deletion
+	
+	* It does not have a constructor because it is lazily paged and can be trivially constructed
+	TODO: Create a bitmap array that takes a dynamic amount of connections
+*/
+
 class ConnectionPool {
 public:
 	static const usize blockSize = sizeof(Connection) * 64;

@@ -15,7 +15,6 @@
 
 template <usize bufferSize>
 struct Buffer {
-	static const usize minReadSize = 4;
 	u64 clobberPre;
 	u8 data[bufferSize - 16 - (3 * sizeof(usize))];	// Trailing storage pads unbounded memory loads
 	u64 clobberPost;
@@ -79,14 +78,15 @@ struct Buffer {
 
 		if (bytesFree < bytes) {
 			bytesFree = compact();
-			if (bytesFree < minReadSize)
+			if (bytesFree == 0)
 				return -2;
 		}
 
 		const usize bytesCapped = MIN(bytesFree, bytes);
 		isize bytesRead = ::read(fd, data + writePos, bytesCapped);
-		if (bytesRead > 0)
-			writePos += (usize) bytesRead;
+		if (bytesRead < 0)
+			return -1;
+		writePos += (usize) bytesRead;
 		return bytesRead;
 	}
 
@@ -101,9 +101,20 @@ struct Buffer {
 		return bytesWritten;
 	}
 
+	isize atomic_write(int fd, usize bytes, usize &bytesOut) {
+		usize bytesCapped = MIN3(bytes, writePos - readPos, ATOMIC_IOSIZE);
+		isize bytesWritten = ::write(fd, data + readPos, bytesCapped);
+
+		if (bytesWritten > 0) {
+			readPos += (usize) bytesWritten;
+			scanPos = (scanPos >= readPos) ? scanPos : readPos;
+			bytesOut -= (usize)bytesWritten;
+		}
+		return bytesWritten;
+	}
+
 	// HTTP
-	isize dechunk(Buffer& tmp, usize &chunkSize, usize &bodySize);
-	isize decode(int writeFd, usize &chunkSize, usize &bodySize);
+	Status::Code dechunk(Buffer& tmp, usize &chunkSize, usize &bodySize);
 
 	// Search
 	Span find_line_end();
@@ -111,7 +122,6 @@ struct Buffer {
 	Span find_char(u8 c);
 
 	template <usize N> bool strcmp(const char (&string)[N]);
-	// template <usize N> bool strcasecmp(const char (&string)[N]);
 
 	bool skip_spaces();
 	Span get_field_value(usize readEnd);

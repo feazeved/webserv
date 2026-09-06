@@ -1,42 +1,40 @@
 #pragma once
 #include "Connection.hpp"
 
-CONNECTION_INL
-(isize) download_file_chunked(Epoll &epoll) {
-	isize result = write_to_server_chunked();
-	if (result == -1)
-		return -1;
-	if (result == 1) {
-		bodySize = recvBuffer.scanPos - recvBuffer.readPos;
-		mode = Mode::POST;
-		if (epoll.modify(clientFd, EPOLLOUT, epollState))
-			return -1;
-		return download_file(epoll);
-	}
-	if (read_from_client(epoll) == -1)
-		return -1;
-	return 0;
-}
+// CONNECTION_INL
+// (isize) download_file_chunked(Epoll &epoll) {
+// 	Status::Code code = write_to_server_chunked(false);
+// 	if (code >= Status::i400)
+// 		return flush_setup_close(epoll, code);
+// 	if (code == Status::ok) {
+// 		bodySize = recvBuffer.scanPos - recvBuffer.readPos;
+// 		mode = Mode::POST;
+// 		if (epoll.modify(clientFd, EPOLLOUT, epollState))
+// 			return -1;
+// 		return download_file(epoll);
+// 	}
+// 	return read_from_client(epoll);
+// }
 
-CONNECTION_INL
-(isize) download_file_fixed(Epoll &epoll) {
-	isize bytesWritten = write_to_server();
-	if (bytesWritten < 0)
-		return flush_setup_close(epoll, Status::i500);
-	if (recvBuffer.size() < bodySize && read_from_client(epoll) == -1)
-		return -1;
-	if (recvBuffer.size() >= bodySize) {
-		mode = Mode::POST;
-		if (epoll.modify(clientFd, EPOLLOUT, epollState))
-			return -1;
-		return download_file(epoll);
-	}
-	return bytesWritten;
-}
+// CONNECTION_INL
+// (isize) download_file_fixed(Epoll &epoll) {
+// 	Status::Code code = recvBuffer.atomic_write(writeFd, bodySize, bodySize);
+// 	if (code >= Status::i400)
+// 		return flush_setup_close(epoll, code);
+// 	if (recvBuffer.size() < bodySize)
+// 		return -1;
+// 	if (recvBuffer.size() >= bodySize) {
+// 		mode = Mode::POST;
+// 		if (epoll.modify(clientFd, EPOLLOUT, epollState))
+// 			return -1;
+// 		return download_file(epoll);
+// 	}
+// 	return read_from_client(epoll);;
+// }
 
 CONNECTION_INL
 (isize) download_file(Epoll &epoll) {
-	isize bytesWritten = write_to_server();
+	isize bytesWritten = recvBuffer.atomic_write(writeFd, bodySize, bodySize);
 	if (bytesWritten < 0)
 		return flush_setup_close(epoll, Status::i500);
 	if (bodySize == 0) {

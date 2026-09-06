@@ -80,7 +80,7 @@ usize s_count_servers(const char *str, usize length) {
 	while (str < end) {
 		while (IS_SPACE(*str))
 			str++;
-		if (STRCMP(str, "server") != 0) {
+		if (LITCMP(str, "server") != 0) {
 			if (*str == 0)
 				return serverCount;
 			return SIZE_MAX;

@@ -15,7 +15,7 @@ usize s_append_entry(HTTP_Buffer &src, DIR* directory, struct dirent *dirEntry) 
 
 	struct stat st;
 
-	if (STRCMP(entry.ptr, ".\0") == 0 || STRCMP(entry.ptr, "..\0") == 0)
+	if (LITCMP(entry.ptr, ".\0") == 0 || LITCMP(entry.ptr, "..\0") == 0)
 		return 0;
 	if (fstatat(dirfd(directory), dirEntry->d_name, &st, 0)) {
 		src.append(HTTP_INDEX_PERMISSION);
@@ -93,7 +93,7 @@ CONNECTION_INL
 	readFd = open(pathBuffer, O_RDONLY | O_CLOEXEC | O_NONBLOCK);
 	if (readFd >= 0) {
 		struct stat st;
-		if (fstat(readFd, &st) == -1) {
+		if (fstat(readFd, &st) == -1 || (usize)st.st_size >= MAX_FILE_SIZE) {
 			close(readFd);
 			readFd = -1;
 			return flush_setup_close(epoll, s_get_status());

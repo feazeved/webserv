@@ -10,3 +10,14 @@ POST/PRE refer to the location of the padding. [PRE] [DATA] [POST]
 3) Match algorithms require 24 bytes OOB padding
 (POST 24 bytes OOB padding)
 
+
+
+---
+
+
+Rules
+1) Size type variables will always take a maximum size of LONG_MAX, even for unsigned types. 
+This is done to avoid overflows and always have error sentinels.
+LONG_MAX is a ridiculously large number anyhow, any real constraint should realistically be much smaller
+
+2) 

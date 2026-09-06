@@ -3,15 +3,13 @@
 
 CONNECTION_INL
 (isize) first_parse(Epoll &epoll) {
-	if (read_from_client(epoll) == -1)
-		return -1;
+	isize bytesRead = read_from_client(epoll);
+	if (bytesRead <= 0)
+		return bytesRead;
 
 	Span line = recvBuffer.find_line_end();
-	if (line == NULL) {
-		if (recvBuffer.capacity() - recvBuffer.size() < recvBuffer.minReadSize)
-			return flush_setup_close(epoll, Status::i431);
+	if (line == NULL)
 		return 0;
-	}
 
 	Status::Code code = parse_first_line(line);
 	if (code != Status::unset)
@@ -22,8 +20,9 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) parse(Epoll &epoll) {
-	if (read_from_client(epoll) == -1)
-		return -1;
+	isize bytesRead = read_from_client(epoll);
+	if (bytesRead <= 0)
+		return bytesRead;
 
 	Span line;
 	while ((line = recvBuffer.find_line_end()) != NULL) {
@@ -35,8 +34,6 @@ CONNECTION_INL
 		if (code != Status::unset)
 			return flush_setup_close(epoll, code);
 	}
-	if (recvBuffer.capacity() - recvBuffer.size() < recvBuffer.minReadSize)
-		return flush_setup_close(epoll, Status::i431);
 	return 0;
 }
 
