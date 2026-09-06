@@ -6,7 +6,7 @@
 // These are exclusive states
 namespace Mode {
 	enum e_http_mode {
-		FIRST_PARSE = 0,	// Changes to PARSE after first line
+		PARSE_FIRST = 0,	// Changes to PARSE after first line
 		PARSE,				// Calls setup when finished
 
 		GET,				// Changes to FLUSH upon bodysize == 0

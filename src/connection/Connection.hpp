@@ -38,7 +38,7 @@ struct Connection {
 			MEMSET_INLINE(this, 0, sizeof(*this));
 		}
 	};
-/* ========== Attributes ======================== */
+/* ========== Attributes ============================================= */
 	VirtualServer* cfg;
 	Status status;
 	u16 options;	// TODO: Change this to a bitmap
@@ -67,6 +67,7 @@ struct Connection {
 		usize chunkSize;	// 0 means chunk header; otherwise remaining chunk bytes
 		DIR* directory;
 	};
+/* =================================================================== */
 
 	// Common
 	isize init(int fd, VirtualServer* serverConfig);
@@ -83,7 +84,7 @@ struct Connection {
 
 	// Configuration
 	isize dispatch(Epoll &epoll);
-	isize first_parse(Epoll &epoll);
+	isize parse_first(Epoll &epoll);
 	isize parse(Epoll &epoll);
 	isize end_connection();
 
@@ -126,7 +127,6 @@ struct Connection {
 };
 
 #include "Connection_common.ipp"
-#include "Connection_dispatch.ipp"
 #include "Connection_response.ipp"
 
 #include "Connection_parse.ipp"

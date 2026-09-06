@@ -2,6 +2,26 @@
 #include "Connection.hpp"
 
 CONNECTION_INL
+(isize) parse(Epoll &epoll) {
+	while (true) {
+		Span line;
+		while ((line = recvBuffer.find_line_end()) != NULL) {
+			if (line.size == 0) {
+				recvBuffer.readPos = recvBuffer.scanPos;
+				return setup(epoll);
+			}
+			Status::Code code = parse_line(line);
+			if (code != Status::unset)
+				return flush_setup_close(epoll, code);
+		}
+
+		const isize result = read_from_client(epoll);
+		if (result <= 0)
+			return result;
+	}
+}
+
+CONNECTION_INL
 (Status::Code) parse_line(Span line) {
 	if (line.size < 2 || line.size >= 8000)
 		return line.size < 2 ? Status::i400 : Status::i431;
@@ -62,32 +82,4 @@ CONNECTION_INL
 			break;
 	}
 	return Status::unset;
-}
-
-/*	CGI output is server-controlled, so this path performs only the inexpensive
-	structural checks needed before forwarding the line
-*/
-CONNECTION_INL
-(Status::Code) parse_cgi_line(Buffer64 &dst) {
-	const char* const lineEnd = (char*)sendBuffer.sptr() - 2;
-	const usize totalLength = (usize)(lineEnd - (char*)sendBuffer.rptr());
-
-	const usize readEnd = sendBuffer.readPos + totalLength;
-	Span field = sendBuffer.find_char(':');
-	if (field.ptr == NULL)
-		return Status::ixxx;
-
-	const isize fieldIndex = fn::match_field(field);
-	if (fieldIndex != Field::STATUS) {
-		dst.append(field.ptr, totalLength);
-		dst.append("\r\n");
-		return Status::ok;
-	}
-
-	Span value = sendBuffer.get_field_value(readEnd);
-	if (value.ptr == NULL)
-		return Status::ixxx;	// Rejects empty values
-
-	Status::Code code = Status::s_str_to_code(value.ptr);	// TODO: change the check to be if OK not if error
-	return code;
 }

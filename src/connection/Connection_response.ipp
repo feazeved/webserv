@@ -1,6 +1,34 @@
 #pragma once
 #include "Connection.hpp"
 
+/*	CGI output is server-controlled, so this path performs only the inexpensive
+	structural checks needed before forwarding the line
+*/
+CONNECTION_INL
+(Status::Code) parse_cgi_line(Buffer64 &dst) {
+	const char* const lineEnd = (char*)sendBuffer.sptr() - 2;
+	const usize totalLength = (usize)(lineEnd - (char*)sendBuffer.rptr());
+
+	const usize readEnd = sendBuffer.readPos + totalLength;
+	Span field = sendBuffer.find_char(':');
+	if (field.ptr == NULL)
+		return Status::ixxx;
+
+	const isize fieldIndex = fn::match_field(field);
+	if (fieldIndex != Field::STATUS) {
+		dst.append(field.ptr, totalLength);
+		dst.append("\r\n");
+		return Status::ok;
+	}
+
+	Span value = sendBuffer.get_field_value(readEnd);
+	if (value.ptr == NULL)
+		return Status::ixxx;	// Rejects empty values
+
+	Status::Code code = Status::s_str_to_code(value.ptr);	// TODO: change the check to be if OK not if error
+	return code;
+}
+
 CONNECTION_INL
 (Status::Code) build_cgi_header(Status::Code code) {
 	Buffer64 tmpBuffer = {};

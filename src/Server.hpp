@@ -82,31 +82,25 @@ public:
 	}
 
 	void reap_children() {
-		usize failCount = 0;
 		usize elementIndex;
-		pid_t pidList[ConnectionPool::elementCount];
 
 		for (usize i = 0; i < connections.blockCount; i++) {
-			Bitmap &bitmap = connections.delBitmap[i];
-			usize outerIndex = 64 * i;
-			while ((elementIndex = bitmap.pop_first_set()) != WORD_BITS) {	// Also clears the bitmap
-				usize linearIndex = outerIndex + elementIndex;
+			Bitmap bitmap = connections.delBitmap[i];
+			const usize outerIndex = 64 * i;
+
+			while ((elementIndex = bitmap.pop_first_set()) != WORD_BITS) {
+				const usize linearIndex = outerIndex + elementIndex;
 				Connection& connection = connections.connections[linearIndex];
-				if (connection.processId != -1 && waitpid(connection.processId, NULL, WNOHANG) <= 0)
-					pidList[failCount++] = connection.processId;
+
+				if (connection.processId != -1) {
+					const pid_t result = waitpid(connection.processId, NULL, WNOHANG);
+					if (result == 0 || (result == -1 && errno == EINTR))
+						continue;
+				}
+
+				connections.delBitmap[i].bitclr(elementIndex);
 				connections.free_slot(linearIndex);
 			}
-		}
-
-		while (failCount > 0) {
-			usize writeIndex = 0;
-			for (usize i = 0; i < failCount; i++) {
-				const pid_t processId = pidList[i];
-				const pid_t result = waitpid(processId, NULL, WNOHANG);
-				if (result == 0 || (result == -1 && errno == EINTR))
-					pidList[writeIndex++] = processId;
-			}
-			failCount = writeIndex;
 		}
 	}
 

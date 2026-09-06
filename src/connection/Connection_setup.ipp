@@ -7,14 +7,14 @@ CONNECTION_INL
 	contentType = Mime::OCTET_STREAM;
 	bodySize = 0;
 	chunkSize = 0;
-	mode = Mode::FIRST_PARSE;
+	mode = Mode::PARSE_FIRST;
 	req.clear();
 	sendBuffer.clear();
 	status.clear();
 	startTime = Clock::time_elapsed();
 	if (epoll.modify(clientFd, EPOLLIN, epollState))
 		return -1;
-	return first_parse(epoll);		// Keep the connection alive until header is flushed
+	return parse_first(epoll);		// Keep the connection alive until header is flushed
 }
 
 CONNECTION_INL
