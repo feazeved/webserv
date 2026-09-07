@@ -12,8 +12,7 @@
 
 #define PARSER_INL(ret_type) ret_type inline Parser::
 
-class Parser {
-public:
+struct Parser {
 	struct Token {
 		enum Type {
 			OPEN_BRACKET,

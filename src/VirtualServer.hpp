@@ -13,8 +13,6 @@
 #include "Array.hpp"
 #include "Environment.hpp"
 
-#define VIRTUALSERVER_INL(ret_type) ret_type inline VirtualServer::
-
 struct Location {
 	Span16	uri;
 	Span16	root;

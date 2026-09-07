@@ -4,17 +4,15 @@
 #include <sys/epoll.h>
 
 #include "core.hpp"
-#include "VirtualServer.hpp"
 
 struct Epoll {
 	static const usize maxEvents = 64;
 
 	i32 fd;
 	usize index;
-	VirtualServer* servers;
 	struct epoll_event eventList[maxEvents];
 
-	Epoll (VirtualServer *srcServers) : fd(-1), index(0), servers(srcServers) {
+	Epoll () : fd(-1), index(0) {
 		fd = epoll_create(1);
 		if (fd == -1)
 			return ;
