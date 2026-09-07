@@ -6,20 +6,26 @@ CONNECTION_INL
 	if (line.size < 14 || line.size >= 8000)	// ERROR: Bad request "GET / HTTP/1.1" shortest possible
 		return line.size < 14 ? Status::i400 : Status::i431;
 
-	const usize readPosEnd = parseBuffer.readPos + line.size - 9;
 	char* targetEnd = line.ptr + line.size - 9;
-	if (parseBuffer.strcmp("GET "))
+	char* targetStart = parseBuffer.rptr();
+
+	if (LITCMP(line.ptr, "GET ") == 0) {
+		targetStart += 4;
 		options |= Options::GET;
-	else if (parseBuffer.strcmp("POST "))
+	}
+	else if (LITCMP(line.ptr, "POST ") == 0) {
+		targetStart += 5;
 		options |= Options::POST;
-	else if (parseBuffer.strcmp("DELETE "))
+	}
+	else if (LITCMP(line.ptr, "DELETE ") == 0) {
+		targetStart += 7;
 		options |= Options::DELETE;
+	}
 	else
 		return Status::i501;
-	char* targetStart = parseBuffer.rptr();
-	parseBuffer.readPos = readPosEnd;
-	if (!parseBuffer.strcmp(" HTTP/1.1\r\n"))
+	if (LITCMP(targetEnd, " HTTP/1.1\r\n") != 0)
 		return Status::i505;
+	parseBuffer.readPos = parseBuffer.scanPos;	//
 	return parse_validate(targetStart, targetEnd);
 }
 

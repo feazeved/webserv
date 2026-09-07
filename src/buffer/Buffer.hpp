@@ -85,7 +85,6 @@ struct Buffer {
 	Span find_header_end();
 	Span find_char(u8 c);
 
-	template <usize N> bool strcmp(const char (&string)[N]);
 	bool skip_spaces();
 	Span get_field_value(usize readEnd);
 
@@ -140,5 +139,4 @@ typedef Buffer<2 * HTTP_BUFFERSIZE - 256> HTTP_PBuffer;
 #include "Buffer_add.ipp"
 #include "Buffer_add_special.ipp"
 #include "Buffer_search.ipp"
-#include "Buffer_string.ipp"
 #include "Buffer_http.ipp"

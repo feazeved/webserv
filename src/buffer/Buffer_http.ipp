@@ -45,3 +45,20 @@ BUFFER_INL
 	}
 	return Status::unset;
 }
+
+BUFFER_INL
+(Span) get_field_value(usize readEnd) {
+	Span result = {};
+	while ((data[readPos] == ' ' || data[readPos] == '\t'))
+		readPos++;
+	if (readPos >= readEnd)
+		return result;
+	usize valueEnd = readEnd;
+	while ((data[valueEnd - 1] == ' ' || data[valueEnd - 1] == '\t'))
+		valueEnd--;
+	data[valueEnd] = '\0';	//	REVIEW
+	result.ptr = (char*)data + readPos;
+	result.size = valueEnd - readPos;
+	readPos = scanPos;
+	return result;
+}

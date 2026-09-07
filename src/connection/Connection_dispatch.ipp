@@ -35,7 +35,7 @@ CONNECTION_INL
 	if (epoll.request_read() && parseBuffer.read(clientFd, ATOMIC_IOSIZE) <= 0)
 		return flush_setup_close(epoll, Status::i500);
 
-	Span line = recvBuffer.find_line_end();
+	Span line = parseBuffer.find_line_end();
 	if (line == NULL)
 		return 0;
 
@@ -54,9 +54,9 @@ CONNECTION_INL
 		return flush_setup_close(epoll, Status::i500);
 
 	Span line;
-	while ((line = recvBuffer.find_line_end()) != NULL) {
+	while ((line = parseBuffer.find_line_end()) != NULL) {
 		if (line.size == 0) {
-			recvBuffer.readPos = recvBuffer.scanPos;
+			parseBuffer.readPos = parseBuffer.scanPos;
 			return setup_dispatch(epoll);
 		}
 		Status::Code code = parse_line(line);

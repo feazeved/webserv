@@ -54,7 +54,7 @@ void s_store_location(char* &wptr, const Parser::ParsedLocation &ploc, Location 
 		location.redirectTarget = s_store_location_span(location, wptr, ploc.redirectTarget);
 		location.redirectStatus = ploc.redirectStatus;
 		location.methods = ploc.methods;
-		location.autoindex = ploc.autoindex;	
+		location.autoindex = ploc.autoindex;
 }
 
 static inline

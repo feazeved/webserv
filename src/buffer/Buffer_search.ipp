@@ -57,3 +57,10 @@ BUFFER_INL
 	Span field = {NULL, 0};
 	return field;
 }
+
+BUFFER_INL
+(bool) skip_spaces() {
+	while ((data[readPos] == ' ' || data[readPos] == '\t'))
+		readPos++;
+	return MEMCMP(data + readPos, "\r\n", 2) != 0;
+}

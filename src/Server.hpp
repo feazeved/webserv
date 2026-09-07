@@ -62,7 +62,7 @@ public:
 		}
 
 		while (true) {
-			const usize eventCount = epoll.wait(1000);
+			const usize eventCount = epoll.wait(1000);	// REVIEW
 			if (eventCount == SIZE_MAX) {
 				if (errno == EINTR)
 					continue;
