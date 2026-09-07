@@ -72,16 +72,16 @@ usize strtol10(const char* src, usize minLength = 1, usize maxLength = 19) {
 	return length >= minLength && length <= maxLength ? value : SIZE_MAX;
 }
 
-bool strcasecmp16(const char* string, const char* ref, usize length) {
-	u128 buffer[2];
-	u8* bufPtr = (u8*) buffer;
-	const u128 tmp = (u128) 0x2020202020202020UL;
-	const u128 orMask = (tmp << 64) | (tmp);
+// bool strcasecmp16(const char* string, const char* ref, usize length) {
+// 	u128 buffer[2];
+// 	u8* bufPtr = (u8*) buffer;
+// 	const u128 tmp = (u128) 0x2020202020202020UL;
+// 	const u128 orMask = (tmp << 64) | (tmp);
 
-	MEMCPY_INLINE(bufPtr, string, 16);
-	buffer[0] |= orMask;
-	return MEMCMP(bufPtr, ref, 16) == 0;
-}
+// 	MEMCPY_INLINE(bufPtr, string, 16);
+// 	buffer[0] |= orMask;
+// 	return MEMCMP(bufPtr, ref, 16) == 0;
+// }
 
 FN_ATTR(always_inline, pure) static inline
 usize strtol16(const char* src, usize minLength = 1, usize maxLength = 15) {

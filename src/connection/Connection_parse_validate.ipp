@@ -78,6 +78,9 @@ CONNECTION_INL
 	}
 	req.target.size = (usize)(writePtr - req.target.ptr);
 	*writePtr = '\0';
+	char* ptr = req.target.ptr;
+	if (ptr[1] == '/' || (ptr[1] == '.' && ptr[2] == '/'))
+		return Status::i400;
 	for (char* ptr = req.target.ptr; ptr < writePtr; ptr++) {
 		if (LITCMP(ptr, "/../") == 0 || LITCMP(ptr, "/..\0") == 0)
 			return Status::i400;
