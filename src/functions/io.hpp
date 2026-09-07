@@ -59,13 +59,14 @@ bool set_stream_mode(int fd) {
 
 FN_ATTR(always_inline, flatten) static inline
 bool read_whole_file(Arena &arena, const char *filePath, Span &file, usize padSize = 32, usize minSize = 0, usize maxSize = UINT32_MAX) {
-	struct stat st;
-	if (stat(filePath, &st) == -1 || (usize)st.st_size < minSize || (usize)st.st_size >= maxSize)
-		PERR_RETURN(1, "Error: Invalid file");
-
-	int fd = open(filePath, O_RDONLY);
+	int fd = open(filePath, O_RDONLY | O_CLOEXEC);
 	if (fd == -1)
 		PERR_RETURN(1, "Error: Failed to open file");
+	struct stat st;
+	if (fstat(fd, &st) == -1 || !S_ISREG(st.st_mode) || (usize)st.st_size < minSize || (usize)st.st_size >= maxSize) {
+		close(fd);
+		PERR_RETURN(1, "Error: Invalid file");
+	}
 
 	const usize fileSize = (usize)st.st_size;
 	const u32 fileOffset = arena.alloc(fileSize, 1 + padSize);

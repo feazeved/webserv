@@ -14,7 +14,6 @@ class Status {
 public:
 	static const usize errorPageCount = 32 + 12;
 	static char strings[];
-	static char *const startPtr;
 
 	u16 index;
 
@@ -101,7 +100,7 @@ STATIC_ASSERT(i100 == 9);
 	}
 
 	inl static usize s_code_to_index(Code code) {
-		char* ptr = startPtr + (usize) code;
+		char* ptr = strings + (usize) code;
 		usize first = (u8)(ptr[0] - '0');
 		usize second = (u8)(ptr[1] - '0');
 		usize third = (u8)(ptr[2] - '0');
@@ -116,21 +115,21 @@ STATIC_ASSERT(i100 == 9);
 
 	inl Span status_str() const {
 		Span result;
-		result.ptr = startPtr + (usize)index;
+		result.ptr = strings + (usize)index;
 		result.size = (u8) result.ptr[-1];
 		return result;
 	}
 
 	inl static Span s_status_str(Status::Code code) {
 		Span result;
-		result.ptr = startPtr + (u16) code;
+		result.ptr = strings + (u16) code;
 		result.size = (u8) result.ptr[-1];
 		return result;
 	}
 
 	inl Span error_page() const {
 		Span result;
-		result.ptr = startPtr + (usize)index;
+		result.ptr = strings + (usize)index;
 		result.size = (u8) result.ptr[-1];
 	
 		result.ptr += result.size + 2;
@@ -142,7 +141,7 @@ STATIC_ASSERT(i100 == 9);
 		const usize offset = s_index(3 + (number >= 32), number - (number >= 32 ? 32 : 0));
 
 		Span tmp;
-		tmp.ptr = startPtr + offset;
+		tmp.ptr = strings + offset;
 		tmp.size = (u8) tmp.ptr[-1];
 		tmp.ptr += tmp.size + 2;
 		tmp.size = (u8)tmp.ptr[-1];
@@ -151,7 +150,7 @@ STATIC_ASSERT(i100 == 9);
 
 	inl static Span s_error_page(Status::Code code) {
 		Span result;
-		result.ptr = startPtr + (u16) code;
+		result.ptr = strings + (u16) code;
 		result.size = (u8) result.ptr[-1];
 	
 		result.ptr += result.size + 2;
@@ -204,13 +203,6 @@ STATIC_ASSERT(i100 == 9);
 		return index != unset;
 	}
 
-	// Constructors and Overloads
-	inl Status() : index(unset) {}
-	inl Status(Code code) : index((u16)code) {}
-
-	inl explicit Status(usize number) : index(s_num_to_code(number)) {}
-	inl explicit Status(const char *str) : index((u16)s_str_to_code(str)) {}
-
 	inl Status& operator=(Code code) {
 		index = (u16)code;
 		return *this;
@@ -227,7 +219,6 @@ STATIC_ASSERT(i100 == 9);
 
 #ifdef MAIN_FILE
 	char Status::strings[] = HTTP_STATUS_STRINGS;
-	char *const Status::startPtr = Status::strings;
 #endif
 
 STATIC_ASSERT(sizeof(HTTP_STATUS_STRINGS) <= UINT16_MAX);

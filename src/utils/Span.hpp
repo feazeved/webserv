@@ -21,7 +21,7 @@ struct Span {
 	bool strcasecmp(const char (&string)[length]) {
 		u8 buffer[length];
 		const usize strLength = length - 1;
-		if (size != strLength)	// Review: remove this
+		if (size != strLength)	// TODO: remove this
 			return false;
 
 		MEMCPY_INLINE(buffer, ptr, strLength);

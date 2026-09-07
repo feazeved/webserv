@@ -51,6 +51,7 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) parse_setup(Epoll &epoll) {
+	recvBuffer.compact();	// REVIEW: Check this
 	options = 0;
 	contentType = Mime::OCTET_STREAM;
 	bodySize = 0;

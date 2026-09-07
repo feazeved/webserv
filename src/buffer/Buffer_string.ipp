@@ -18,6 +18,7 @@ BUFFER_INL
 	usize valueEnd = readEnd;
 	while ((data[valueEnd - 1] == ' ' || data[valueEnd - 1] == '\t'))
 		valueEnd--;
+	data[valueEnd] = '\0';	//	REVIEW
 	result.ptr = (char*)data + readPos;
 	result.size = valueEnd - readPos;
 	readPos = scanPos;

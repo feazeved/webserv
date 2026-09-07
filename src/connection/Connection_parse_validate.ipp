@@ -100,9 +100,8 @@ CONNECTION_INL
 		return code;
 	targetEnd = req.target.end();
 	req.query = Span::create(queryStart, (usize)(end - queryStart));	// FILTER=yes,ORDER=ascending\0
-																			//		<---V
-	req.targetName = Span::create(targetEnd, 0);					// /meow.jpg?FILTER=yes,ORDER=ascending\0
-	while (req.targetName.ptr[-1] != '/')							// meow.jpg
+	req.targetName = Span::create(targetEnd, 0);						// /meow.jpg?FILTER=yes,ORDER=ascending\0
+	while (req.targetName.ptr[-1] != '/')								// meow.jpg
 		req.targetName.ptr--;
 	req.targetName.size = (usize)(targetEnd - req.targetName.ptr);
 	req.uri = req.location->get_uri();
