@@ -33,11 +33,11 @@ BUFFER_INL
 
 BUFFER_INL
 (isize) read(int fd, usize bytes) {
-	usize bytesFree = sizeof(data) - writePos;
-
-	if (bytesFree < bytes)
-		return -1;
+	const usize bytesFree = sizeof(data) - writePos;
 	const usize bytesCapped = MIN(bytesFree, bytes);
+
+	if (bytesCapped == 0)
+		return -1;
 	isize bytesRead = ::read(fd, data + writePos, bytesCapped);
 	if (bytesRead > 0)
 		writePos += (usize) bytesRead;
