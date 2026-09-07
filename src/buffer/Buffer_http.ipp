@@ -11,7 +11,7 @@ BUFFER_INL
 	while (writePos - readPos > 2 && tmp.size() < ATOMIC_IOSIZE) {
 // ==== Reading chunk header ==================================================
 		if (chunkSize == 0) {
-			if (writePos - readPos < 5)	// REVIEW
+			if (writePos - readPos < 5)
 				break;
 			if (LITCMP(data + readPos, "0\r\n\r\n") == 0) {
 				readPos += 5;
@@ -30,7 +30,8 @@ BUFFER_INL
 		}
 // ==== Reading chunk body ====================================================
 		else {
-			const usize appendLength = MIN3(chunkSize, writePos - readPos - 2, (usize)ATOMIC_IOSIZE - tmp.size());
+			// const usize appendLength = MIN3(chunkSize, writePos - readPos - 2, (usize)ATOMIC_IOSIZE - tmp.size());
+			const usize appendLength = MIN(chunkSize, writePos - readPos - 2);
 			tmp.append((char*)data + readPos, appendLength);
 			readPos += appendLength;
 			scanPos = readPos;

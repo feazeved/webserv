@@ -84,8 +84,6 @@ CONNECTION_INL
 	startTime = Clock::time_elapsed();	// Resets the clock on a valid response header
 	if (req.location->redirectStatus.is_valid())
 		return redirect_setup(epoll, (Status::Code)req.location->redirectStatus.index);
-	if (epoll.modify(clientFd, EPOLLIN | EPOLLOUT, epollState))
-		return -1;
 	if (options & Options::CGI)
 		return cgi_setup(epoll);
 	if (options & Options::GET)

@@ -28,7 +28,7 @@ CONNECTION_INL
 	const usize bytesToWrite = tmpBuffer.size();
 	if (bytesToWrite == 0)
 		return code;
-	if (tmpBuffer.write(writeFd, bytesToWrite) != (isize)bytesToWrite)
+	if (tmpBuffer.write_all(writeFd, bytesToWrite) != (isize)bytesToWrite)
 		return Status::i500;
 	return code;
 }
@@ -47,7 +47,7 @@ CONNECTION_INL
 (isize) download_file_fixed(Epoll &epoll) {
 	isize bytesWritten = 0;
 	if (bodySize != 0 && recvBuffer.size() != 0) {
-		bytesWritten = recvBuffer.write(writeFd, bodySize);
+		bytesWritten = recvBuffer.write_all(writeFd, bodySize);
 		if (bytesWritten < 0)
 			return flush_setup_close(epoll, Status::i500);
 		bodySize -= (usize)bytesWritten;

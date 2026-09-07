@@ -55,3 +55,25 @@ BUFFER_INL
 	}
 	return bytesWritten;
 }
+
+BUFFER_INL
+(isize) write_all(int fd, usize bytes) {
+	usize numRetries = 3;
+	const isize bytesTotal = MIN(bytes, writePos - readPos);
+	usize bytesToWrite = bytesTotal;
+
+	while (bytesToWrite > 0) {
+		usize bytesCapped = MIN(ATOMIC_IOSIZE, bytesToWrite);
+		isize bytesWritten = ::write(fd, data + readPos, bytesCapped);
+		if (bytesWritten <= 0) {
+			if (numRetries == 0)
+				return -1;
+			numRetries--;
+			continue;
+		}
+		bytesToWrite -= (usize)bytesWritten;
+		readPos += (usize) bytesWritten;
+		scanPos = (scanPos >= readPos) ? scanPos : readPos;
+	}
+	return bytesTotal;
+}

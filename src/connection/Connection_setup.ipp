@@ -1,6 +1,13 @@
 #pragma once
 #include "Connection.hpp"
 
+/*
+	The IO state upon entering setup is EPOLLIN
+	* del/post don't need state changes because if necessary, flush handles it
+	* cgi gets changed to EPOLLOUT when changing to cgi_parsed
+	* get changes to EPOLLOUT
+*/
+
 CONNECTION_INL
 (isize) del_setup(Epoll &epoll) {
 	Buffer64 pathBuffer = {};
@@ -40,15 +47,12 @@ CONNECTION_INL
 (isize) redirect_setup(Epoll &epoll, Status::Code code) {
 	bodySize = 0;
 	options &= ~(u16)Options::KEEP_ALIVE;
-	mode = Mode::FLUSH;
 	sendBuffer.append("HTTP/1.1 ");
 	sendBuffer.append(Status::s_status_str(code));
 	sendBuffer.append("\r\nLocation: ");
 	sendBuffer.append(req.location->get_redirect_target());
 	sendBuffer.append("\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
-	if (epoll.modify(clientFd, EPOLLOUT, epollState))
-		return -1;
-	return write_to_client(epoll);
+	return flush_setup(epoll);
 }
 
 CONNECTION_INL

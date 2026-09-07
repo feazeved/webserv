@@ -6,6 +6,9 @@ CONNECTION_INL
 	Buffer64 pathBuffer = {};
 	append_target_path(pathBuffer);
 
+	if (epoll.modify(clientFd, EPOLLOUT, epollState))
+		return -1;
+
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)
 		return flush_setup_close(epoll, s_get_status());

@@ -76,6 +76,7 @@ struct Buffer {
 	isize read_compact(int fd, usize bytes);
 	isize read(int fd, usize bytes);
 	isize write(int fd, usize bytes);
+	isize write_all(int fd, usize bytes);
 
 	// HTTP
 	Status::Code dechunk(Buffer& tmp, usize &chunkSize, usize &bodySize);

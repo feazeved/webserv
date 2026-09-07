@@ -27,7 +27,7 @@ CONNECTION_INL
 (isize) cgi_fixed(Epoll &epoll) {
 	isize bytesWritten = 0;
 	if (bodySize != 0 && recvBuffer.size() != 0) {
-		bytesWritten = recvBuffer.write(writeFd, bodySize);
+		bytesWritten = recvBuffer.write_all(writeFd, bodySize);
 		if (bytesWritten < 0)
 			return flush_setup_close(epoll, Status::i500);
 		bodySize -= (usize)bytesWritten;
@@ -58,6 +58,8 @@ CONNECTION_INL
 	if (readFd == -1)
 		return flush_setup(epoll);
 	mode = Mode::CGI_PARSED;
+	if (epoll.modify(clientFd, EPOLLOUT, epollState))
+		return -1;
 	return write_to_client(epoll);
 }
 
