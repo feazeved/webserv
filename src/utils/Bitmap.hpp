@@ -6,7 +6,7 @@
 
 class Bitmap {
 public:
-	usize bitmap;
+	usize value;
 
 	sinl usize mask_start(usize bitStart) {
 		return SIZE_MAX << bitStart % WORD_BITS;
@@ -21,15 +21,15 @@ public:
 	}
 
 	inl void bitset(usize index) {
-		bitmap |= (usize)1 << index;
+		value |= (usize)1 << index;
 	}
 
 	inl void bitclr(usize index) {
-		bitmap &= ~((usize)1 << index);
+		value &= ~((usize)1 << index);
 	}
 
 	inl void bitflip(usize index) {
-		bitmap ^= (usize)1 << index;
+		value ^= (usize)1 << index;
 	}
 
 	// Inclusive start, Exclusive end
@@ -37,15 +37,15 @@ public:
 		const usize mask = mask_range(bitStart, bitEnd);
 		const usize bitMask = (usize)-bit;
 
-		bitmap ^= (bitmap ^ bitMask) & mask;
+		value ^= (value ^ bitMask) & mask;
 	}
 
 	inl bool bitread(u8 index) const {
-		return (bitmap & ((usize)1 << index)) != 0;
+		return (value & ((usize)1 << index)) != 0;
 	}
 
 	inl usize bitread(usize bitStart, usize bitEnd) const {
-		return (bitmap & mask_range(bitStart, bitEnd)) >> bitStart;
+		return (value & mask_range(bitStart, bitEnd)) >> bitStart;
 	}
 
 	inl static usize s_pop_first_set(usize &bitmap) {
@@ -55,21 +55,21 @@ public:
 	}
 
 	inl usize pop_first_set() {
-		usize index = bitmap == 0 ? WORD_BITS : (usize)CTZ(bitmap);
-		bitmap &= bitmap - 1;
+		usize index = value == 0 ? WORD_BITS : (usize)CTZ(value);
+		value &= value - 1;
 		return index;
 	}
 
 	inl usize find_first_clear() {
-		if (bitmap == SIZE_MAX)
+		if (value == SIZE_MAX)
 			return WORD_BITS;
-		return (usize)CTZ(~bitmap);
+		return (usize)CTZ(~value);
 	}
 
 	inl usize find_first_set() const {
-		if (bitmap == 0)
+		if (value == 0)
 			return WORD_BITS;
-		return (usize)CTZ(bitmap);
+		return (usize)CTZ(value);
 	}
 
 	// template <void (*Func)(usize)>
@@ -85,19 +85,19 @@ public:
 
 /* ========== Accessors and Overloads ======================== */
 	inl usize count() const {
-		return (usize)POPCOUNT(bitmap);
+		return (usize)POPCOUNT(value);
 	}
 
 	inl void clear() {
-		bitmap = 0;
+		value = 0;
 	}
 
 	inl void set() {
-		bitmap = SIZE_MAX;
+		value = SIZE_MAX;
 	}
 	
 	operator usize() {
-		return bitmap;
+		return value;
 	}
 
 	Bitmap() {

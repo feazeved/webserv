@@ -85,7 +85,7 @@ public:
 		usize elementIndex;
 
 		for (usize i = 0; i < connections.blockCount; i++) {
-			Bitmap bitmap = connections.delBitmap[i];
+			Bitmap bitmap = connections.map.del[i];
 			const usize outerIndex = 64 * i;
 
 			while ((elementIndex = bitmap.pop_first_set()) != WORD_BITS) {
@@ -98,7 +98,7 @@ public:
 						continue;
 				}
 
-				connections.delBitmap[i].bitclr(elementIndex);
+				connections.map.del[i].bitclr(elementIndex);
 				connections.free_slot(linearIndex);
 			}
 		}
@@ -110,8 +110,8 @@ public:
 		usize elementIndex;
 	
 		for (usize i = 0; i < connections.blockCount; i++) {
-			Bitmap bitmap = connections.elementBitmap[i];
-			bitmap.bitmap &= ~connections.delBitmap[i];
+			Bitmap bitmap = connections.map.element[i];
+			bitmap.value &= ~connections.map.del[i];
 			usize outerIndex = 64 * i;
 			while ((elementIndex = bitmap.pop_first_set()) != WORD_BITS) {
 				usize linearIndex = outerIndex + elementIndex;

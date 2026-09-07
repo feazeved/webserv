@@ -23,16 +23,14 @@ public:
 
 public:
 	Connection connections[elementCount];
-	Bitmap blockBitmap;
-	Bitmap elementBitmap[blockCount];	// Metadata for each 64 Connection Block
-	Bitmap delBitmap[blockCount];		// Connections marked for closure
+	struct {
+		Bitmap block;
+		Bitmap element[blockCount];	// Metadata for each 64 Connection Block
+		Bitmap del[blockCount];		// Connections marked for closure
+	}	map;
 
 	void reset() {
-		blockBitmap.clear();
-		for (usize blockIndex = 0; blockIndex < blockCount; blockIndex++) {
-			elementBitmap[blockIndex].clear();
-			delBitmap[blockIndex].clear();
-		}
+		MEMSET_INLINE(&map, 0, sizeof(map));
 	}
 
 	Connection* get_ptr(usize linearIndex) {
@@ -42,7 +40,7 @@ public:
 	template <void (Connection::*Func)()>
 	void for_each_active() {
 		for (usize blockIndex = 0; blockIndex < blockCount; blockIndex++) {
-			Bitmap active = elementBitmap[blockIndex];
+			Bitmap active = map.element[blockIndex];
 
 			Connection *base = connections + blockIndex * 64;
 			usize elementIndex;
@@ -55,8 +53,8 @@ public:
 
 	void clear() {
 		for (usize blockIndex = 0; blockIndex < blockCount; blockIndex++) {
-			Bitmap &elementBlock = elementBitmap[blockIndex];
-			if (elementBlock.bitmap == 0)
+			Bitmap &elementBlock = map.element[blockIndex];
+			if (elementBlock.value == 0)
 				continue;
 
 			Connection *base = connections + blockIndex * 64;
@@ -65,20 +63,20 @@ public:
 				base[elementIndex].end_connection();
 				elementBlock.bitclr(elementIndex);
 			}
-			blockBitmap.bitclr(blockIndex);
-			delBitmap[blockIndex].clear();
+			map.block.bitclr(blockIndex);
+			map.del[blockIndex].clear();
 		}
 	}
 
 	usize acquire_slot(int clientFd, VirtualServer *server) {
-		usize blockIndex = blockBitmap.find_first_clear();
+		usize blockIndex = map.block.find_first_clear();
 		if (blockIndex >= blockCount)
 			return SIZE_MAX;
 
-		usize elementIndex = elementBitmap[blockIndex].find_first_clear();
-		elementBitmap[blockIndex].bitset(elementIndex);
-		if (elementBitmap[blockIndex].bitmap == SIZE_MAX)
-			blockBitmap.bitset(blockIndex);
+		usize elementIndex = map.element[blockIndex].find_first_clear();
+		map.element[blockIndex].bitset(elementIndex);
+		if (map.element[blockIndex].value == SIZE_MAX)
+			map.block.bitset(blockIndex);
 
 		usize index = blockIndex * 64 + elementIndex;
 		connections[index].init(clientFd, server);
@@ -89,8 +87,8 @@ public:
 		usize elementIndex = linearIndex % 64;
 		usize blockIndex = linearIndex / 64;
 
-		blockBitmap.bitclr(blockIndex);
-		elementBitmap[blockIndex].bitclr(elementIndex);
+		map.block.bitclr(blockIndex);
+		map.element[blockIndex].bitclr(elementIndex);
 	}
 
 	void mark_for_deletion(usize linearIndex) {
@@ -98,7 +96,7 @@ public:
 		usize blockIndex = linearIndex / 64;
 
 		connections[linearIndex].end_connection();
-		delBitmap[blockIndex].bitset(elementIndex);
+		map.del[blockIndex].bitset(elementIndex);
 	}
 
 	Connection& operator[](usize index) {
