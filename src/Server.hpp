@@ -44,7 +44,7 @@ public:
 	Epoll epoll;
 
 	Server(const char* filePath) : alpha((u8*)&connections, sizeof(connections)), 
-		beta(storage, sizeof(storage)), parser(filePath, servers, alpha, beta), epoll(servers) {
+		beta(storage, sizeof(storage)), parser(filePath, servers, alpha, beta), epoll() {
 		connections.reset();
 		if (epoll.fd == -1)
 			PERR_EXIT(clear(), "Error: Failed to create epoll");
