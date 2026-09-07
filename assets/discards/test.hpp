@@ -13,11 +13,11 @@ struct SmallString{
 };
 
 static inline
-isize s_match2(const char *ptr, const char *end){
+isize s_match2(const char* ptr, const char* end){
 	static const char ltable[][32] = 
 		{"status", "location", "transfer-encoding", "content-length"};		
 
-	const char *optr = ptr;
+	const char* optr = ptr;
 	while (ptr < end && *ptr != ':')
 		ptr++;
 	usize length = (usize)(ptr - optr);
@@ -39,7 +39,7 @@ isize s_match2(const char *ptr, const char *end){
 	return 0;	
 }
 
-isize s_match(const char *ptr, const char *end) {
+isize s_match(const char* ptr, const char* end) {
 	static const char ltable[][5] = {
 		{'h','t','m','l'},
 		{'h','t','m'},
@@ -53,7 +53,7 @@ isize s_match(const char *ptr, const char *end) {
 		{'t','x','t'}
 	};
 
-	const char *optr = ptr;
+	const char* optr = ptr;
 	while (ptr < end && *ptr != ':')
 		ptr++;
 	usize length = (usize)(ptr - optr);

@@ -40,8 +40,8 @@ isize match_mime_type(char* &ptr, char* end) {
 }
 
 static inline
-isize s_get_mime_type(const char *dotPos, const char *end) {
-	static const char *mimeStrings[] = {"\x09" "text/html", "\x09" "text/html", 
+isize s_get_mime_type(const char* dotPos, const char* end) {
+	static const char* mimeStrings[] = {"\x09" "text/html", "\x09" "text/html", 
 	"\x08" "text/css", "\x10" "application/json", "\x16" "application/javascript",
 	"\x09" "image/png", "\x0A" "image/jpeg", "\x0A" "image/jpeg", 
 	"\x09" "image/gif", "\x0A" "text/plain", "\x18" "application/octet-stream"};

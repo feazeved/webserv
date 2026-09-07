@@ -39,7 +39,7 @@ public:
 		u16 milliseconds, microseconds, nanoseconds;
 	};
 
-	static void format_time(struct timespec *tm, char *buffer) {
+	static void format_time(struct timespec* tm, char* buffer) {
 		u64 nanoseconds = (u64)tm->tv_nsec + (u64)(tm->tv_sec) * 1000000000ul;
 		return s_format_time(nanoseconds, (u8*)buffer);	
 	}

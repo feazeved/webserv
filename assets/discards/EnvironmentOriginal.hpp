@@ -10,11 +10,11 @@ private:
 
 public:
 	u8 buffer[bufferSize];
-	char *envp[envSize];
+	char* envp[envSize];
 	usize optr, bufIndex;
 
-	bool append(char *str, usize length) {
-		char *end = str + length - 1;	// The last null terminator is not important
+	bool append(char* str, usize length) {
+		char* end = str + length - 1;	// The last null terminator is not important
 		if (length / 2 <= (envSize - optr)) {	// FAST PATH, should be guaranteed
 			envp[optr] = str++;
 			while (str < end) {
@@ -36,10 +36,10 @@ public:
 		return false;
 	}
 
-	Environment(const char **envpSrc) : 
+	Environment(const char* *envpSrc) : 
 		buffer(), envp(), optr(0), bufIndex(0) {
 		usize length;
-		const char *str;
+		const char* str;
 
 		for (; optr < envSize / 2; optr++) {
 			str = envpSrc[optr];

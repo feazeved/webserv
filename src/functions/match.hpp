@@ -37,7 +37,7 @@ Span find_dot(Span span) {
 
 template <usize count, usize size>
 FN_ATTR(pure, always_inline) static inline
-isize s_match(const u8 *ptr, usize length, const u8 (&ltable)[count][size]) {
+isize s_match(const u8* ptr, usize length, const u8 (&ltable)[count][size]) {
 	u8 buffer[size * 2];
 
 	length = length >= size ? 0 : length;
@@ -99,7 +99,7 @@ isize match_mime(Span target) {
 // 	char tmp = span.ptr[0];
 // 	span.ptr[0] = '.';
 
-// 	char *end = span.ptr + span.size;
+// 	char* end = span.ptr + span.size;
 // 	Span ext = {span.ptr + span.size, 0};
 // 	while (*ext.ptr != '.')
 // 		ext.ptr--;

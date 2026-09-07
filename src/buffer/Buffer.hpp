@@ -104,8 +104,8 @@ struct Buffer {
 	char* append_mime(u8 mimeIndex);
 	char* append_digit10(usize number);
 	char* append_digit16(usize number);
-	char* append_url_component(const char *ptr, usize length);
-	char* append_html(char *ptr, usize length);
+	char* append_url_component(const char* ptr, usize length);
+	char* append_html(char* ptr, usize length);
 	usize append_entry(DIR* directory, struct dirent *dirEntry);
 	char* memset(u8 byte, usize length);
 	template <usize N> char* memset_inline(u8 byte, usize length);

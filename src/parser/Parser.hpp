@@ -57,7 +57,7 @@ public:
 	Span file;
 	usize serverCount;
 
-	Parser(const char *filePath, VirtualServer (&servers)[MAX_VIRTUAL_SERVERS], Arena &srcAlpha, Arena &srcBeta)
+	Parser(const char* filePath, VirtualServer (&servers)[MAX_VIRTUAL_SERVERS], Arena &srcAlpha, Arena &srcBeta)
 		: alpha(srcAlpha), beta(srcBeta), file(), serverCount(0) {
 		if (fn::read_whole_file(alpha, filePath, file, 63, 16))
 			std::exit(1);

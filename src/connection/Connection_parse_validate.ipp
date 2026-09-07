@@ -27,8 +27,8 @@ CONNECTION_INL
 // REVIEW: CGI cant fail?
 CONNECTION_INL
 (Span) check_cgi() {
-	char *cgiEnd = req.cgi.end();
-	char *targetEnd = req.target.end();
+	char* cgiEnd = req.cgi.end();
+	char* targetEnd = req.target.end();
 	u16 lengths[2];
 	Span result = {};
 
@@ -44,7 +44,7 @@ CONNECTION_INL
 
 	while (req.cgi.ptr < cgiEnd) {
 		MEMCPY_INLINE(lengths, req.cgi.ptr, sizeof(lengths));
-		const char *ext = req.cgi.ptr + sizeof(lengths);
+		const char* ext = req.cgi.ptr + sizeof(lengths);
 		if (req.targetExt.size == lengths[0] && MEMCMP(ext, req.targetExt.ptr, req.targetExt.size) == 0) {
 			result.ptr = req.cgi.ptr + sizeof(lengths) + lengths[0];
 			result.size = (u16)(lengths[1]);

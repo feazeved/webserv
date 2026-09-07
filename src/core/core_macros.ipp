@@ -7,7 +7,7 @@
 // === Builtin extensions =====================================
 #define MEMFIND(dst, str, dstSize) \
 ({ \
-	const u8 *mf_dst = (const u8 *)(dst); \
+	const u8* mf_dst = (const u8*)(dst); \
 	const usize mf_dstSize = (usize)(dstSize); \
 	const usize mf_strSize = sizeof(str) - 1; \
 	usize mf_result = SIZE_MAX; \

@@ -14,7 +14,7 @@
 */
 
 struct Arena {
-	u8 *ptr;
+	u8* ptr;
 	usize size, capacity;
 
 	Arena(u8* srcPtr, usize srcLength) : ptr(srcPtr), size(0), capacity(srcLength) {}

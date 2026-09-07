@@ -2,7 +2,7 @@
 // If equal, consumes characters and skips valid spaces
 // TODO: fix this shit
 static inline
-bool s_compare_case(char* &str, char *end, const char* ref, u32 refLength)
+bool s_compare_case(char* &str, char* end, const char* ref, u32 refLength)
 {
 	if (str + refLength > end)
 		return false;

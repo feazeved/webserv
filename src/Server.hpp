@@ -43,7 +43,7 @@ public:
 	Parser parser;
 	Epoll epoll;
 
-	Server(const char *filePath) : alpha((u8*)&connections, sizeof(connections)), 
+	Server(const char* filePath) : alpha((u8*)&connections, sizeof(connections)), 
 		beta(storage, sizeof(storage)), parser(filePath, servers, alpha, beta), epoll(servers) {
 		connections.reset();
 		if (epoll.fd == -1)

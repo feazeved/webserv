@@ -30,7 +30,7 @@ void s_store_cgi(char* &wptr, const Parser::ParsedCgi &cgiBlock, Location &locat
 		location.cgiBlock.index = (u16)(wptr - (char*)&location.uri);
 		location.cgiBlock.size = (u16)cgiBlock.size;
 		for (usize index = 0; index < cgiBlock.definitions.count; index += 4) {
-			Parser::Token *definition = cgiBlock.definitions.ptr + index;
+			Parser::Token* definition = cgiBlock.definitions.ptr + index;
 			const Span &extension = definition[0].value;
 			const Span &interpreter = definition[2].value;
 			const u16 lengths[2] = {(u16)extension.size, (u16)interpreter.size};
@@ -73,14 +73,14 @@ PARSER_INL
 	if (allocation == UINT32_MAX)
 		std::exit(1);
 	ArrayView<Location> locations((Location*)beta.mptr(allocation), source.count);
-	char *wptr = (char*)(locations.ptr + locations.count);
+	char* wptr = (char*)(locations.ptr + locations.count);
 	for (usize locationIndex = 0; locationIndex < locations.count; locationIndex++)
 		s_store_location(wptr, source[locationIndex], locations[locationIndex]);
 	return locations;
 }
 
 static inline
-void s_build_error_page_path(char *out, const Span &root, const Span &path) {
+void s_build_error_page_path(char* out, const Span &root, const Span &path) {
 	usize length = 0;
 	if (root.size != 0) {
 		MEMCPY(out, root.ptr, root.size);

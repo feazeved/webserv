@@ -6,23 +6,6 @@
 #include "core.hpp"
 #include "VirtualServer.hpp"
 
-struct Key {
-	i32 clientFd;
-	u32 index;
-
-	bool is_server() {
-		return !!(index & 0x80000000ul);
-	}
-
-	u32 server_index() {
-		return index & 0x7FFFFFFFul;
-	}
-
-	u32 connection_index() {
-		return index;
-	}
-};
-
 struct Epoll {
 	static const usize maxEvents = 64;
 
@@ -51,7 +34,6 @@ struct Epoll {
 		MEMSET_INLINE(eventList, 0, sizeof(eventList));
 	}
 
-	// Can return a personal struct here and access it like .fd, .clientIndex
 	struct epoll_event* get_event(usize srcIndex) {
 		index = srcIndex;
 		return eventList + index;
@@ -96,14 +78,5 @@ struct Epoll {
 
 	bool is_error() {
 		return !!(eventList[index].events & (EPOLLERR | EPOLLHUP));
-	}
-
-	// TBD
-	int client_fd() {
-		return (i32) eventList[index].data.u64;
-	}
-
-	VirtualServer* cfg() {
-		return servers + index;
 	}
 };

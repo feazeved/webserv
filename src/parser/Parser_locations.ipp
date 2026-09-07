@@ -72,13 +72,13 @@ PARSER_INL
 
 	ParsedCgi cgi;
 	tokArray.ptr++;
-	Token *definitionStart = tokArray.ptr;
+	Token* definitionStart = tokArray.ptr;
 	while (tokArray[0].type != Token::CLOSE_BRACKET) {
-		Token *definition = tokArray.ptr;
+		Token* definition = tokArray.ptr;
 		const Span &extension = tokArray[0].value;
 		if (extension.size < 2 || extension.ptr[0] != '.')
 			PERR_EXIT(1, "Error: Invalid CGI extension");
-		for (Token *previousToken = definitionStart; previousToken < definition; previousToken += 4) {
+		for (Token* previousToken = definitionStart; previousToken < definition; previousToken += 4) {
 			const Span &previous = previousToken->value;
 			if (previous.size == extension.size && MEMCMP(previous.ptr, extension.ptr, extension.size) == 0)
 				PERR_EXIT(1, "Error: Duplicate CGI extension");
@@ -109,7 +109,7 @@ PARSER_INL
 	ParsedLocation loc;
 	loc.uri = tokArray[0].value;
 
-	if (loc.uri.size == 0 || loc.uri.ptr[0] != '/')
+	if (loc.uri.ptr[0] != '/')
 		PERR_EXIT(1, "Error: Invalid location path");
 	if (loc.uri.size == 0 || loc.uri.size >= MAX_PATH_SIZE)
 		PERR_EXIT(1, "Error: Path size is too large");

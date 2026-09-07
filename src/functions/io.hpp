@@ -20,7 +20,7 @@ bool set_stream_mode(int fd) {
 }
 
 // FN_ATTR(always_inline) static inline
-// Span alloc_whole_file(Arena &arena, const char *filePath, int &fd, usize padSize = 32, usize minSize = 0, usize maxSize = UINT32_MAX) {
+// Span alloc_whole_file(Arena &arena, const char* filePath, int &fd, usize padSize = 32, usize minSize = 0, usize maxSize = UINT32_MAX) {
 // 	struct stat st;
 // 	Span result = {};
 
@@ -58,7 +58,7 @@ bool set_stream_mode(int fd) {
 // }
 
 FN_ATTR(always_inline, flatten) static inline
-bool read_whole_file(Arena &arena, const char *filePath, Span &file, usize padSize = 32, usize minSize = 0, usize maxSize = UINT32_MAX) {
+bool read_whole_file(Arena &arena, const char* filePath, Span &file, usize padSize = 32, usize minSize = 0, usize maxSize = UINT32_MAX) {
 	int fd = open(filePath, O_RDONLY | O_CLOEXEC);
 	if (fd == -1)
 		PERR_RETURN(1, "Error: Failed to open file");

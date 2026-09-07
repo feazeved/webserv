@@ -8,7 +8,7 @@ PARSER_INL
 		PERR_EXIT(1, "Error: Unexpected token");
 	dir.name = tokArray[0].value;
 	tokArray.ptr++;
-	Token *argumentStart = tokArray.ptr;
+	Token* argumentStart = tokArray.ptr;
 	while (tokArray[0].type == Token::WORD)
 		tokArray.ptr++;
 	if (tokArray[0].type != Token::SEMICOLON)

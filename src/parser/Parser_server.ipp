@@ -20,9 +20,9 @@ static inline
 void s_directive_listen(Arena &arena, const Span &value, VirtualServer &server) {
 	if (server.port != SIZE_MAX)
 		PERR_EXIT(1, "Error: Invalid port definition");
-	char *port = value.ptr;
+	char* port = value.ptr;
 	usize portLength = value.size;
-	char *separator = (char*)MEMCHR(port, ':', portLength);
+	char* separator = (char*)MEMCHR(port, ':', portLength);
 	if (separator != NULL) {
 		usize hostLength = (usize)(separator - port);
 		if (hostLength == 0 || hostLength == value.size - 1 || server.host.size != 0)
@@ -43,7 +43,7 @@ void s_directive_body_size(const Span &value, usize &bodySize) {
 		PERR_EXIT(1, "Error: Invalid max body size");
 
 	u8 factor = 0;
-	const char *str = value.ptr;
+	const char* str = value.ptr;
 	usize digitLength = value.size;
 	if (str[digitLength - 1] == 'G') {
 		factor = 30;
@@ -98,7 +98,7 @@ usize s_count_locations(ArrayView<Parser::Token> tokArray) {
 	usize locationCount = 0;
 	while (tokArray[0].type != Parser::Token::CLOSE_BRACKET) {
 		if (tokArray[0].value == "location") {
-			Parser::Token *locationStart = tokArray.ptr;
+			Parser::Token* locationStart = tokArray.ptr;
 			tokArray.ptr++;
 			if (tokArray[0].type != Parser::Token::WORD || tokArray[1].type != Parser::Token::OPEN_BRACKET)
 				PERR_EXIT(1, "Error: Invalid location block");

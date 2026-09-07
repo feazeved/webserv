@@ -2,7 +2,7 @@
 #include "Connection.hpp"
 
 static inline
-void s_exec_script(char *const argv[3], char **envp, int fdIn[2], int fdOut[2], char* cwdPath) {
+void s_exec_script(char* const argv[3], char** envp, int fdIn[2], int fdOut[2], char* cwdPath) {
 	bool fail = dup2(fdOut[1], STDOUT_FILENO) == -1;
 	fail = fail || dup2(fdIn[0], STDIN_FILENO) == -1;
 
@@ -94,8 +94,8 @@ CONNECTION_INL
 CONNECTION_INL
 (isize) cgi_setup(Epoll &epoll) {
 	Buffer64 pathBuffer = {};
-	char *chdirPath;
-	char *argv[3];
+	char* chdirPath;
+	char* argv[3];
 	int fdIn[2], fdOut[2];
 	Mode::e_http_mode nextMode = Mode::CGI;
 	if (options & Options::POST)

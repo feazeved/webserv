@@ -14,7 +14,7 @@ public:
 	static char** optr;
 	static char** writePtr;
 
-	static void append(char *ptr) {
+	static void append(char* ptr) {
 		ASSERT(writePtr < envp + envSize - 1, "Environment buffer overflow");
 		*writePtr++ = ptr;
 		*writePtr = NULL;
@@ -25,7 +25,7 @@ public:
 		*optr = NULL;
 	}
 
-	static void init(char *const *envpSrc) {
+	static void init(char* const* envpSrc) {
 		optr = envp;
 		char** endPtr = envp + envSize - minElements;
 		while (optr < endPtr && *envpSrc != NULL)

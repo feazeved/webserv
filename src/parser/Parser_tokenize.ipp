@@ -7,7 +7,7 @@ bool s_is_config_delimiter(char value) {
 }
 
 static inline
-usize s_count_tokens(const char *str) {
+usize s_count_tokens(const char* str) {
 	usize tokenCount = 0;
 	while (true) {
 		while (IS_SPACE(*str))
@@ -18,7 +18,7 @@ usize s_count_tokens(const char *str) {
 		if (s_is_config_delimiter(*str))
 			str++;
 		else {
-			const char *word = str;
+			const char* word = str;
 			while ((u8)*str > 32 && !s_is_config_delimiter(*str))
 				str++;
 			if (str == word)
@@ -32,7 +32,7 @@ static inline
 usize s_get_next_word(char* &ostr) {
 	while (IS_SPACE(*ostr))
 		ostr++;
-	char *str = ostr;
+	char* str = ostr;
 	while ((u8)*str > 32 && !s_is_config_delimiter(*str))
 		str++;
 
@@ -43,7 +43,7 @@ usize s_get_next_word(char* &ostr) {
 }
 
 static inline 
-Parser::Token s_match_delimiter(char *ptr, usize delimPos, isize &braces) {
+Parser::Token s_match_delimiter(char* ptr, usize delimPos, isize &braces) {
 	Parser::Token token;
 	char delimiter = ptr[delimPos];
 
@@ -71,9 +71,9 @@ Parser::Token s_match_delimiter(char *ptr, usize delimPos, isize &braces) {
 }
 
 static inline
-usize s_count_servers(const char *str, usize length) {
-	const char *ostr;
-	const char *end = str + length;
+usize s_count_servers(const char* str, usize length) {
+	const char* ostr;
+	const char* end = str + length;
 	usize serverCount = 0;
 	isize pdepth = 0;
 
@@ -107,7 +107,7 @@ usize s_count_servers(const char *str, usize length) {
 }
 
 static inline
-void s_strip_comments(char *ptr, usize fileSize) {
+void s_strip_comments(char* ptr, usize fileSize) {
 	static const char sentinels[] = "\0{};localhost";	// Also appends sentinels to the string
 
 	for (usize index = 0; index < fileSize; index++) {
@@ -126,7 +126,7 @@ PARSER_INL
 	usize length;
 	isize braces = 0;
 	usize tokenIndex = 0;
-	char *ptr = file.ptr;
+	char* ptr = file.ptr;
 
 	s_strip_comments(ptr, file.size);
 	serverCount = s_count_servers(ptr, file.size);

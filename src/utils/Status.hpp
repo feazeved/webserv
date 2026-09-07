@@ -88,7 +88,7 @@ STATIC_ASSERT(i100 == 9);
 		return s_index(div - 1, number - div * 100);
 	}
 
-	inl static Code s_str_to_code(const char *str) {
+	inl static Code s_str_to_code(const char* str) {
 		if (str[0] < '1' || str[0] > '5' ||
 			str[1] < '0' || str[1] > '9' ||
 			str[2] < '0' || str[2] > '9')
@@ -170,7 +170,7 @@ STATIC_ASSERT(i100 == 9);
 
 	// Utilities
 	inl usize number() const {
-		const char *str = status_str().ptr;
+		const char* str = status_str().ptr;
 		usize number = 100 * (usize)(str[0] - '0');
 		number += 10 * (usize)(str[1] - '0');
 		number += (usize)(str[2] - '0');

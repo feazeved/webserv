@@ -5,9 +5,9 @@ BUFFER_INL
 (char*) append_mime(u8 mimeIndex) {
 	static const u8 mimeStrings[][32] = MIME_STRINGS;
 
-	const u8 *str = mimeStrings[mimeIndex];
+	const u8* str = mimeStrings[mimeIndex];
 	const usize length = *str;
-	char *optr = (char*)data + writePos;
+	char* optr = (char*)data + writePos;
 	MEMCPY_INLINE(optr, str + 1, 24);
 	writePos += length;
 	return optr;
@@ -38,7 +38,7 @@ BUFFER_INL
 }
 
 BUFFER_INL
-(char*) append_url_component(const char *ptr, usize length) {
+(char*) append_url_component(const char* ptr, usize length) {
 	static const u8 hex[] = "0123456789ABCDEF";
 	static u8 lut[2][4] = {{0, 0, 0, 1}, {'%', 0, 0, 3}};
 	char* optr = (char*)data + writePos;
@@ -56,7 +56,7 @@ BUFFER_INL
 }
 
 BUFFER_INL
-(char*) append_html(char *ptr, usize length) {
+(char*) append_html(char* ptr, usize length) {
 	u8 lengthLut[6] = {5, 5, 6, 4, 4, 1};
 	static char strLut[6][8] = {"&amp;", "&#39;", "&quot;", "&lt;", "&gt;", "\0"};
 	char* optr = (char*)data + writePos;

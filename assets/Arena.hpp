@@ -40,7 +40,7 @@ public:
 		usize newCapacity = NEXT_POW2(bytes + size);
 		if (newCapacity >= UINT32_MAX)
 			return error();
-		u8 *newAllocPtr = (u8*) std::realloc(data, newCapacity);
+		u8* newAllocPtr = (u8*) std::realloc(data, newCapacity);
 		if (newAllocPtr == NULL)
 			return error();
 		capacity = newCapacity;

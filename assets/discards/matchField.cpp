@@ -14,7 +14,7 @@ isize s_match_field(char* &ptr, char* end) {
 	static const char fieldTable[][32] = 
 	{"status", "location", "transfer-encoding", "content-length"};	
 	static const usize fieldCount = ARRAY_SIZE(fieldTable);
-	char *optr = ptr;
+	char* optr = ptr;
 
 	while (ptr < end && *ptr != ':')
 		ptr++;
