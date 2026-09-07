@@ -18,6 +18,7 @@ namespace Mode {
 		CGI,				// Reads from CGI, writes to client, changes to FLUSH upon EOF
 		CGI_FIXED,			// Reads from client, changes to CGI upon bodySize == 0
 		CGI_CHUNKED,		// Reads from client, changes to CGI_FIXED on chunk termination
+		CGI_PARSED,			
 
 		FLUSH				// Changes to FIRST_PARSE if keepalive is on. else terminates
 	};

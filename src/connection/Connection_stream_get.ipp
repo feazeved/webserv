@@ -18,7 +18,7 @@ CONNECTION_INL
 			if (errno != 0)
 				return -1;
 			sendBuffer.append("</pre></body></html>");
-			return flush_setup(epoll, Status::i200);
+			return flush_setup(epoll);
 		}
 		bytesTotal += sendBuffer.append_entry(directory, entry);
 	}
@@ -35,6 +35,6 @@ CONNECTION_INL
 		return -1;
 	bodySize -= (usize)bytesRead;
 	if (bodySize == 0)
-		return flush_setup(epoll, Status::i200);
+		return flush_setup(epoll);
 	return write_to_client(epoll);
 }

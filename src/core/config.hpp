@@ -1,7 +1,8 @@
 #pragma once
 
 // Server configuration
-#define HTTP_BUFFERSIZE 8192
+#define HTTP_METADATA_SIZE (64)
+#define HTTP_BUFFERSIZE (8192 - HTTP_METADATA_SIZE / 2)
 #define MAX_VIRTUAL_SERVERS (64)	// TODO: This isn't really configurable yet
 #define HTTP_TIMEOUT 60
 

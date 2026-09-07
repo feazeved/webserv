@@ -5,6 +5,7 @@ CONNECTION_INL
 (isize) get_setup(Epoll &epoll) {
 	Buffer64 pathBuffer = {};
 	append_target_path(pathBuffer);
+	s_switch_to_streaming(recvBuffer, parseBuffer);
 
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)
@@ -52,7 +53,6 @@ CONNECTION_INL
 	directory = opendir(pathBuffer);
 	if (directory == NULL) 
 		return flush_setup_close(epoll, s_get_status());
-	status = Status::i200;
 	contentType = Mime::HTML;
 	mode = Mode::AUTOINDEX;
 	options &= ~(u16)Options::KEEP_ALIVE;

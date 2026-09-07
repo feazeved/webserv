@@ -113,6 +113,12 @@ STATIC_ASSERT(i100 == 9);
 		return s_code_to_index((Code)index) - (32ul * 4);
 	}
 
+	inl static usize s_get_page_index(Code code) {
+		if (code < Status::i400)
+			return SIZE_MAX;
+		return s_code_to_index(code) - (32ul * 4);
+	}
+
 	inl Span status_str() const {
 		Span result;
 		result.ptr = strings + (usize)index;

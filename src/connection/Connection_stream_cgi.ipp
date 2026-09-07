@@ -46,20 +46,25 @@ CONNECTION_INL
 		close(readFd);
 		readFd = -1;
 	}
-
-	if (!status.is_set()) {
-		Span header = sendBuffer.find_header_end();
-		if (header.ptr == NULL) {
-			if (bytesRead == -2 || readFd == -1)
-				return flush_setup_close(epoll, Status::i500);
-			return 0;	// Still no CGI Header
-		}
-		Status::Code code = build_cgi_header(Status::i200);
-		if (code == Status::ixxx)
+	Span header = sendBuffer.find_header_end();
+	if (header.ptr == NULL) {
+		if (bytesRead == -2 || readFd == -1)
 			return flush_setup_close(epoll, Status::i500);
-		status = code;
+		return 0;	// Still no CGI Header
 	}
+	Status::Code code = build_cgi_header(Status::i200);
+	if (code == Status::ixxx)
+		return flush_setup_close(epoll, Status::i500);
 	if (readFd == -1)
-		return flush_setup(epoll, (Status::Code)status.index);
+		return flush_setup(epoll);
+	mode = Mode::CGI_PARSED;
+	return write_to_client(epoll);
+}
+
+CONNECTION_INL
+(isize) cgi_parsed(Epoll &epoll) {
+	isize bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
+	if (bytesRead == 0)
+		return flush_setup(epoll);
 	return write_to_client(epoll);
 }

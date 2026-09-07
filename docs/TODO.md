@@ -22,3 +22,4 @@
 
 18. When upload store is not present, convert it to URI
 
+19. Change bitfields to a bitmap

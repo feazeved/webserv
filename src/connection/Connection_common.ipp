@@ -1,6 +1,24 @@
 #pragma once
 #include "Connection.hpp"
 
+// Can only call this once all the req variables have been used
+static inline
+void s_switch_to_streaming(HTTP_Buffer &recvBuffer, HTTP_PBuffer &parseBuffer) {
+	if (parseBuffer.writePos >= sizeof(recvBuffer.data))
+		parseBuffer.compact();
+	recvBuffer.writePos = parseBuffer.writePos;
+	recvBuffer.readPos = parseBuffer.readPos;
+	recvBuffer.scanPos = parseBuffer.scanPos;
+}
+
+static inline
+void s_switch_to_parsing(HTTP_Buffer &recvBuffer, HTTP_PBuffer &parseBuffer) {
+	recvBuffer.compact();
+	parseBuffer.writePos = recvBuffer.writePos;
+	parseBuffer.readPos = recvBuffer.readPos;
+	parseBuffer.scanPos = recvBuffer.scanPos;
+}
+
 CONNECTION_INL
 (char*) append_target_path(Buffer64 &buffer) {
 	const Span root = req.location->get_root();
@@ -58,7 +76,6 @@ CONNECTION_INL
 	recvBuffer.clear();
 	req.clear();
 	sendBuffer.clear();
-	status.clear();
 	startTime = Clock::time_elapsed();
 	return 1;
 }

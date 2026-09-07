@@ -24,6 +24,7 @@ CONNECTION_INL
 		case Mode::CGI:				return cgi(epoll);
 		case Mode::CGI_FIXED:		return cgi_fixed(epoll);
 		case Mode::CGI_CHUNKED:		return cgi_chunked(epoll);
+		case Mode::CGI_PARSED:		return cgi_parsed(epoll);
 		case Mode::AUTOINDEX:		return upload_directory(epoll);
 		default: return -1;
 	}
@@ -31,15 +32,13 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) parse_first(Epoll &epoll) {
+	const isize result = read_from_client(epoll);
+	if (result <= 0)
+		return result;
+
 	Span line = recvBuffer.find_line_end();
-	if (line == NULL) {
-		const isize result = read_from_client(epoll);
-		if (result <= 0)
-			return result;
-		line = recvBuffer.find_line_end();
-		if (line == NULL)
-			return 0;
-	}
+	if (line == NULL)
+		return 0;
 
 	Status::Code code = parse_first_line(line);
 	if (code != Status::unset)
@@ -50,22 +49,24 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) parse(Epoll &epoll) {
-	while (true) {
-		Span line;
-		while ((line = recvBuffer.find_line_end()) != NULL) {
-			if (line.size == 0) {
-				recvBuffer.readPos = recvBuffer.scanPos;
-				return setup_dispatch(epoll);
-			}
-			Status::Code code = parse_line(line);
-			if (code != Status::unset)
-				return flush_setup_close(epoll, code);
-		}
+	if (parseBuffer.writePos >= 16000)
+		return flush_setup_close(epoll, Status::i431);
 
-		const isize result = read_from_client(epoll);
-		if (result <= 0)
-			return result;
+	const isize result = read_from_client(epoll);
+	if (result <= 0)
+		return result;
+
+	Span line;
+	while ((line = recvBuffer.find_line_end()) != NULL) {
+		if (line.size == 0) {
+			recvBuffer.readPos = recvBuffer.scanPos;
+			return setup_dispatch(epoll);
+		}
+		Status::Code code = parse_line(line);
+		if (code != Status::unset)
+			return flush_setup_close(epoll, code);
 	}
+	return 0;
 }
 
 CONNECTION_INL

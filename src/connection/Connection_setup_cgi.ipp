@@ -117,12 +117,11 @@ CONNECTION_INL
 	readFd = fdOut[0];
 	writeFd = fdIn[1];
 	sendBuffer.clear();
+	s_switch_to_streaming(recvBuffer, parseBuffer);
 	if (mode == Mode::CGI_FIXED)
 		return cgi_fixed(epoll);
 	if (mode == Mode::CGI_CHUNKED)
 		return cgi_chunked(epoll);
-	ASSERT(mode == Mode::CGI, "Invalid CGI mode");
-
 	return switch_to_cgi(epoll);
 
 	ErrorCloseOutput:	close(fdOut[0]), close(fdOut[1]);

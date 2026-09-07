@@ -163,6 +163,8 @@ typedef Buffer<8 * 1024> Buffer8;
 typedef Buffer<16 * 1024> Buffer16;
 typedef Buffer<32 * 1024> Buffer32;
 typedef Buffer<64 * 1024> Buffer64;
+typedef Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;
+typedef Buffer<2 * HTTP_BUFFERSIZE - 256> HTTP_PBuffer;
 
 #include "Buffer_add.ipp"
 #include "Buffer_add_special.ipp"

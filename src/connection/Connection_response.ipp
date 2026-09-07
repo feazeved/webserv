@@ -97,7 +97,7 @@ CONNECTION_INL
 CONNECTION_INL
 (void) build_error_header(Status::Code code) {
 	Span statusStr = Status::s_status_str(code);
-	Span errorPage = cfg->errorPages[status.get_page_index()];
+	Span errorPage = cfg->errorPages[Status::s_get_page_index(code)];
 
 	options &= ~(u16)Options::KEEP_ALIVE;
 	sendBuffer.clear();

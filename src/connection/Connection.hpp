@@ -18,11 +18,6 @@
 
 #define CONNECTION_INL(ret_type) inline ret_type Connection::
 
-static const usize metadataSize = 64;
-static const usize metasizeAlign = ALIGN_UP(metadataSize / 2, 8ul);
-static const usize bufferSize = HTTP_BUFFERSIZE - metasizeAlign;
-typedef Buffer<bufferSize> HTTP_Buffer;
-
 struct Connection {
 	struct Request {
 		Span target, query, host, cookies, interpreter;
@@ -30,86 +25,75 @@ struct Connection {
 		Location* location;
 		Span relativeTarget, targetName, targetExt;
 		Span uri, cgi;
-
-		// Can add root and other location vars here
+		u8 padding[56];
 
 		void clear() {
 			MEMSET_INLINE(this, 0, sizeof(*this));
 		}
 	};
 /* ========== Attributes ============================================= */
-	VirtualServer* cfg;
-	Status status;
-	u16 options;	// TODO: Change this to a bitmap
-	u8 contentType;	// TODO: this should be a span in req maybe?
-	Mode::e_http_mode mode;
-	u32 startTime;
-	u8 epollState;
-	usize bodySize;	// Remaining transfer bytes; maximum allowance while dechunking
-	i32 clientFd, readFd;
-	HTTP_Buffer recvBuffer;
-
 	union {
-		dirent* dirEntry;
-		struct { pid_t processId; i32 writeFd; };
+		struct { HTTP_Buffer recvBuffer, sendBuffer; };
+		struct { HTTP_PBuffer parseBuffer; Request req; };
 	};
 
 	union {
-		HTTP_Buffer sendBuffer;		// Request shares memory with sendBuffer
+		u8 metadata[64];
 		struct {
-			u8 padding[bufferSize - sizeof(Request)];
-			Request req;			// Req values are not needed during execution
+			VirtualServer* cfg;
+			u16 options;
+			u8 contentType;
+			Mode::e_http_mode mode;
+			u32 startTime;
+			u8 epollState;
+			usize bodySize;
+			i32 clientFd, readFd;
+			union {
+				struct { dirent* dirEntry; DIR* directory; };
+				struct { pid_t processId; i32 writeFd; usize chunkSize; };
+			};
 		};
 	};
-
-	union {
-		usize chunkSize;	// 0 means chunk header; otherwise remaining chunk bytes
-		DIR* directory;
-	};
 /* =================================================================== */
-
 	// Common
 	isize init(int fd, VirtualServer* serverConfig);
 	void clear();
+	isize end_connection();
+	char* append_target_path(Buffer64 &buffer);
+
+	// Dispatching
+	isize dispatch(Epoll &epoll);
+	isize parse_first(Epoll &epoll);
+	isize parse(Epoll &epoll);
 
 	// Parsing
 	Status::Code parse_line(Span line);
 	Status::Code parse_first_line(Span line);
-	Status::Code parse_cgi_line(Buffer64 &tmpBuffer);
 	Status::Code parse_validate(char* str, char* end);
 	Status::Code validate_target(char* str, char* end);
 	Status::Code match_location();
 	Span check_cgi();
 
-	// Configuration
-	isize dispatch(Epoll &epoll);
-	isize parse_first(Epoll &epoll);
-	isize parse(Epoll &epoll);
-	isize end_connection();
-
 	// Response
 	void build_error_header(Status::Code code);
 	void build_header(Status::Code code);
 	Status::Code build_cgi_header(Status::Code code);
-
-	// Common
-	isize flush(Epoll &epoll);
-	isize write_to_client(Epoll &epoll);
-	isize read_from_client(Epoll &epoll);
-	Status::Code write_chunked();
-	char* append_target_path(Buffer64 &buffer);
+	Status::Code parse_cgi_line(Buffer64 &tmpBuffer);
 
 	// Streaming
 	isize cgi(Epoll &epoll);
 	isize cgi_fixed(Epoll &epoll);
+	isize cgi_parsed(Epoll &epoll);
 	isize cgi_chunked(Epoll &epoll);
 	isize switch_to_cgi(Epoll &epoll);
-
 	isize download_file_fixed(Epoll &epoll);
 	isize download_file_chunked(Epoll &epoll);
-
 	isize upload_file(Epoll &epoll);
 	isize upload_directory(Epoll &epoll);
+	isize flush(Epoll &epoll);
+	isize write_to_client(Epoll &epoll);
+	isize read_from_client(Epoll &epoll);
+	Status::Code write_chunked();
 
 	// Setup
 	isize setup_dispatch(Epoll &epoll);
@@ -119,7 +103,7 @@ struct Connection {
 	isize post_setup(Epoll &epoll);
 	isize cgi_setup(Epoll &epoll);
 	char* append_env(Buffer64 &buffer, char* argv[3]);
-	isize flush_setup(Epoll &epoll, Status::Code code);
+	isize flush_setup(Epoll &epoll);
 	isize flush_setup_close(Epoll &epoll, Status::Code code);
 	isize parse_setup(Epoll &epoll);
 	isize redirect_setup(Epoll &epoll, Status::Code code);

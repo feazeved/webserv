@@ -58,7 +58,7 @@ CONNECTION_INL
 	}
 	if (bodySize == 0) {
 		build_header(Status::i201);
-		return flush_setup(epoll, Status::i201);
+		return flush_setup(epoll);
 	}
 	if (recvBuffer.size() < bodySize)
 		return read_from_client(epoll);
@@ -73,7 +73,7 @@ CONNECTION_INL
 	if (code == Status::ok) {
 		bodySize = 0;
 		build_header(Status::i201);
-		return flush_setup(epoll, Status::i201);
+		return flush_setup(epoll);
 	}
 	return read_from_client(epoll);
 }
