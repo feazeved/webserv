@@ -82,20 +82,16 @@ struct Epoll {
 		return false;
 	}
 
-	void clr_read_flag() {
+	bool request_read() {
+		bool canRead = !!(eventList[index].events & EPOLLIN);
 		eventList[index].events &= ~(u32)EPOLLIN;
+		return canRead;
 	}
 
-	void clr_write_flag() {
+	bool request_write() {
+		bool canWrite = !!(eventList[index].events & EPOLLOUT);
 		eventList[index].events &= ~(u32)EPOLLOUT;
-	}
-
-	bool is_writeable() {
-		return !!(eventList[index].events & EPOLLOUT);
-	}
-
-	bool is_readable() {
-		return !!(eventList[index].events & EPOLLIN);
+		return canWrite;
 	}
 
 	bool is_error() {

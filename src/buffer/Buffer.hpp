@@ -65,45 +65,11 @@ struct Buffer {
 		scanPos = 0;
 	}
 
-	usize compact() {
-		const usize bytesUsed = writePos - readPos;
-		const usize scanOffset = scanPos - readPos;
-
-		MEMMOVE(data, data + readPos, bytesUsed);
-		readPos = 0;
-		scanPos = scanOffset;
-		writePos = bytesUsed;
-		return sizeof(data) - writePos;
-	}
-
-	isize read(int fd, usize bytes) {
-		usize bytesFree = sizeof(data) - writePos;
-
-		if (bytesFree < bytes) {
-			bytesFree = compact();
-			if (bytesFree == 0)
-				return -2;
-		}
-
-		const usize bytesCapped = MIN(bytesFree, bytes);
-		isize bytesRead = ::read(fd, data + writePos, bytesCapped);
-		if (bytesRead < 0)
-			return -1;
-		writePos += (usize) bytesRead;
-		return bytesRead;
-	}
-
-	isize write(int fd, usize bytes) {
-		usize bytesCapped = MIN3(ATOMIC_IOSIZE, bytes, writePos - readPos);
-		isize bytesWritten = ::write(fd, data + readPos, bytesCapped);
-
-		if (bytesWritten > 0) {
-			readPos += (usize) bytesWritten;
-			scanPos = (scanPos >= readPos) ? scanPos : readPos;
-		}
-		return bytesWritten;
-	}
-
+	// IO
+	usize compact();
+	isize read_compact(int fd, usize bytes);
+	isize read(int fd, usize bytes);
+	isize write(int fd, usize bytes);
 
 	// HTTP
 	Status::Code dechunk(Buffer& tmp, usize &chunkSize, usize &bodySize);
@@ -114,7 +80,6 @@ struct Buffer {
 	Span find_char(u8 c);
 
 	template <usize N> bool strcmp(const char (&string)[N]);
-
 	bool skip_spaces();
 	Span get_field_value(usize readEnd);
 
@@ -132,7 +97,6 @@ struct Buffer {
 
 	// Append Special
 	char* append_mime(u8 mimeIndex);
-
 	char* append_digit10(usize number);
 	char* append_digit16(usize number);
 	char* append_url_component(const char *ptr, usize length);
@@ -166,6 +130,7 @@ typedef Buffer<64 * 1024> Buffer64;
 typedef Buffer<HTTP_BUFFERSIZE> HTTP_Buffer;
 typedef Buffer<2 * HTTP_BUFFERSIZE - 256> HTTP_PBuffer;
 
+#include "Buffer_io.ipp"
 #include "Buffer_add.ipp"
 #include "Buffer_add_special.ipp"
 #include "Buffer_search.ipp"

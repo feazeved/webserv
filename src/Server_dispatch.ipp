@@ -42,8 +42,7 @@ SERVER_INL
 		PERR_EXIT(clear(), "Error: Invalid listening socket event");
 	if (epoll.is_error())
 		PERR_EXIT(clear(), "Error: Listening socket failed");
-	if (epoll.is_readable())
-		add_connection(serverIndex);
+	add_connection(serverIndex);
 }
 
 SERVER_INL

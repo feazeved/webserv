@@ -28,7 +28,7 @@ CONNECTION_INL
 // Finished state means everything is read to the send buffer and it only needs flushing of the send buffer
 CONNECTION_INL
 (isize) upload_file(Epoll &epoll) {
-	isize bytesRead = sendBuffer.read(readFd, MIN((usize)ATOMIC_IOSIZE, bodySize));
+	isize bytesRead = sendBuffer.read_compact(readFd, MIN((usize)ATOMIC_IOSIZE, bodySize));
 	if (bytesRead == -2)
 		return write_to_client(epoll);
 	if (bytesRead <= 0 && (bytesRead == -1 || bodySize != 0))

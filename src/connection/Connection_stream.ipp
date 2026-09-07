@@ -3,22 +3,18 @@
 
 CONNECTION_INL
 (isize) write_to_client(Epoll &epoll) {
-	if (!epoll.is_writeable())
-		return 0;
-	epoll.clr_write_flag();
-	return sendBuffer.write(clientFd, ATOMIC_IOSIZE);
+	if (epoll.request_write())
+		return sendBuffer.write(clientFd, ATOMIC_IOSIZE);
+	return 0;
 }
 
 CONNECTION_INL
 (isize) read_from_client(Epoll &epoll) {
-	if (!epoll.is_readable())
+	if (!epoll.request_read())
 		return 0;
-	epoll.clr_read_flag();
-	const isize bytesRead = recvBuffer.read(clientFd, ATOMIC_IOSIZE);
-	if (bytesRead == -2) {
-		const Status::Code code = mode <= Mode::PARSE ? Status::i431 : Status::i413;
-		return flush_setup_close(epoll, code) < 0 ? -1 : 0;
-	}
+	const isize bytesRead = recvBuffer.read_compact(clientFd, ATOMIC_IOSIZE);
+	if (bytesRead == -2)
+		return flush_setup_close(epoll, Status::i413);
 	return bytesRead == 0 ? -1 : bytesRead;
 }
 

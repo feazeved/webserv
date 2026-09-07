@@ -41,7 +41,7 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) cgi(Epoll &epoll) {
-	isize bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
+	isize bytesRead = sendBuffer.read_compact(readFd, ATOMIC_IOSIZE);
 	if (bytesRead == 0) {
 		close(readFd);
 		readFd = -1;
@@ -63,7 +63,7 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) cgi_parsed(Epoll &epoll) {
-	isize bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
+	isize bytesRead = sendBuffer.read_compact(readFd, ATOMIC_IOSIZE);
 	if (bytesRead == 0)
 		return flush_setup(epoll);
 	return write_to_client(epoll);
