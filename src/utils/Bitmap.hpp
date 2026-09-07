@@ -99,8 +99,4 @@ public:
 	operator usize() {
 		return value;
 	}
-
-	Bitmap() {
-		clear();
-	}
 };

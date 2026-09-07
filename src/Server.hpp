@@ -104,7 +104,6 @@ public:
 		}
 	}
 
-	// connections.for_each_active<Connection::check_timeout(30)>;	// how the fuck do you do this
 	void check_timeouts() {
 		time_t timeNow = Clock::update();
 		usize elementIndex;

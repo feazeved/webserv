@@ -47,7 +47,7 @@ CONNECTION_INL
 		const char* ext = req.cgi.ptr + sizeof(lengths);
 		if (req.targetExt.size == lengths[0] && MEMCMP(ext, req.targetExt.ptr, req.targetExt.size) == 0) {
 			result.ptr = req.cgi.ptr + sizeof(lengths) + lengths[0];
-			result.size = (u16)(lengths[1]);
+			result.size = (u16)(lengths[1]) - 1;
 			options |= Options::CGI;
 			return result;
 		}
