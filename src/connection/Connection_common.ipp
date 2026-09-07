@@ -2,21 +2,26 @@
 #include "Connection.hpp"
 
 // Can only call this once all the req variables have been used
-static inline
-void s_switch_to_streaming(HTTP_Buffer &recvBuffer, HTTP_PBuffer &parseBuffer) {
-	if (parseBuffer.writePos >= sizeof(recvBuffer.data))
+CONNECTION_INL
+(void) activate_streaming(Mode::e_http_mode nextMode) {
+	ASSERT(mode <= Mode::PARSE, "Parsing buffer was not active");
+	ASSERT(nextMode > Mode::PARSE, "Invalid streaming mode");
+	ASSERT(parseBuffer.writePos <= sizeof(recvBuffer.data), "Buffered request tail exceeded receive buffer");
+	if (parseBuffer.writePos > sizeof(recvBuffer.data))
 		parseBuffer.compact();
-	recvBuffer.writePos = parseBuffer.writePos;
-	recvBuffer.readPos = parseBuffer.readPos;
-	recvBuffer.scanPos = parseBuffer.scanPos;
+	mode = nextMode;
+	recvBuffer.init(parseBuffer.writePos, parseBuffer.readPos, parseBuffer.scanPos);
+	sendBuffer.clear();
 }
 
-static inline
-void s_switch_to_parsing(HTTP_Buffer &recvBuffer, HTTP_PBuffer &parseBuffer) {
+CONNECTION_INL
+(void) activate_parsing() {
+	ASSERT(mode == Mode::FLUSH, "Streaming buffer was not active");
+	ASSERT(sendBuffer.size() == 0, "Response was not fully flushed");
 	recvBuffer.compact();
-	parseBuffer.writePos = recvBuffer.writePos;
-	parseBuffer.readPos = recvBuffer.readPos;
-	parseBuffer.scanPos = recvBuffer.scanPos;
+	mode = Mode::PARSE_FIRST;
+	parseBuffer.init(recvBuffer.writePos, recvBuffer.readPos, recvBuffer.scanPos);
+	req.clear();
 }
 
 CONNECTION_INL
@@ -73,9 +78,8 @@ CONNECTION_INL
 	bodySize = 0;
 	chunkSize = 0;
 	mode = Mode::PARSE_FIRST;
-	recvBuffer.clear();
+	parseBuffer.clear();
 	req.clear();
-	sendBuffer.clear();
 	startTime = Clock::time_elapsed();
 	return 1;
 }

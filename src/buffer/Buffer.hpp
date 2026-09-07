@@ -60,9 +60,15 @@ struct Buffer {
 	}
 
 	void clear() {
-		readPos = 0;
 		writePos = 0;
+		readPos = 0;
 		scanPos = 0;
+	}
+
+	inl void init(usize newWritePos, usize newReadPos, usize newScanPos) {
+		writePos = newWritePos;
+		readPos = newReadPos;
+		scanPos = newScanPos;
 	}
 
 	// IO

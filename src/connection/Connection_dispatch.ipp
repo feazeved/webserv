@@ -32,7 +32,7 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) parse_first(Epoll &epoll) {
-	if (!epoll.request_read() && parseBuffer.read(clientFd, ATOMIC_IOSIZE) <= 0)
+	if (epoll.request_read() && parseBuffer.read(clientFd, ATOMIC_IOSIZE) <= 0)
 		return flush_setup_close(epoll, Status::i500);
 
 	Span line = recvBuffer.find_line_end();
@@ -48,10 +48,10 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) parse(Epoll &epoll) {
-	if (!epoll.request_read() && parseBuffer.read(clientFd, ATOMIC_IOSIZE) <= 0)
-		return flush_setup_close(epoll, Status::i500);
 	if (parseBuffer.writePos >= 16000)
 		return flush_setup_close(epoll, Status::i431);
+	if (epoll.request_read() && parseBuffer.read(clientFd, ATOMIC_IOSIZE) <= 0)
+		return flush_setup_close(epoll, Status::i500);
 
 	Span line;
 	while ((line = recvBuffer.find_line_end()) != NULL) {
@@ -82,24 +82,16 @@ CONNECTION_INL
 		bodySize = cfg->maxBodySize;
 
 	startTime = Clock::time_elapsed();	// Resets the clock on a valid response header
-	sendBuffer.clear();
 	if (req.location->redirectStatus.is_valid())
 		return redirect_setup(epoll, (Status::Code)req.location->redirectStatus.index);
-	if (options & Options::CGI && !(options & Options::POST))
-		mode = Mode::CGI;
-	else if (options & Options::CGI && (options & Options::POST))
-		mode = (options & Options::FIXED_LENGTH) ? Mode::CGI_FIXED : Mode::CGI_CHUNKED;
-	else if (options & Options::GET)
-		mode = Mode::GET;
-	else if (options & Options::POST)
-		mode = (options & Options::FIXED_LENGTH) ? Mode::POST_FIXED : Mode::POST_CHUNKED;
 	if (epoll.modify(clientFd, EPOLLIN | EPOLLOUT, epollState))
 		return -1;
-	if (mode == Mode::POST_FIXED || mode == Mode::POST_CHUNKED)
-		return post_setup(epoll);
-	if (mode == Mode::CGI || mode == Mode::CGI_FIXED || mode == Mode::CGI_CHUNKED)
+	if (options & Options::CGI)
 		return cgi_setup(epoll);
-	if (mode == Mode::GET)
+	if (options & Options::GET)
 		return get_setup(epoll);
+	if (options & Options::POST)
+		return post_setup(epoll);
+	ASSERT(options & Options::DELETE, "Invalid request method");
 	return del_setup(epoll);
 }

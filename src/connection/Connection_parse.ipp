@@ -6,19 +6,19 @@ CONNECTION_INL
 	if (line.size < 14 || line.size >= 8000)	// ERROR: Bad request "GET / HTTP/1.1" shortest possible
 		return line.size < 14 ? Status::i400 : Status::i431;
 
-	const usize readPosEnd = recvBuffer.readPos + line.size - 9;
+	const usize readPosEnd = parseBuffer.readPos + line.size - 9;
 	char* targetEnd = line.ptr + line.size - 9;
-	if (recvBuffer.strcmp("GET "))
+	if (parseBuffer.strcmp("GET "))
 		options |= Options::GET;
-	else if (recvBuffer.strcmp("POST "))
+	else if (parseBuffer.strcmp("POST "))
 		options |= Options::POST;
-	else if (recvBuffer.strcmp("DELETE "))
+	else if (parseBuffer.strcmp("DELETE "))
 		options |= Options::DELETE;
 	else
 		return Status::i501;
-	char* targetStart = recvBuffer.rptr();
-	recvBuffer.readPos = readPosEnd;
-	if (!recvBuffer.strcmp(" HTTP/1.1\r\n"))
+	char* targetStart = parseBuffer.rptr();
+	parseBuffer.readPos = readPosEnd;
+	if (!parseBuffer.strcmp(" HTTP/1.1\r\n"))
 		return Status::i505;
 	return parse_validate(targetStart, targetEnd);
 }
@@ -28,13 +28,13 @@ CONNECTION_INL
 	if (line.size < 2 || line.size >= 8000)
 		return line.size < 2 ? Status::i400 : Status::i431;
 
-	const usize readEnd = recvBuffer.readPos + line.size;
-	Span field = recvBuffer.find_char(':');
+	const usize readEnd = parseBuffer.readPos + line.size;
+	Span field = parseBuffer.find_char(':');
 	if (field.ptr == NULL || field.size == 0)
 		return Status::i400;
 
 	isize fieldIndex = fn::match_field(field);
-	Span value = recvBuffer.get_field_value(readEnd);
+	Span value = parseBuffer.get_field_value(readEnd);
 	if (value.ptr == NULL)
 		return Status::i400;	// Rejects empty values
 	switch (fieldIndex) {

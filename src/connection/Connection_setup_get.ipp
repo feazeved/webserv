@@ -5,7 +5,6 @@ CONNECTION_INL
 (isize) get_setup(Epoll &epoll) {
 	Buffer64 pathBuffer = {};
 	append_target_path(pathBuffer);
-	s_switch_to_streaming(recvBuffer, parseBuffer);
 
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)
@@ -17,6 +16,7 @@ CONNECTION_INL
 		return flush_setup_close(epoll, s_get_status());
 	bodySize = (usize)st.st_size;
 	contentType = fn::match_mime(pathBuffer.get_span());
+	activate_streaming(Mode::GET);
 	build_header(Status::i200);
 	return upload_file(epoll);
 }
@@ -38,6 +38,7 @@ CONNECTION_INL
 			return flush_setup_close(epoll, Status::i500);
 		contentType = fn::match_mime(pathBuffer.get_span());
 		bodySize = (usize)st.st_size;
+		activate_streaming(Mode::GET);
 		build_header(Status::i200);
 		return upload_file(epoll);
 	}
@@ -48,14 +49,14 @@ CONNECTION_INL
 	const usize targetSize = fn::html_encoded_size(req.target.ptr, req.target.size);
 	const usize fixedSize = sizeof(HTTP_INDEX_HEADER) + sizeof(HTTP_INDEX_MIDDLE) + sizeof(HTTP_INDEX_TAIL) - 3;
 	const usize headerSize = fixedSize + targetSize * 2;
-	if (headerSize > sendBuffer.capacity())
+	if (headerSize > sizeof(sendBuffer.data))
 		return flush_setup_close(epoll, Status::i414);
 	directory = opendir(pathBuffer);
 	if (directory == NULL) 
 		return flush_setup_close(epoll, s_get_status());
 	contentType = Mime::HTML;
-	mode = Mode::AUTOINDEX;
 	options &= ~(u16)Options::KEEP_ALIVE;
+	activate_streaming(Mode::AUTOINDEX);
 	sendBuffer.append(HTTP_INDEX_HEADER);
 	sendBuffer.append_html(req.target.ptr, req.target.size);
 	sendBuffer.append(HTTP_INDEX_MIDDLE);

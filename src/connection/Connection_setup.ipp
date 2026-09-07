@@ -5,7 +5,6 @@ CONNECTION_INL
 (isize) del_setup(Epoll &epoll) {
 	Buffer64 pathBuffer = {};
 	append_target_path(pathBuffer);
-	s_switch_to_streaming(recvBuffer, parseBuffer);
 
 	struct stat st;
 	if (stat(pathBuffer, &st) == -1)
@@ -14,6 +13,7 @@ CONNECTION_INL
 		return flush_setup_close(epoll, Status::i403);	// Forbids deleting directories
 	if (unlink(pathBuffer) == -1)
 		return flush_setup_close(epoll, s_get_status());
+	activate_streaming(Mode::FLUSH);
 	build_header(Status::i204);
 	return flush_setup(epoll);
 }
@@ -25,12 +25,13 @@ CONNECTION_INL
 	pathBuffer.append(uploadStore);
 	pathBuffer.append(req.relativeTarget);
 	*pathBuffer = 0;
-	s_switch_to_streaming(recvBuffer, parseBuffer);
 
 	writeFd = open(pathBuffer, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NONBLOCK, 0644);
 	if (writeFd == -1)
 		return flush_setup_close(epoll, s_get_status());
-	if (mode == Mode::POST_FIXED)
+	const bool fixedLength = options & Options::FIXED_LENGTH;
+	activate_streaming(fixedLength ? Mode::POST_FIXED : Mode::POST_CHUNKED);
+	if (fixedLength)
 		return download_file_fixed(epoll);
 	return download_file_chunked(epoll);
 }
@@ -52,14 +53,11 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) parse_setup(Epoll &epoll) {
-	s_switch_to_parsing(recvBuffer, parseBuffer);
+	activate_parsing();
 	options = 0;
 	contentType = Mime::OCTET_STREAM;
 	bodySize = 0;
 	chunkSize = 0;
-	mode = Mode::PARSE_FIRST;
-	req.clear();
-	sendBuffer.clear();
 	startTime = Clock::time_elapsed();
 	if (epoll.modify(clientFd, EPOLLIN, epollState))
 		return -1;

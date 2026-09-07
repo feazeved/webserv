@@ -32,6 +32,7 @@ char* s_split_filename(char* cwdPath, usize length) {
 			break;
 		slashPtr = cwdPath++;
 	}
+	ASSERT(slashPtr != NULL, "Script path did not contain a slash");
 	*slashPtr = 0;
 	*end = 0;
 	return slashPtr + 1;
@@ -96,6 +97,9 @@ CONNECTION_INL
 	char *chdirPath;
 	char *argv[3];
 	int fdIn[2], fdOut[2];
+	Mode::e_http_mode nextMode = Mode::CGI;
+	if (options & Options::POST)
+		nextMode = (options & Options::FIXED_LENGTH) ? Mode::CGI_FIXED : Mode::CGI_CHUNKED;
 
 	chdirPath = append_env(pathBuffer, argv);
 	if (chdirPath == NULL)
@@ -116,11 +120,10 @@ CONNECTION_INL
 	close(fdOut[1]);
 	readFd = fdOut[0];
 	writeFd = fdIn[1];
-	sendBuffer.clear();
-	s_switch_to_streaming(recvBuffer, parseBuffer);
-	if (mode == Mode::CGI_FIXED)
+	activate_streaming(nextMode);
+	if (nextMode == Mode::CGI_FIXED)
 		return cgi_fixed(epoll);
-	if (mode == Mode::CGI_CHUNKED)
+	if (nextMode == Mode::CGI_CHUNKED)
 		return cgi_chunked(epoll);
 	return switch_to_cgi(epoll);
 

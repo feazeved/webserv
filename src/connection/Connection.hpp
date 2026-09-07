@@ -48,10 +48,9 @@ struct Connection {
 			u8 epollState;
 			usize bodySize;
 			i32 clientFd, readFd;
-			union {
-				struct { dirent* dirEntry; DIR* directory; };
-				struct { pid_t processId; i32 writeFd; usize chunkSize; };
-			};
+			pid_t processId;
+			i32 writeFd;
+			union { usize chunkSize; DIR* directory; };
 		};
 	};
 /* =================================================================== */
@@ -60,6 +59,8 @@ struct Connection {
 	void clear();
 	isize end_connection();
 	char* append_target_path(Buffer64 &buffer);
+	void activate_streaming(Mode::e_http_mode nextMode);
+	void activate_parsing();
 
 	// Dispatching
 	isize dispatch(Epoll &epoll);
