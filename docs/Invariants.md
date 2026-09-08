@@ -16,7 +16,7 @@ A single connection uses 16kb of space, of which 64 bytes is used by metadata, a
 A connection pool holds 4096 connections, totalling 64MB + ~1KB of metadata
 
 Each virtual server takes up roughly 784 bytes of memory, plus a fixed storage space for its configs (a budget of 64KB)
-This means that for 64 virtual servers, it uses 64 * (784 + 64KB) =  50KB + 4MB = ~4MB
+This means that for 64 virtual servers, it uses 64 * (784 + 64KB) =  50KB + 4MB = ~4MB. Configured error pages also consume this shared budget.
 
 Additionally, default error pages and status strings are cached in memory, occupying roughly 10kb of space
 
@@ -38,13 +38,13 @@ For temporary things that aren't going to be used by the program later like toke
 * Each error page cached is at maximum MAX_ERROR_PAGE_SIZE (HTTP_BUFFERSIZE - 512B)
 
 #### Location Invariants
-* All location strings are null terminated and 0 <= length <= MAX_PATH_SIZE
+* All stored location strings are null terminated and 0 <= length <= MAX_PATH_SIZE
 * 0 length strings still point to empty data
 * There are no duplicates of any kind
-* Redirect status is valid
+* A configured redirect status is a supported 3xx status
 * There is at least one allowed method
 * A server root always exists
-* A location root never ends with a "/"
+* A server root and a location root never end with a "/"
 * An upload store always ends with a "/"
 * An index always starts with "/"
 * A URI always starts with a "/"
@@ -52,9 +52,10 @@ For temporary things that aren't going to be used by the program later like toke
 #### Defaults
 * If server root does not exist, it becomes ""
 * If location root does not exist, it becomes server root
-* If upload store does not exist, upload store becomes root
+* If upload store does not exist, upload store becomes root with a trailing "/" (or "/" when root is empty)
 * If index does not exist, it becomes "/index.html"
 * If no methods are specified, it becomes GET only
+* If no client_max_body_size is specified, it becomes LONG_MAX
 
 #### Valid syntax:
 * For body sizes, you can define G, M and K for GB, MB and KB respectively.
@@ -72,5 +73,3 @@ Example:
 1) Size type variables will always take a maximum size of LONG_MAX, even for unsigned types. 
 This is done to avoid overflows and always have error sentinels.
 LONG_MAX is a ridiculously large number anyhow, any real constraint should realistically be much smaller
-
-2) 
