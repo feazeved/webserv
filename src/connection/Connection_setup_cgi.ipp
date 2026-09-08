@@ -65,7 +65,7 @@ CONNECTION_INL
 		return NULL;
 	}
 	char* cwdPath = buffer.append(scriptPath, scriptPathLength + 1);			// /home/webserv/www/images/cgi
-	argv[0] = buffer.append(req.interpreter.ptr, req.interpreter.size + 1);			// /bin/python3
+	argv[0] = buffer.append(req.interpreter.ptr, req.interpreter.size + 1);		// /bin/python3
 	argv[1] = s_split_filename(cwdPath, scriptPathLength);						// process.py
 	argv[2] = NULL;
 	Environment::append(buffer.append("HTTP_HOST="));

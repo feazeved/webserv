@@ -4,6 +4,7 @@
 // #include <netinet/in.h>
 // #include <netdb.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <sys/stat.h>
 
 #include "core.hpp"
@@ -59,11 +60,11 @@ bool set_stream_mode(int fd) {
 
 FN_ATTR(always_inline, flatten) static inline
 bool read_whole_file(Arena &arena, const char* filePath, Span &file, usize padSize = 32, usize minSize = 0, usize maxSize = UINT32_MAX) {
-	int fd = open(filePath, O_RDONLY | O_CLOEXEC);
+	int fd = open(filePath, O_RDONLY | O_CLOEXEC | O_NONBLOCK);
 	if (fd == -1)
 		PERR_RETURN(1, "Error: Failed to open file");
 	struct stat st;
-	if (fstat(fd, &st) == -1 || !S_ISREG(st.st_mode) || (usize)st.st_size < minSize || (usize)st.st_size >= maxSize) {
+	if (fstat(fd, &st) == -1 || !S_ISREG(st.st_mode) || (usize)st.st_size < minSize || (usize)st.st_size > maxSize) {
 		close(fd);
 		PERR_RETURN(1, "Error: Invalid file");
 	}

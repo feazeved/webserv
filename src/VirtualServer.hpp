@@ -51,7 +51,7 @@ public:
 
 	VirtualServer()
 		: serverRoot(Span::create("")), host(), locations(), port(SIZE_MAX),
-		maxBodySize(LONG_MAX), gameState(NULL), listenFd(-1) {
+		maxBodySize(SIZE_MAX), gameState(NULL), listenFd(-1) {
 		MEMSET_INLINE(errorPages, 0, sizeof(errorPages));
 	}
 
@@ -72,8 +72,7 @@ public:
 		if (listenFd != -1)
 			clear();
 
-		if (port < 1 || port > 65535)
-			PERR_EXIT(clear(), "Error: Invalid virtual server port");
+		ASSERT(port >= 1 && port <= 65535, "Invalid virtual server port");
 
 		listenFd = socket(AF_INET, SOCK_STREAM, 0);
 		if (listenFd == -1)

@@ -77,7 +77,7 @@ CONNECTION_INL
 	Span statusStr = Status::s_status_str(code);
 
 	sendBuffer.append("HTTP/1.1 ");
-	sendBuffer.append(statusStr);		// TODO: Make htis not depend on setting status
+	sendBuffer.append(statusStr);
 	sendBuffer.append("\r\nContent-Type: ");
 	sendBuffer.append_mime(contentType);
 	sendBuffer.append("\r\nContent-Length: ");

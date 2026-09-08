@@ -39,8 +39,6 @@ usize canonicalize_target_inplace(u8* str, usize length) {
 	usize newLength = s_normalize_target(str, length);
 	if (newLength == SIZE_MAX)
 		return SIZE_MAX;
-	if (*str != '/')
-		return SIZE_MAX;
 
 	u8* end = str + newLength;
 	while (str < end) {

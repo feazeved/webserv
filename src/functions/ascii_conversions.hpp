@@ -1,3 +1,4 @@
+#pragma once
 #include "core.hpp"
 #include "webserv.hpp"
 #include "Span.hpp"

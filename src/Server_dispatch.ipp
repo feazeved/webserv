@@ -38,8 +38,7 @@ SERVER_INL
 SERVER_INL
 (void) server_event(u64 key) {
 	const u32 serverIndex = (u32)(key >> 32);
-	if (serverIndex >= parser.serverCount)
-		PERR_EXIT(clear(), "Error: Invalid listening socket event");
+	ASSERT(serverIndex < parser.serverCount, "Invalid listening socket event");
 	if (epoll.is_error())
 		PERR_EXIT(clear(), "Error: Listening socket failed");
 	add_connection(serverIndex);

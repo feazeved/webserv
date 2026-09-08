@@ -87,15 +87,16 @@ PARSER_INL
 		server.host = beta.copy_span(Span::create("localhost"));
 	if (serverRoot.size == 0)
 		serverRoot = beta.copy_span(Span::create(""));
-	else if (serverRoot.ptr[serverRoot.size - 1] == '/')
+	while (serverRoot.size != 0 && serverRoot.ptr[serverRoot.size - 1] == '/')
 		serverRoot.size--;
+	serverRoot.ptr[serverRoot.size] = '\0';
 	
 	Span defaultIndex = beta.copy_span(Span::create("/index.html"));
 	for (usize index = 0; index < ploc.count; index++) {
 		ParsedLocation &src = ploc[index];
 		if (src.root.size == 0)
 			src.root = serverRoot;
-		else if (src.root.ptr[src.root.size - 1] == '/')
+		while (src.root.size != 0 && src.root.ptr[src.root.size - 1] == '/')
 			src.root.size--;
 		if (src.uploadStore.size == 0)
 			src.uploadStore = src.root;
@@ -113,25 +114,14 @@ PARSER_INL
 
 static inline
 void s_build_error_page_path(char* out, const Span &root, const Span &path) {
-	usize length = 0;
-	if (root.size != 0) {
-		MEMCPY(out, root.ptr, root.size);
-		length = root.size;
-	}
-
-	usize pathOffset = 0;
-	if (root.size != 0 && path.size != 0) {
-		const bool rootHasSlash = out[length - 1] == '/';
-		const bool pathHasSlash = path.ptr[0] == '/';
-		if (rootHasSlash && pathHasSlash)
-			pathOffset = 1;
-		else if (!rootHasSlash && !pathHasSlash)
-			out[length++] = '/';
-	}
-
-	const usize pathLength = path.size - pathOffset;
-	MEMCPY(out + length, path.ptr + pathOffset, pathLength);
-	length += pathLength;
+	ASSERT(path.size != 0, "Error page path is empty");
+	ASSERT(root.size == 0 || root.ptr[root.size - 1] != '/', "Root has a trailing slash");
+	usize length = root.size;
+	MEMCPY(out, root.ptr, length);
+	if (length != 0 && path.ptr[0] != '/')
+		out[length++] = '/';
+	MEMCPY(out + length, path.ptr, path.size);
+	length += path.size;
 	out[length] = '\0';
 }
 
@@ -154,8 +144,7 @@ PARSER_INL
 		usize duplicate = 0;
 		for (; duplicate < index; duplicate++) {
 			const Span &previousPath = configuredPaths[duplicate];
-			if (path.size == previousPath.size && previousPath.size != 0
-				&& MEMCMP(path.ptr, previousPath.ptr, path.size) == 0)
+			if (path.size == previousPath.size && MEMCMP(path.ptr, previousPath.ptr, path.size) == 0)
 				break;
 		}
 		if (duplicate != index) {

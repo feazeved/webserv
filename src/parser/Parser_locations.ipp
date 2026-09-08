@@ -4,14 +4,18 @@
 static inline
 void s_set_methods(const ArrayView<Span> &methods, Parser::ParsedLocation &location) {
 	for (usize index = 0; index < methods.count; index++) {
+		u8 method;
 		if (methods[index] == "GET")
-			location.methods |= Options::GET;
+			method = Options::GET;
 		else if (methods[index] == "POST")
-			location.methods |= Options::POST;
+			method = Options::POST;
 		else if (methods[index] == "DELETE")
-			location.methods |= Options::DELETE;
+			method = Options::DELETE;
 		else
 			PERR_EXIT(1, "Error: Invalid method");
+		if ((location.methods & method) != 0)
+			PERR_EXIT(1, "Error: Duplicate method");
+		location.methods |= method;
 	}
 }
 
@@ -64,7 +68,7 @@ PARSER_INL
 	}
 	else
 		PERR_EXIT(1, "Error: Invalid location directive");
-	if (length == 0 || length >= MAX_PATH_SIZE)
+	if (length >= MAX_PATH_SIZE)
 		PERR_EXIT(1, "Error: Path size is too large");
 }
 
@@ -79,7 +83,7 @@ PARSER_INL
 	while (tokArray[0].type != Token::CLOSE_BRACKET) {
 		Token* definition = tokArray.ptr;
 		const Span &extension = tokArray[0].value;
-		if (extension.size < 2 || extension.ptr[0] != '.')
+		if (extension.size < 2 || extension.size >= MAX_PATH_SIZE || extension.ptr[0] != '.')
 			PERR_EXIT(1, "Error: Invalid CGI extension");
 		for (Token* previousToken = definitionStart; previousToken < definition; previousToken += 4) {
 			const Span &previous = previousToken->value;
@@ -93,6 +97,8 @@ PARSER_INL
 		if (tokArray[0].type != Token::WORD)
 			PERR_EXIT(1, "Error: Invalid CGI interpreter");
 		Span &interpreter = tokArray[0].value;
+		if (interpreter.size >= MAX_PATH_SIZE)
+			PERR_EXIT(1, "Error: Path size is too large");
 		interpreter.ptr[interpreter.size++] = '\0';
 		tokArray.ptr++;
 		if (tokArray[0].type != Token::SEMICOLON)
@@ -110,10 +116,12 @@ PARSER_INL
 (Parser::ParsedLocation) parse_location(ArrayView<Token> &tokArray) {
 	ParsedLocation loc = {};
 	loc.uri = tokArray[0].value;
+	loc.redirectTarget = Span::create("");
+	loc.redirectStatus = Status::unset;
 
 	if (loc.uri.ptr[0] != '/')
 		PERR_EXIT(1, "Error: Invalid location path");
-	if (loc.uri.size == 0 || loc.uri.size >= MAX_PATH_SIZE)
+	if (loc.uri.size >= MAX_PATH_SIZE)
 		PERR_EXIT(1, "Error: Path size is too large");
 	tokArray.ptr += 2;
 	bool cgiDefined = false;

@@ -3,12 +3,12 @@
 #include "webserv.hpp"
 #include "Span.hpp"
 
-/* (IMPORTANT) This function presumes 32 byte padding
-This function performs a 32 byte load of a field delimited by : then compares
+/* (IMPORTANT) Field matching presumes 24 byte padding
+This function performs a 24 byte load of a field delimited by : then compares
 against a table of reference strings to find a match. Because MEMCMP length is
 fixed, the compiler automatically vectorizes the comparison
 
-Returns: 0 on no matches, -1 on errors or
+Returns: 0 on no matches or
 		index associated with the string compared
 
 TODO:	Finding can be two operations, Setting or can be one operation

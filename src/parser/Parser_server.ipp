@@ -6,12 +6,14 @@ void s_directive_error_page(Parser::Directive &dir, VirtualServer &server) {
 	if (dir.args.count < 2)
 		PERR_EXIT(1, "Error: Invalid error page");
 	Span path = dir.args[dir.args.count - 1];
-	if (path.size == 0 || path.size >= MAX_PATH_SIZE)
+	if (path.size >= MAX_PATH_SIZE)
 		PERR_EXIT(1, "Error: Invalid error page");
 	for (usize index = 0; index + 1 < dir.args.count; index++) {
 		Status status = {Status::s_str_to_code(dir.args[index].ptr)};
 		if (dir.args[index].size != 3 || !status.is_error())
 			PERR_EXIT(1, "Error: Invalid error number");
+		if (server.errorPages[status.get_page_index()].size != 0)
+			PERR_EXIT(1, "Error: Duplicate error page");
 		server.errorPages[status.get_page_index()] = path;
 	}
 }
@@ -39,7 +41,7 @@ void s_directive_listen(Arena &arena, const Span &value, VirtualServer &server) 
 
 static inline
 void s_directive_body_size(const Span &value, usize &bodySize) {
-	if (bodySize != LONG_MAX || value.size == 0)
+	if (bodySize != SIZE_MAX)
 		PERR_EXIT(1, "Error: Invalid max body size");
 
 	u8 factor = 0;
@@ -60,7 +62,7 @@ void s_directive_body_size(const Span &value, usize &bodySize) {
 	if (digitLength == 0)
 		PERR_EXIT(1, "Error: Invalid max body size");
 	const usize bytes = fn::strtol10(str, digitLength, digitLength);
-	if (bytes >= (SIZE_MAX >> factor))
+	if (bytes > ((usize)LONG_MAX >> factor))
 		PERR_EXIT(1, "Error: Invalid max body size");
 	bodySize = bytes << factor;
 }
@@ -72,7 +74,7 @@ PARSER_INL
 	if (name == "error_page")
 		return s_directive_error_page(dir, server);
 	
-	if (dir.args.count != 1 || dir.args[0].size == 0 || dir.args[0].size >= MAX_PATH_SIZE)
+	if (dir.args.count != 1 || dir.args[0].size >= MAX_PATH_SIZE)
 		PERR_EXIT(1, "Error: Invalid server directive");
 	const Span &value = dir.args[0];
 	if (name == "listen")
@@ -110,8 +112,8 @@ usize s_count_locations(ArrayView<Parser::Token> tokArray) {
 				tokArray.ptr++;
 			}
 			const usize locationSize = (usize)(tokArray.ptr[-1].value.ptr - locationStart->value.ptr) + 1;
-			if (locationSize <= 1 || locationSize > MAX_LOCATION_BLOCK_SIZE)
-				PERR_EXIT(1, "Error: Invalid location block");	// No empty locations either
+			if (locationSize > MAX_LOCATION_BLOCK_SIZE)
+				PERR_EXIT(1, "Error: Invalid location block");
 			locationCount++;
 		}
 		else {
@@ -156,5 +158,7 @@ PARSER_INL
 	tokArray.ptr++;
 	if (server.port == SIZE_MAX)
 		PERR_EXIT(1, "Error: Missing listen directive");
+	if (server.maxBodySize == SIZE_MAX)
+		server.maxBodySize = LONG_MAX;
 	server.locations = process_locations(parsedLocations, server);
 }

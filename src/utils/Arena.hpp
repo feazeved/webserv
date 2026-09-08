@@ -42,10 +42,7 @@ struct Arena {
 
 	template <typename Type>
 	ArrayView<Type> alloc_array(usize numElements, usize alignSize = 16) {
-		if (numElements > SIZE_MAX / sizeof(Type)) {
-			PRINT_LN(2, "Error: Out of memory");
-			return ArrayView<Type>();
-		}
+		ASSERT(numElements <= LONG_MAX / sizeof(Type), "Array size exceeds LONG_MAX");
 		const usize bytes = numElements * sizeof(Type);
 		alignSize = MAX(alignSize, __alignof__(Type));
 		const u32 index = alloc(bytes, 0, alignSize);
