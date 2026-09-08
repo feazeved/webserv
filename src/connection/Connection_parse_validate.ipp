@@ -59,8 +59,9 @@ CONNECTION_INL
 (Status::Code) parse_validate(char* str, char* end) {
 	char* queryPtr = (char*) MEMCHR(str, '?', (usize)(end - str));	// /images/cats/meow.jpg?FILTER=yes,ORDER=ascending\0
 	char* queryStart = queryPtr == NULL ? end : queryPtr + 1;
+	queryPtr = queryPtr == NULL ? end : queryPtr;
 
-	req.target.size = fn::canonicalize_target_inplace((u8*)str, (usize)(queryStart - str));
+	req.target.size = fn::canonicalize_target_inplace((u8*)str, (usize)(queryPtr - str));
 	if (req.target.size == SIZE_MAX)
 		return Status::i400;
 	req.target.ptr = str;								// /images/cats/meow.jpg
