@@ -10,7 +10,7 @@ CONNECTION_INL
 		return -1;
 
 	struct stat st;
-	if (stat(pathBuffer, &st) == -1)
+	if (stat(pathBuffer, &st) == -1 || !S_ISREG(st.st_mode))
 		return flush_setup_close(epoll, s_get_status());
 	if (S_ISDIR(st.st_mode))
 		return get_directory_setup(epoll, pathBuffer);
@@ -45,6 +45,8 @@ CONNECTION_INL
 		build_header(Status::i200);
 		return upload_file(epoll);
 	}
+	if (errno != ENOENT && errno != ENOTDIR)
+		return flush_setup_close(epoll, s_get_status());	// REVIEW
 	pathBuffer.writePos = directoryLength;
 	*pathBuffer = 0;
 	if (req.location->autoindex == false)

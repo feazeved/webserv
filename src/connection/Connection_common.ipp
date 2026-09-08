@@ -6,7 +6,7 @@ CONNECTION_INL
 (void) activate_streaming(Mode::e_http_mode nextMode) {
 	ASSERT(mode <= Mode::PARSE, "Parsing buffer was not active");
 	ASSERT(nextMode > Mode::PARSE, "Invalid streaming mode");
-	ASSERT(parseBuffer.writePos <= sizeof(recvBuffer.data), "Buffered request tail exceeded receive buffer");
+	ASSERT(parseBuffer.size() <= sizeof(recvBuffer.data), "Buffered request tail exceeded receive buffer");
 	if (parseBuffer.writePos > sizeof(recvBuffer.data))
 		parseBuffer.compact();
 	mode = nextMode;
