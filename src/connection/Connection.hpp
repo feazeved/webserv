@@ -21,7 +21,7 @@
 struct Connection {
 	struct Request {
 		Span target, query, host, cookies, interpreter;
-		Span contentTypeHeader, contentSize;	// relativeTarget (what comes after URI)
+		Span contentTypeHeader, contentSize;
 		Location* location;
 		Span relativeTarget, targetName, targetExt;
 		Span uri, cgi;
