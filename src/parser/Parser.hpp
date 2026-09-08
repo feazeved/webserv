@@ -31,8 +31,6 @@ struct Parser {
 	struct ParsedCgi {
 		ArrayView<Token> definitions;
 		usize size;
-
-		ParsedCgi() : definitions(), size(0) {}
 	};
 
 	struct ParsedLocation {
@@ -45,10 +43,7 @@ struct Parser {
 		Status redirectStatus;
 		u8 methods;
 		bool autoindex;
-
-		ParsedLocation()
-			: uri(), root(), index(), uploadStore(), cgiBlock(), redirectTarget(Span::create("")),
-			  redirectStatus(), methods(0), autoindex(false) {}
+		bool autoindexSet;
 	};
 
 	Arena &alpha;
@@ -75,7 +70,9 @@ struct Parser {
 	void cache_error_pages(VirtualServer &server);
 	ParsedLocation parse_location(ArrayView<Token> &tokArray);
 	void parse_server(ArrayView<Token> &tokArray, VirtualServer &server);
-	ArrayView<Location> store_locations(const ArrayView<ParsedLocation> &source);
+
+	ArrayView<Location> store_locations(ArrayView<ParsedLocation> &ploc);
+	ArrayView<Location> process_locations(ArrayView<ParsedLocation> &ploc, VirtualServer &server);
 
 	ParsedCgi parse_cgi(ArrayView<Token> &tokArray);
 	void parse_location_directive(ParsedLocation &location, Directive &dir);

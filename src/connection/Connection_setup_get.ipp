@@ -59,11 +59,15 @@ CONNECTION_INL
 		return flush_setup_close(epoll, s_get_status());
 	contentType = Mime::HTML;
 	options &= ~(u16)Options::KEEP_ALIVE;
+	// Its unfortunate that we have to append then copy again, but compaction might destroy target 
+	char* targetClean = pathBuffer.append_html(req.target.ptr, req.target.size);
+	usize targetCleanSize = (usize)(pathBuffer.wptr() - targetClean);
+
 	activate_streaming(Mode::AUTOINDEX);
 	sendBuffer.append(HTTP_INDEX_HEADER);
-	sendBuffer.append_html(req.target.ptr, req.target.size);
+	sendBuffer.append(targetClean, targetCleanSize);
 	sendBuffer.append(HTTP_INDEX_MIDDLE);
-	sendBuffer.append_html(req.target.ptr, req.target.size);
+	sendBuffer.append(targetClean, targetCleanSize);
 	sendBuffer.append(HTTP_INDEX_TAIL);
 	return upload_directory(epoll);
 }

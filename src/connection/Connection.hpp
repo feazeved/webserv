@@ -71,7 +71,6 @@ struct Connection {
 	Status::Code parse_line(Span line);
 	Status::Code parse_first_line(Span line);
 	Status::Code parse_validate(char* str, char* end);
-	Status::Code validate_target(char* str, char* end);
 	Status::Code match_location();
 	Span check_cgi();
 

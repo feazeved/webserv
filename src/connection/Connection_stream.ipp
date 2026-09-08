@@ -45,6 +45,8 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) download_file_fixed(Epoll &epoll) {
+	if (read_from_client(epoll) < 0)
+		return -1;
 	isize bytesWritten = 0;
 	if (bodySize != 0 && recvBuffer.size() != 0) {
 		bytesWritten = recvBuffer.write_all(writeFd, bodySize);
@@ -56,13 +58,13 @@ CONNECTION_INL
 		build_header(Status::i201);
 		return flush_setup(epoll);
 	}
-	if (recvBuffer.size() < bodySize)
-		return read_from_client(epoll);
-	return bytesWritten;
+	return 0;
 }
 
 CONNECTION_INL
 (isize) download_file_chunked(Epoll &epoll) {
+	if (read_from_client(epoll) < 0)
+		return -1;
 	Status::Code code = write_chunked();
 	if (code >= Status::i400)
 		return flush_setup_close(epoll, code);
@@ -71,5 +73,5 @@ CONNECTION_INL
 		build_header(Status::i201);
 		return flush_setup(epoll);
 	}
-	return read_from_client(epoll);
+	return 0;
 }

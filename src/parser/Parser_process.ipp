@@ -27,56 +27,88 @@ Span16 s_store_upload_span(Location &location, char* &wptr, const Span &source) 
 
 static inline
 void s_store_cgi(char* &wptr, const Parser::ParsedCgi &cgiBlock, Location &location) {
-		location.cgiBlock.index = (u16)(wptr - (char*)&location.uri);
-		location.cgiBlock.size = (u16)cgiBlock.size;
-		for (usize index = 0; index < cgiBlock.definitions.count; index += 4) {
-			Parser::Token* definition = cgiBlock.definitions.ptr + index;
-			const Span &extension = definition[0].value;
-			const Span &interpreter = definition[2].value;
-			const u16 lengths[2] = {(u16)extension.size, (u16)interpreter.size};
-			MEMCPY_INLINE(wptr, lengths, sizeof(lengths));
-			wptr += sizeof(lengths);
-			MEMCPY(wptr, extension.ptr, extension.size);
-			wptr += extension.size;
-			MEMCPY(wptr, interpreter.ptr, interpreter.size);
-			wptr += interpreter.size;
-		}
-		*wptr++ = '\0';	
+	location.cgiBlock.index = (u16)(wptr - (char*)&location.uri);
+	location.cgiBlock.size = (u16)cgiBlock.size;
+	for (usize index = 0; index < cgiBlock.definitions.count; index += 4) {
+		Parser::Token* definition = cgiBlock.definitions.ptr + index;
+		const Span &extension = definition[0].value;
+		const Span &interpreter = definition[2].value;
+		const u16 lengths[2] = {(u16)extension.size, (u16)interpreter.size};
+		MEMCPY_INLINE(wptr, lengths, sizeof(lengths));
+		wptr += sizeof(lengths);
+		MEMCPY(wptr, extension.ptr, extension.size);
+		wptr += extension.size;
+		MEMCPY(wptr, interpreter.ptr, interpreter.size);
+		wptr += interpreter.size;
+	}
+	*wptr++ = '\0';	
 }
 
 static inline
-void s_store_location(char* &wptr, const Parser::ParsedLocation &ploc, Location &location) {
-		location.uri = s_store_location_span(location, wptr, ploc.uri);
-		location.root = s_store_location_span(location, wptr, ploc.root);
-		location.index = s_store_location_span(location, wptr, ploc.index);
-		location.uploadStore = s_store_upload_span(location, wptr, ploc.uploadStore);
-		s_store_cgi(wptr, ploc.cgiBlock, location);
-		location.redirectTarget = s_store_location_span(location, wptr, ploc.redirectTarget);
-		location.redirectStatus = ploc.redirectStatus;
-		location.methods = ploc.methods;
-		location.autoindex = ploc.autoindex;
+void s_store_location(char* &wptr, const Parser::ParsedLocation &ploc, Location &loc) {
+	loc.uri = s_store_location_span(loc, wptr, ploc.uri);
+	loc.root = s_store_location_span(loc, wptr, ploc.root);
+	loc.index = s_store_location_span(loc, wptr, ploc.index);
+	loc.uploadStore = s_store_upload_span(loc, wptr, ploc.uploadStore);
+	s_store_cgi(wptr, ploc.cgiBlock, loc);
+	loc.redirectTarget = s_store_location_span(loc, wptr, ploc.redirectTarget);
+	loc.redirectStatus = ploc.redirectStatus;
+	loc.methods = ploc.methods;
+	loc.autoindex = ploc.autoindex;
 }
 
 static inline
 usize s_location_size(const Parser::ParsedLocation &loc) {
-	usize packSize = 12 + loc.uri.size + loc.root.size + loc.index.size;
+	usize packSize = 16 + loc.uri.size + loc.root.size + loc.index.size;
 	packSize += loc.uploadStore.size + loc.cgiBlock.size + loc.redirectTarget.size;
 	return packSize;
 }
 
 PARSER_INL
-(ArrayView<Location>) store_locations(const ArrayView<ParsedLocation> &source) {
-	usize allocationSize = source.count * sizeof(Location);
-	for (usize index = 0; index < source.count; index++)
-		allocationSize += s_location_size(source[index]);
+(ArrayView<Location>) store_locations(ArrayView<ParsedLocation> &ploc) {
+	usize allocationSize = ploc.count * sizeof(Location);
+	for (usize index = 0; index < ploc.count; index++)
+		allocationSize += s_location_size(ploc[index]);
 	const u32 allocation = beta.alloc(allocationSize, 0, __alignof__(Location));
 	if (allocation == UINT32_MAX)
 		std::exit(1);
-	ArrayView<Location> locations((Location*)beta.mptr(allocation), source.count);
+	ArrayView<Location> locations((Location*)beta.mptr(allocation), ploc.count);
 	char* wptr = (char*)(locations.ptr + locations.count);
 	for (usize locationIndex = 0; locationIndex < locations.count; locationIndex++)
-		s_store_location(wptr, source[locationIndex], locations[locationIndex]);
+		s_store_location(wptr, ploc[locationIndex], locations[locationIndex]);
 	return locations;
+}
+
+PARSER_INL
+(ArrayView<Location>) process_locations(ArrayView<ParsedLocation> &ploc, VirtualServer &server) {
+	Span &serverRoot = server.serverRoot;
+
+	if (server.host.size == 0)
+		server.host = beta.copy_span(Span::create("localhost"));
+	if (serverRoot.size == 0)
+		serverRoot = beta.copy_span(Span::create(""));
+	else if (serverRoot.ptr[serverRoot.size - 1] == '/')
+		serverRoot.size--;
+	
+	Span defaultIndex = beta.copy_span(Span::create("/index.html"));
+	for (usize index = 0; index < ploc.count; index++) {
+		ParsedLocation &src = ploc[index];
+		if (src.root.size == 0)
+			src.root = serverRoot;
+		else if (src.root.ptr[src.root.size - 1] == '/')
+			src.root.size--;
+		if (src.uploadStore.size == 0)
+			src.uploadStore = src.root;
+		if (src.index.size == 0)
+			src.index = defaultIndex;
+		else if (*src.index.ptr != '/') {
+			*(--src.index.ptr) = '/';
+			src.index.size++;
+		}
+		if (src.methods == 0)
+			src.methods = Options::GET;
+	}
+	return store_locations(ploc);
 }
 
 static inline
@@ -131,7 +163,7 @@ PARSER_INL
 			continue;
 		}
 		s_build_error_page_path(pathBuffer, server.serverRoot, path);
-		if (fn::read_whole_file(beta, pathBuffer, page, 0, 0, HTTP_ERROR_PAGE_MAX_SIZE))
+		if (fn::read_whole_file(beta, pathBuffer, page, 0, 0, MAX_ERROR_PAGE_SIZE))
 			std::exit(1);
 	}
 }

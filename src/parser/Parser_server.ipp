@@ -122,8 +122,8 @@ usize s_count_locations(ArrayView<Parser::Token> tokArray) {
 			tokArray.ptr++;
 		}
 	}
-	if (locationCount >= UINT16_MAX)
-		PERR_EXIT(1, "Error: More than 65535 locations");
+	if (locationCount > MAX_LOCATION_COUNT)
+		PERR_EXIT(1, "Error: Location count exceeds the maximum");
 	return locationCount;
 }
 
@@ -156,16 +156,5 @@ PARSER_INL
 	tokArray.ptr++;
 	if (server.port == SIZE_MAX)
 		PERR_EXIT(1, "Error: Missing listen directive");
-	if (server.host.size == 0)
-		server.host = beta.copy_span(Span::create("localhost"));	// TODO: this is suspicious
-	Span defaultIndex = beta.copy_span(Span::create("index.html"));
-	for (usize index = 0; index < parsedLocations.count; index++) {
-		if (parsedLocations[index].root.size == 0)
-			parsedLocations[index].root = server.serverRoot;
-		if (parsedLocations[index].uploadStore.size == 0)
-			parsedLocations[index].uploadStore = parsedLocations[index].root;
-		if (parsedLocations[index].index.size == 0)
-			parsedLocations[index].index = defaultIndex;	// REVIEW: make sure no writes occur
-	}
-	server.locations = store_locations(parsedLocations);
+	server.locations = process_locations(parsedLocations, server);
 }

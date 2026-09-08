@@ -71,6 +71,12 @@ CONNECTION_INL
 	Environment::append(buffer.append("HTTP_HOST="));
 	buffer.append(req.host.ptr, req.host.size + 1);
 	Environment::append(STRPREP(req.query.ptr, "QUERY_STRING="));
+	if (req.contentTypeHeader.size != 0) {
+		char* contentTypeHeader = buffer.append("CONTENT_TYPE=");
+		buffer.append(req.contentTypeHeader);
+		buffer.append("\0");
+		Environment::append(contentTypeHeader);
+	}
 	if (req.cookies.size != 0)
 		Environment::append(STRPREP(req.cookies.ptr, "HTTP_COOKIE="));
 
@@ -79,12 +85,6 @@ CONNECTION_INL
 		buffer.append_digit10(bodySize);
 		buffer.append("\0");
 		Environment::append(lengthStr);
-	}
-	if (req.contentTypeHeader.size != 0) {
-		char* contentTypeHeader = buffer.append("CONTENT_TYPE=");
-		buffer.append(req.contentTypeHeader);
-		buffer.append("\0");
-		Environment::append(contentTypeHeader);
 	}
 	Environment::append((char*) requestMethod[methodIndex]);
 	Environment::append(scriptName);

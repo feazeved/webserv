@@ -20,37 +20,40 @@ PARSER_INL
 	usize length = 1;
 
 	if (dir.name == "root") {
-		if (dir.args.count != 1)
+		if (dir.args.count != 1 || location.root.size != 0)
 			PERR_EXIT(1, "Error: Invalid root");
 		location.root = dir.args[0];
 		length = dir.args[0].size;
 	}
 	else if (dir.name == "autoindex") {
-		if (dir.args.count != 1 || (!(dir.args[0] == "on") && !(dir.args[0] == "off")))
+		if (dir.args.count != 1 || location.autoindexSet == true)
+			PERR_EXIT(1, "Error: Invalid autoindex");
+		if ((!(dir.args[0] == "on") && !(dir.args[0] == "off")))
 			PERR_EXIT(1, "Error: Invalid autoindex");
 		location.autoindex = dir.args[0] == "on";
+		location.autoindexSet = true;
 	}
 	else if (dir.name == "allowed_methods") {
 		if (dir.args.count == 0)
 			PERR_EXIT(1, "Error: No allowed methods defined");
+		if (location.methods != 0)
+			PERR_EXIT(1, "Error: Duplicate methods");
 		s_set_methods(dir.args, location);
 	}
 	else if (dir.name == "index") {
-		if (dir.args.count != 1)
+		if (dir.args.count != 1 || location.index.size != 0)
 			PERR_EXIT(1, "Error: Invalid index");
 		location.index = dir.args[0];
 		length = dir.args[0].size;
 	}
 	else if (dir.name == "upload_store") {
-		struct stat st;
-		if (dir.args.count != 1 || stat(dir.args[0].ptr, &st) == -1
-			|| !S_ISDIR(st.st_mode) || access(dir.args[0].ptr, W_OK | X_OK) == -1)
+		if (dir.args.count != 1 || location.uploadStore.size != 0)
 			PERR_EXIT(1, "Error: Invalid upload store");
 		location.uploadStore = dir.args[0];
 		length = dir.args[0].size;
 	}
 	else if (dir.name == "return") {
-		if (dir.args.count != 2 || dir.args[0].size != 3)
+		if (dir.args.count != 2 || dir.args[0].size != 3 || location.redirectTarget.size != 0)
 			PERR_EXIT(1, "Error: Invalid redirect");
 		const usize status = fn::strtol10(dir.args[0].ptr);
 		location.redirectStatus.index = Status::s_num_to_code(status);
@@ -70,7 +73,7 @@ PARSER_INL
 	if (tokArray[0].type != Token::OPEN_BRACKET)
 		PERR_EXIT(1, "Error: Invalid CGI block");
 
-	ParsedCgi cgi;
+	ParsedCgi cgi = {};
 	tokArray.ptr++;
 	Token* definitionStart = tokArray.ptr;
 	while (tokArray[0].type != Token::CLOSE_BRACKET) {
@@ -91,8 +94,6 @@ PARSER_INL
 			PERR_EXIT(1, "Error: Invalid CGI interpreter");
 		Span &interpreter = tokArray[0].value;
 		interpreter.ptr[interpreter.size++] = '\0';
-		if (access(interpreter.ptr, X_OK) == -1)	// TODO: Check if more is not needed
-			PERR_EXIT(1, "Error: Invalid CGI interpreter");
 		tokArray.ptr++;
 		if (tokArray[0].type != Token::SEMICOLON)
 			PERR_EXIT(1, "Error: Expected ';' after CGI definition");
@@ -107,7 +108,7 @@ PARSER_INL
 
 PARSER_INL
 (Parser::ParsedLocation) parse_location(ArrayView<Token> &tokArray) {
-	ParsedLocation loc;
+	ParsedLocation loc = {};
 	loc.uri = tokArray[0].value;
 
 	if (loc.uri.ptr[0] != '/')

@@ -1,3 +1,4 @@
+## Glossary
 OOB Padding: 			Will not permanently modify
 Clobberable padding:	Will permanently modify
 
@@ -10,12 +11,64 @@ POST/PRE refer to the location of the padding. [PRE] [DATA] [POST]
 3) Match algorithms require 24 bytes OOB padding
 (POST 24 bytes OOB padding)
 
+## Memory Layout
+A single connection uses 16kb of space, of which 64 bytes is used by metadata, and the rest by buffers
+A connection pool holds 4096 connections, totalling 64MB + ~1KB of metadata
 
+Each virtual server takes up roughly 784 bytes of memory, plus a fixed storage space for its configs (a budget of 64KB)
+This means that for 64 virtual servers, it uses 64 * (784 + 64KB) =  50KB + 4MB = ~4MB
 
----
+Additionally, default error pages and status strings are cached in memory, occupying roughly 10kb of space
 
+There are two arenas:
+	* Alpha	(64MB): Memory space occupied by the connection pool;
+	* Beta	(4MB): Fixed storage space budget for virtual server configs and error pages
 
-Rules
+## Parsing
+For temporary things that aren't going to be used by the program later like tokens and unprocessed configs, arena alpha is used. This ensures no additional allocations or frees are necessary, since whatever was going to be used by connections is considered garbage memory before initialization.
+
+### General
+* Comments are stripped from parsing
+* The config file read is allocated with at least 64 bytes padding
+
+#### Limits
+* Each server block is at maximum MAX_SERVER_BLOCK_SIZE (64KB)
+* Each location block is at maximum MAX_LOCATION_BLOCK_SIZE (32KB)
+* Number of locations is at maximum MAX_LOCATION_COUNT (32KB)
+* Each error page cached is at maximum MAX_ERROR_PAGE_SIZE (HTTP_BUFFERSIZE - 512B)
+
+#### Location Invariants
+* All location strings are null terminated and 0 <= length <= MAX_PATH_SIZE
+* 0 length strings still point to empty data
+* There are no duplicates of any kind
+* Redirect status is valid
+* There is at least one allowed method
+* A server root always exists
+* A location root never ends with a "/"
+* An upload store always ends with a "/"
+* An index always starts with "/"
+* A URI always starts with a "/"
+
+#### Defaults
+* If server root does not exist, it becomes ""
+* If location root does not exist, it becomes server root
+* If upload store does not exist, upload store becomes root
+* If index does not exist, it becomes "/index.html"
+* If no methods are specified, it becomes GET only
+
+#### Valid syntax:
+* For body sizes, you can define G, M and K for GB, MB and KB respectively.
+If not specified, bytes are assumed instead
+Example: client_max_body_size 20M;
+
+* CGI blocks are defined per location.
+Example: 
+	cgi {
+		.extension = /absolute_path_to_interpreter;
+		.py = /bin/python3;
+	}
+
+## Rules
 1) Size type variables will always take a maximum size of LONG_MAX, even for unsigned types. 
 This is done to avoid overflows and always have error sentinels.
 LONG_MAX is a ridiculously large number anyhow, any real constraint should realistically be much smaller
