@@ -1,5 +1,9 @@
 # Configuration ------------------------------- #
 NAME = webserv
+CGI_BIN = build/penguin_cgi.rs
+CGI_SRC = cgi-rust/penguin_cgi.rs
+RUSTC = rustc
+RUSTFLAGS_CGI = --edition 2021 -O -C strip=symbols
 VPATH = src src/utils src/global src/core src/parser src/buffer src/connection src/functions
 MAIN_SRC = main.cpp
 CORE_SRC =
@@ -50,7 +54,18 @@ $(BUILD_PATH):
 	@mkdir -p $@
 
 # Phonies ------------------------------------- #
-all: $(BIN)
+
+all: $(BIN) penguin
+
+penguin:
+	@if command -v $(RUSTC) >/dev/null 2>&1; then \
+		$(MAKE) --no-print-directory $(CGI_BIN); \
+	else \
+		echo "warning: $(RUSTC) not found - skipping $(CGI_BIN)"; \
+	fi
+
+$(CGI_BIN): $(CGI_SRC) | $(BUILD_PATH)
+	$(RUSTC) $(RUSTFLAGS_CGI) -o $@ $<
 
 test: $(TEST_BIN)
 	./$(TEST_BIN)
@@ -95,4 +110,4 @@ ffast: CXXFLAGS += $(FAST) -Ofast
 ffast: LDFLAGS += -flto
 ffast: clean $(BIN)
 
-.PHONY: all test run vrun compdb clean fclean re debug asan tsan fast ffast
+.PHONY: all penguin test run vrun compdb clean fclean re debug asan tsan fast ffast
