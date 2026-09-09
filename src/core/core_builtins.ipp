@@ -46,13 +46,13 @@
 #define MEMAPP(s1, s2, n)	((n) + __builtin_memcpy(s1, s2, n))
 #define STRAPP(s1, s2)		((char*)((sizeof(s2) - 1) + __builtin_memcpy(s1, s2, (sizeof(s2) - 1))))
 
-#if defined(__clang__) && __has_builtin(__builtin_memcpy_inline)
+#if defined(__clang__) && __clang_major__ >= 15 && __has_builtin(__builtin_memcpy_inline)
 	#define MEMCPY_INLINE(dst, src, n)	__builtin_memcpy_inline(dst, src, n)
 #else
 	#define MEMCPY_INLINE(dst, src, n)	__builtin_memcpy(dst, src, n)
 #endif
 
-#if defined(__clang__) && __has_builtin(__builtin_memset_inline)
+#if defined(__clang__) && __clang_major__ >= 15 && __has_builtin(__builtin_memset_inline)
 	#define MEMSET_INLINE(dst, val, n)	__builtin_memset_inline(dst, val, n)
 #else
 	#define MEMSET_INLINE(dst, val, n)	__builtin_memset(dst, val, n)
@@ -67,4 +67,3 @@
 #define BSWAP32(x)		__builtin_bswap32(x)
 #define BSWAP64(x)		__builtin_bswap64(x)
 #define BITREVERSE(x)	__builtin_bitreverse64(x)	// This is clang specific
-

@@ -98,3 +98,12 @@ form select{
 	/*background: #3b8dc4;*/
 	background: linear-gradient(0deg,rgba(59, 141, 196, 1) 0%, rgba(6, 60, 122, 1) 50%, rgba(59, 141, 196, 1) 100%);
 }
+
+.login-error {
+	background: #a12;
+	color: #fff;
+	border-radius: 10px;
+	padding: 0.5rem 0.9rem;
+	margin: 0 0 0.75rem 0;
+	font-size: 15px;
+}

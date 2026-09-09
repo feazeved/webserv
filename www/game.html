@@ -9,14 +9,14 @@
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Playpen+Sans:wght@100..800&display=swap" rel="stylesheet">
-		<link rel="stylesheet" href="./css/styles.css">
+		<link rel="stylesheet" href="/css/styles.css">
 
 	</head>
 
 	<body>
 		<div class="header">
 			<img class="logo"
-				src="images/logo.png"
+				src="/images/logo.png"
 				alt="Club Penguin Logo"
 				width="221"
 				height="100"
@@ -28,18 +28,24 @@
 			<button id="logoutButton" type="button"><em>Logout</em></button>
 		</div>
 		<nav>
-			<span><a href="./about.html" target="_blank">About Us</a></span>
-			<span><a href="./error-pages/invalid-requests-map.html" target="_blank">Invalid Requests</a></span>
-			<span><a href="./cgis.html" target="_blank">CGI's</a></span>
+			<span><a href="/about.html" target="_blank">About Us</a></span>
+			<span><a href="/error-pages/invalid-requests-map.html" target="_blank">Invalid Requests</a></span>
+			<span><a href="/cgis.html" target="_blank">CGI's</a></span>
 		</nav>
 
 		<div class="game-container">
+			<div id="hud">
+				<span class="hud-item">You: <strong id="hud-who">-</strong></span>
+				<span class="hud-item">Server: <strong id="hud-region">-</strong></span>
+				<span class="hud-item" id="hud-count">connecting...</span>
+				<span class="hud-item" id="hud-status" style="display:none"></span>
+			</div>
 			<div id="gameCanvas">
 				<div id="arena" class="area">
 				</div>
 			</div>
 		</div>
 
-		<script src="js/game.js"></script>
+		<script src="/js/game.js"></script>
 	</body>
 </html>
