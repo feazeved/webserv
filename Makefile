@@ -55,15 +55,11 @@ all: $(BIN)
 test: $(TEST_BIN)
 	./$(TEST_BIN)
 
-run: re
+run:
 	clear
 	./$(BIN) $(ARG)
 
-drun: debug
-	clear
-	./$(BIN) $(ARG)
-
-vrun: re
+vrun:
 	clear
 	valgrind ./$(BIN) $(ARG)
 
