@@ -67,125 +67,167 @@ function makePenguin(username, isMe) {
 	return el;
 }
 
-function setCookie(name, value, days = 30) {
-    const maxAge = days * 24 * 60 * 60;
-    document.cookie = `${name}=${value}; Path=/; Max-Age=${maxAge}`;
+function setStatus(message) {
+	if (!hudStatus) return;
+	hudStatus.textContent = message || "";
+	hudStatus.classList.toggle("hud-warn", Boolean(message));
+	hudStatus.style.display = message ? "" : "none";
 }
-
-function htmlToElement(html) {
-    const template = document.createElement('template');
-    html = html.trim();
-    template.innerHTML = html;
-    return template.content.firstChild;
-}
-
-const username = getCookie("cp_session") || "guest";
-
-const safeUserKey = username.replace(/\s+/g, '_');
-
-function getUserPosition(userKey) {
-    const cookieKey = `cp_pos_${userKey}`;
-    const savedPos = getCookie(cookieKey);
-
-    if (savedPos) {
-        const [x, y] = savedPos.split(",").map(Number);
-        if (!isNaN(x) && !isNaN(y)) {
-            return { x, y };
-        }
-    }
-    return { x: 100, y: 100 };
-}
-
-const initialPos = getUserPosition(safeUserKey);
-
-const player = {
-    username: username,
-    x: initialPos.x,
-    y: initialPos.y
-};
 
 function renderState(state) {
-    if (!Array.isArray(state)) return;
+    if (!state || !Array.isArray(state.players)) return;
 
-    let activeIds = [];
+	const seen = new Set();
 
-    state.forEach(({ username, x, y }) => {
-        if (!username) return;
+	for (const p of state.players) {
+		if (!p || typeof p.username !== "string" || !p.username) continue;
 
-        const safeId = `penguin-${username.replace(/\s+/g, '_')}`;
-        activeIds.push(safeId);
+		const isMe = p.username === state.you;
+		seen.add(p.username);
 
-        let el = document.getElementById(safeId);
-        if (!el) {
-            el = htmlToElement(`<div class="penguin" id="${safeId}">🐧<p>${username}</p></div>`);
-            arena.append(el);
-        }
-        el.style.top = `${y}px`;
-        el.style.left = `${x}px`;
-    });
+		let el = arena.querySelector('[data-name="${CSS.escape(p.username)}"]');
+		if (!el) {
+			el = makePenguin(p.username, isMe);
+			arena.append(el);
+		}
 
-    document.querySelectorAll('.penguin').forEach(el => {
-        if (!activeIds.includes(el.id)) {
-            el.remove();
-        }
-    });
+		const x = isMe ? me.x : p.x;
+		const y = isMe ? me.y : p.y;
+		const facing = isMe ? me.facing : p.facing;
+
+		el.style.left = "${x}px";
+		el.style.top = "${y}px";
+		el.dataset.facing = facing || "s";
+		el.style.zIndex = String(100 + Math.round(y));
+	}
+
+	for (const el of arena.querySelectorAll(".penguin")) {
+		if (!seen.has(el.dataset.name)) el.remove();
+	}
+
+	if (hudCount) {
+		const n = state.players.length;
+		hudCount.textContent = n === 1 ? "1 penguin online" : "${n} penguins online";
+	}
+
+	if (hudWho && state.you) hudWho.textContent = state.you;
+	setStatus(null);
 }
 
-async function update(pData) {
-    try {
-        const res = await fetch("/update", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(pData)
-        });
-        const state = await res.json();
-        renderState(state);
-    } catch (e) {}
+async function call(method, body) {
+	const options = { method, cache: "no-store" };
+	if (body !== undefined) {
+		options.headers = { "Content-Type": "application/json" };
+		options.body = JSON.stringify(body);
+	}
+	const res = await fetch(ENDPOINT, options);
+	if (res.status === 401) {
+		window.location.href = "/login.html";
+		throw new Error("unauthorized");
+	}
+	if (!res.ok) throw new Error("HTTP ${res.status}");
+	return res.json();
 }
 
-setCookie(`cp_pos_${safeUserKey}`, `${player.x},${player.y}`);
-update(player);
+async function poll() {
+	try {
+		const state = await call("GET");
+		if (!me.synced && state.you) {
+			const mine = state.players.find((p) => p.username === state.you);
 
-setInterval(() => {
-    update(player);
-}, 1000);
+			if (mine) {
+				me.x = mine.x;
+				me.y = mine.y;
+				me.facing = mine.facing || "s";
+			}
+			me.name = state.you;
+			me.synced = true;
+		}
+		renderState(state);
+	} catch (e) {
+		if (e.message !== "unauthorized") setStatus("Reconnecting...");
+	}
+}
 
-document.addEventListener("keyup", (e) => {
-    const speed = 30;
-    let moved = false;
+async function flushMove() {
+	sendTimer = null;
+	if (inFlight) {
+		scheduleSend();
+		return;
+	}
+	inFlight = true;
+	try {
+		renderState(await call("POST", { x: me.x, y: me.y, facing: me.facing }));
+	} catch (e) {
+		if (e.message !== "unauthorized") setStatus("Reconnecting...");
+	} finally {
+		inFlight = false;
+	}
+}
 
-    if (e.key === "ArrowUp") { player.y = Math.max(0, player.y - speed); moved = true; }
-    if (e.key === "ArrowDown") { player.y = Math.min(260, player.y + speed); moved = true; }
-    if (e.key === "ArrowLeft") { player.x = Math.max(0, player.x - speed); moved = true; }
-    if (e.key === "ArrowRight") { player.x = Math.min(460, player.x + speed); moved = true; }
+function scheduleSend() {
+	if (sendTimer === null) sendTimer = setTimeout(flushMove, SEND_MS);
+}
 
-    if (moved) {
-        setCookie(`cp_pos_${safeUserKey}`, `${player.x},${player.y}`);
-        update(player);
-    }
-});
+function leave() {
+	const payload = JSON.stringify({ leave: true });
 
-document.addEventListener("DOMContentLoaded", () => {
-    const logoutBtn = document.getElementById("logoutButton");
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", async () => {
-            setCookie(`cp_pos_${safeUserKey}`, `${player.x},${player.y}`);
-            try {
-                await fetch("/update", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username: player.username })
-                });
-            } catch (e) {}
-            window.location.href = "/cgi-bin/logout.py";
-        });
-    }
-});
+	if (navigator.sendBeacon) {
+		navigator.sendBeacon(ENDPOINT, new Blob([payload], { type: "application/json" }));
+	} else {
+		fetch(ENDPOINT, { method: "POST", body: payload, keepalive: true }).catch(() => { });
+	}
+}
 
-window.addEventListener("pagehide", () => {
-    setCookie(`cp_pos_${safeUserKey}`, `${player.x},${player.y}`);
-    const data = JSON.stringify({ username: player.username });
-    if (navigator.sendBeacon) {
-        navigator.sendBeacon("/update", data);
-    }
-});
+const KEYS = {
+	ArrowUp:    ["n",  0, -1], w: ["n",  0, -1], W: ["n",  0, -1],
+	ArrowDown:  ["s",  0,  1], s: ["s",  0,  1], S: ["s",  0,  1],
+	ArrowLeft:  ["w", -1,  0], a: ["w", -1,  0], A: ["w", -1,  0],
+	ArrowRight: ["e",  1,  0], d: ["e",  1,  0], D: ["e",  1,  0],
+};
+
+document.addEventListener("keydown", (event) => {
+	if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+	const move = KEYS[event.key];
+	if (!move) return;
+	event.preventDefault();
+
+	const [facing, dx, dy] = move;
+	const nx = Math.min(MAX_X, Math.max(0, me.x + dx * STEP));
+	const ny = Math.min(MAX_Y, Math.max(0, me.y + dy * STEP));
+
+	if (nx === me.x && ny === me.y && facing === me.facing) return;
+
+		me.x = nx;
+		me.y = ny;
+		me.facing = facing;
+
+		const self = arena.querySelector(".penguin.is-me");
+		if (self) {
+			self.style.left = `${me.x}px`;
+			self.style.top = `${me.y}px`;
+			self.dataset.facing = me.facing;
+			self.style.zIndex = String(100 + Math.round(me.y));
+		}
+
+		scheduleSend();
+})
+
+const logoutButton = document.getElementById("logoutButton");
+if (logoutButton) {
+	logoutButton.addEventListener("click", () => {
+		leave();
+		window.location.href = "/cgi-bin/logout.py";
+	})
+}
+
+window.addEventListener("pagehide", leave);
+
+if (hudRegion) {
+	hudRegion.textContent = REGION_PORT[window.location.port] || "Local";
+}
+
+poll();
+setInterval(poll, POLL_MS);
+setInterval(scheduleSend(), BEAT_MS);
