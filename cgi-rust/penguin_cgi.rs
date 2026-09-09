@@ -51,7 +51,9 @@ fn cookie(name: &str) -> Option<String> {
 fn clean_name(raw: &str) -> Option<String> {
     let ok = !raw.is_empty()
         && raw.len() <= MAX_NAME
-        && raw.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
+        && raw
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
     if ok {
         Some(raw.to_string())
     } else {
@@ -101,7 +103,10 @@ fn load() -> Vec<(Player, u64)> {
 fn save(players: &[(Player, u64)]) {
     let mut text = String::new();
     for (p, seen) in players {
-        text.push_str(&format!("{} {} {} {} {}\n", p.name, p.x, p.y, p.facing, seen));
+        text.push_str(&format!(
+            "{} {} {} {} {}\n",
+            p.name, p.x, p.y, p.facing, seen
+        ));
     }
 
     let tmp = format!("{}.{}.tmp", STATE_FILE, process::id());
@@ -120,12 +125,21 @@ impl Drop for Lock {
 
 fn lock() -> Option<Lock> {
     for _ in 0..400 {
-        if fs::OpenOptions::new().write(true).create_new(true).open(LOCK_FILE).is_ok() {
+        if fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(LOCK_FILE)
+            .is_ok()
+        {
             return Some(Lock);
         }
         if let Ok(meta) = fs::metadata(LOCK_FILE) {
             if let Ok(modified) = meta.modified() {
-                if modified.elapsed().map(|d| d.as_secs() >= 5).unwrap_or(false) {
+                if modified
+                    .elapsed()
+                    .map(|d| d.as_secs() >= 5)
+                    .unwrap_or(false)
+                {
                     let _ = fs::remove_file(LOCK_FILE);
                     continue;
                 }
@@ -212,7 +226,11 @@ fn main() {
         None => return error("401 Unauthorized", "no session"),
     };
 
-    let body = if method == "POST" { read_body() } else { String::new() };
+    let body = if method == "POST" {
+        read_body()
+    } else {
+        String::new()
+    };
 
     let _guard = match lock() {
         Some(g) => g,
@@ -237,7 +255,15 @@ fn main() {
                 return error("503 Service Unavailable", "room full");
             }
             let (x, y, facing) = saved_position();
-            players.push((Player { name: me.clone(), x, y, facing }, now));
+            players.push((
+                Player {
+                    name: me.clone(),
+                    x,
+                    y,
+                    facing,
+                },
+                now,
+            ));
             players.len() - 1
         }
     };

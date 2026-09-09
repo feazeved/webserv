@@ -14,6 +14,9 @@
 
 CONNECTION_INL
 (isize) dispatch(Epoll &epoll) {
+	if (Clock::time_elapsed() - startTime > HTTP_TIMEOUT)
+		return flush_setup_close(epoll, Status::i504);
+
 	switch (mode) {
 		case Mode::PARSE_FIRST:		return parse_first(epoll);
 		case Mode::PARSE:			return parse(epoll);
