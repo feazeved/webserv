@@ -68,6 +68,29 @@ h1, p {
 	}
 }
 
+#logoutButton{
+	border: 2px solid black;
+	color: white;
+	right: 10px;
+	position: absolute;
+	border-radius: 25px;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	font-size: 25px;
+	margin: 4px 2px;
+	cursor: pointer;
+	background: linear-gradient(0deg,rgba(72, 171, 239, 1) 0%, rgba(0, 83, 176, 1) 50%, rgba(72, 171, 239, 1) 100%);
+
+	padding-inline: 2rem;
+	padding-block: 0.75rem;
+	margin-top: 15px;
+}
+
+#logoutButton:hover {
+	/*background: #3b8dc4;*/
+	background: linear-gradient(0deg,rgba(59, 141, 196, 1) 0%, rgba(6, 60, 122, 1) 50%, rgba(59, 141, 196, 1) 100%);
+}
 .game-container{
 	display: flex;
 	color: white;
