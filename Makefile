@@ -20,7 +20,6 @@ RM := rm -f
 BUILD_PATH = build
 INC_PATH = $(VPATH) + includes
 OBJ_PATH = $(BUILD_PATH)/obj
-GAME_PATH = game
 BIN = build/$(NAME)
 TEST_BIN = $(BIN)_test
 OBJ_MAIN = $(addprefix $(OBJ_PATH)/, $(MAIN_SRC:.cpp=.o))
@@ -30,7 +29,7 @@ OBJ_TEST = $(addprefix $(OBJ_PATH)/, $(TEST_SRC:.cpp=.o))
 # Flags --------------------------------------- #
 CXX = clang++
 CPPFLAGS = $(addprefix -I,$(INC_PATH))
-CXXFLAGS = -Wall -Wextra -std=c++98
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 CXXFLAGS_TEST = -Wall -Wextra -std=c++11 -g
 LDFLAGS =
 DEBUG = -g -Wpedantic -Wcast-qual -Wfloat-equal -Wswitch-default -Wsign-conversion -DDEBUG_MODE
@@ -57,8 +56,6 @@ $(TEST_BIN): $(OBJ_TEST) $(OBJ_CORE) | $(BUILD_PATH)
 $(OBJ_PATH):
 	@mkdir -p $@
 $(BUILD_PATH):
-	@mkdir -p $@
-$(GAME_PATH):
 	@mkdir -p $@
 
 # Phonies ------------------------------------- #
@@ -118,6 +115,7 @@ ffast: CXXFLAGS += $(FAST) -Ofast
 ffast: LDFLAGS += -flto
 ffast: clean $(BIN)
 
+-include $(DEPS)
+
 .PHONY: all penguin test run vrun compdb clean fclean re debug asan tsan fast ffast
 
--include $(DEPS)
