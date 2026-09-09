@@ -48,7 +48,7 @@ CONNECTION_INL
 		close(readFd);
 		readFd = -1;
 	}
-	Span header = sendBuffer.find_header_end();
+	Span header = sendBuffer.find_cgi_header_end();
 	if (header.ptr == NULL) {
 		if (sendBuffer.size() > 7500)
 			return flush_setup_close(epoll, Status::i500);
