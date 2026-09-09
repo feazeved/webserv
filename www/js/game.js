@@ -1,55 +1,70 @@
-// Function responsible to listen to wasd / arrows and send the respective json to the server SSE
-// document.addEventListener('keydown', (e) => {
-// 	let dx = 0;
-// 	let dy = 0;
+/*
+	Talks to the Rust CGI at /game/state.penguin
 
-// 	if (e.key == 'ArrowUp')
-// 		dy = -5;
-// 	if (e.key == 'ArrowDown')
-// 		dy = 5;
-// 	if (e.key == 'ArrowLeft')
-// 		dx = -5;
-// 	if (e.key == 'ArrowRight')
-// 		dx = 5;
+	GET -> { you, players: [{ username, x, y, direction }] }
+	POST -> { x, y, direction } moves yourself
+			[ leave: true ] to exit
 
-// 	if (dx == 0 && dy == 0)
-// 		return;
-// 	e.preventDefault();
+*/
 
-// 	fetch('game/move', {
-// 		method: 'POST',
-// 		body: JSON.stringify({ dx, dy })
-// 	});
-// });
+const ENDPOINT	= "/game/state.penguin";
+const POLL_MS	= 200;
+const SEND_MS	= 80;
+const BEAT_MS	= 3000;
+const STEP		= 20;
 
-// function readState() {
-// 	const gameState = JSON.parse(text);
-//
-// if (gameState.type === "move")
-// {
-// 		let penguin = docum(gameState.id);
-//			penguin.style.x = g
-//			penguin.style.y = g
-//			direction/sprite = g
-//			direction/sprite = g
-// }
-//
-// if (JOIN) {
-//     how to add penguin
-// }
-// else if (LEFT) {
-// 		how to remove penguin
-// }
+const MAX_X = 500 - 60;
+const MAX_Y = 300 - 80;
 
-function startGame() {
-
+const REGION_PORT = {
+	"8001": "America",
+	"8002": "Africa",
+	"8003": "Europe",
+	"8004": "Oceania",
 }
 
+const arena		= document.getElementById("arena");
+const hudWho	= document.getElementById("hud-who");
+const hudCount	= document.getElementById("hud_count");
+const hudRegion	= document.getElementById("hud-region");
+const hudStatus	= document.getElementById("hud-status");
+
 function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
-    return null;
+	const parts = "; ${document.cookie}".split("; ${name}=");
+	if (parts.length !== 2) return null;
+	try {
+		return decodeURIComponent(parts.pop().split(";").shift());
+	} catch (e) {
+		return null;
+	}
+}
+
+const me = {
+	name: getCookie("cp_session") || "",
+	x: 200,
+	y: 110,
+	facing: "s",
+	synced: false,
+}
+
+let sendTimer = null;
+let inFlight = false;
+
+function makePenguin(username, isMe) {
+	const el = document.createElement("div");
+	el.className = isMe ? "penguin is-me" : "penguin";
+	el.dataset.name = username;
+
+	const sprite = document.createElement("div");
+	sprite.className = "penguin-sprite";
+
+	const tag = document.createElement("p");
+	tag.className = "penguin-name";
+
+	tag.textContent = username;
+
+	el.append(sprite, tag);
+	return el;
 }
 
 function setCookie(name, value, days = 30) {
@@ -88,8 +103,6 @@ const player = {
     x: initialPos.x,
     y: initialPos.y
 };
-
-const arena = document.getElementById("arena");
 
 function renderState(state) {
     if (!Array.isArray(state)) return;
