@@ -45,12 +45,15 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) redirect_setup(Epoll &epoll, Status::Code code) {
+	const Span statusStr = Status::s_status_str(code);
+	const Span target = req.location->get_redirect_target();
 	bodySize = 0;
 	options &= ~(u16)Options::KEEP_ALIVE;
+	activate_streaming(Mode::FLUSH);
 	sendBuffer.append("HTTP/1.1 ");
-	sendBuffer.append(Status::s_status_str(code));
+	sendBuffer.append(statusStr);
 	sendBuffer.append("\r\nLocation: ");
-	sendBuffer.append(req.location->get_redirect_target());
+	sendBuffer.append(target);
 	sendBuffer.append("\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
 	return flush_setup(epoll);
 }

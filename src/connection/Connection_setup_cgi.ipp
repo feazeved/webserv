@@ -8,7 +8,7 @@ void s_exec_script(char* const argv[3], char** envp, int fdIn[2], int fdOut[2], 
 
 	close(fdOut[0]), close(fdOut[1]);
 	close(fdIn[0]), close(fdIn[1]);
-	if (fail || chdir(cwdPath) == -1) {
+	if (fail || chdir(*cwdPath == '\0' ? "/" : cwdPath) == -1) {	// HOTFIX
 		close(STDOUT_FILENO), close(STDIN_FILENO);
 		_exit(1);
 	}
@@ -121,6 +121,7 @@ CONNECTION_INL
 	readFd = fdOut[0];
 	writeFd = fdIn[1];
 	activate_streaming(nextMode);
+	sendBuffer.init(256, 256, 256);	// Leave room for the HTTP status and connection headers
 	if (nextMode == Mode::CGI_FIXED)
 		return cgi_fixed(epoll);
 	if (nextMode == Mode::CGI_CHUNKED)

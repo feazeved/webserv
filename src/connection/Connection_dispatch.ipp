@@ -33,7 +33,7 @@ CONNECTION_INL
 CONNECTION_INL
 (isize) parse_first(Epoll &epoll) {
 	if (epoll.request_read() && parseBuffer.read(clientFd, ATOMIC_IOSIZE) <= 0)
-		return flush_setup_close(epoll, Status::i500);
+		return -1;	// REVIEW
 
 	Span line = parseBuffer.find_line_end();
 	if (line == NULL)
@@ -51,7 +51,7 @@ CONNECTION_INL
 	if (parseBuffer.writePos >= 16000)
 		return flush_setup_close(epoll, Status::i431);
 	if (epoll.request_read() && parseBuffer.read(clientFd, ATOMIC_IOSIZE) <= 0)
-		return flush_setup_close(epoll, Status::i500);
+		return -1;	// REVIEW
 
 	Span line;
 	while ((line = parseBuffer.find_line_end()) != NULL) {

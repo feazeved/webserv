@@ -43,13 +43,15 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) cgi(Epoll &epoll) {
-	isize bytesRead = sendBuffer.read_compact(readFd, ATOMIC_IOSIZE);
+	isize bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
 	if (bytesRead == 0) {
 		close(readFd);
 		readFd = -1;
 	}
-	Span header = sendBuffer.find_header_end();
+	Span header = sendBuffer.find_cgi_header_end();
 	if (header.ptr == NULL) {
+		if (sendBuffer.size() > 7500)
+			return flush_setup_close(epoll, Status::i500);
 		if (bytesRead == -2 || readFd == -1)
 			return flush_setup_close(epoll, Status::i500);
 		return 0;	// Still no CGI Header

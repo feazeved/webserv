@@ -84,6 +84,8 @@ struct Buffer {
 	// Search
 	Span find_line_end();
 	Span find_header_end();
+	Span find_cgi_line_end();
+	Span find_cgi_header_end();
 	Span find_char(u8 c);
 
 	bool skip_spaces();

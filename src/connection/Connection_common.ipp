@@ -32,12 +32,12 @@ CONNECTION_INL
 	char* fullPath = buffer.append(root);
 	const Span suffix = {req.target.ptr + uri.size, req.target.size - uri.size};
 	if (suffix.size != 0) {
-		const bool rootHasSlash = root.size != 0 && root.ptr[root.size - 1] == '/';
-		const bool suffixHasSlash = suffix.ptr[0] == '/';
-		if (!rootHasSlash && !suffixHasSlash)
+		if (suffix.ptr[0] != '/')
 			buffer.append("/");
-		buffer.append(suffix.ptr + (rootHasSlash && suffixHasSlash), suffix.size - (rootHasSlash && suffixHasSlash));
+		buffer.append(suffix);
 	}
+	else if (root.size == 0)
+		buffer.append("/");
 	*buffer = 0;
 	return fullPath;
 }

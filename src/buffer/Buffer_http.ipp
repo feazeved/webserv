@@ -8,7 +8,7 @@
 
 BUFFER_INL
 (Status::Code) dechunk(Buffer& tmp, usize &chunkSize, usize &bodySize) {
-	while (writePos - readPos > 2 && tmp.size() < ATOMIC_IOSIZE) {
+	while (writePos - readPos > 2) {
 // ==== Reading chunk header ==================================================
 		if (chunkSize == 0) {
 			if (writePos - readPos < 5)
