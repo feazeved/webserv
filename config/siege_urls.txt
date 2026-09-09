@@ -1,0 +1,10 @@
+http://127.0.0.1:8080/
+http://127.0.0.1:8080/small.txt
+http://127.0.0.1:8080/medium.bin
+http://127.0.0.1:8080/large.bin
+http://127.0.0.1:8080/files/
+http://127.0.0.1:8080/empty/
+http://127.0.0.1:8080/with_index/
+http://127.0.0.1:8080/cgi/hello.py
+http://127.0.0.1:8080/cgi/query.py?foo=bar
+http://127.0.0.1:8080/cgi/large.py

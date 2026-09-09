@@ -121,6 +121,7 @@ CONNECTION_INL
 	readFd = fdOut[0];
 	writeFd = fdIn[1];
 	activate_streaming(nextMode);
+	sendBuffer.init(256, 256, 256);	// Leave room for the HTTP status and connection headers
 	if (nextMode == Mode::CGI_FIXED)
 		return cgi_fixed(epoll);
 	if (nextMode == Mode::CGI_CHUNKED)

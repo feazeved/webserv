@@ -30,16 +30,15 @@ CONNECTION_INL
 (isize) get_directory_setup(Epoll &epoll, Buffer64 &pathBuffer) {
 	const usize directoryLength = pathBuffer.writePos;
 	const Span index = req.location->get_index();
-	if (pathBuffer.writePos != 0 && pathBuffer.data[pathBuffer.writePos - 1] != '/')
-		pathBuffer.append("/");
-	pathBuffer.append(index.ptr + (index.ptr[0] == '/'), index.size - (index.ptr[0] == '/'));
+	const bool hasSlash = pathBuffer.data[pathBuffer.writePos - 1] == '/';
+	pathBuffer.append(index.ptr + hasSlash, index.size - hasSlash);
 	*pathBuffer = 0;
 	readFd = open(pathBuffer, O_RDONLY | O_CLOEXEC | O_NONBLOCK);
 	if (readFd >= 0) {
 		struct stat st;
 		if (fstat(readFd, &st) == -1)
 			return flush_setup_close(epoll, s_get_status());
-		if ((usize)st.st_size >= MAX_FILE_SIZE || !S_ISREG(st.st_mode))
+		if ((usize)st.st_size > MAX_FILE_SIZE || !S_ISREG(st.st_mode))
 			return flush_setup_close(epoll, Status::i500);
 		contentType = fn::match_mime(pathBuffer.get_span());
 		bodySize = (usize)st.st_size;

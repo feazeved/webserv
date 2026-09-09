@@ -50,6 +50,8 @@ CONNECTION_INL
 	}
 	Span header = sendBuffer.find_header_end();
 	if (header.ptr == NULL) {
+		if (sendBuffer.size() > 7500)
+			return flush_setup_close(epoll, Status::i500);
 		if (bytesRead == -2 || readFd == -1)
 			return flush_setup_close(epoll, Status::i500);
 		return 0;	// Still no CGI Header

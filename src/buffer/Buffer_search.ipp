@@ -39,44 +39,46 @@ BUFFER_INL
 	return result;
 }
 
-// BUFFER_INL
-// (Span) find_cgi_line_end() {
-// 	u8 tmp = data[writePos];
-// 	data[writePos] = '\n';
-// 	while (data[scanPos] != '\n')
-// 		scanPos++;
-// 	data[writePos] = tmp;
-// 	if (scanPos < writePos) {
-// 		usize lineEnd = scanPos;
-// 		if (lineEnd > readPos && data[lineEnd - 1] == '\r')
-// 			lineEnd--;
-// 		Span result = {(char*)data + readPos, lineEnd - readPos};
-// 		scanPos++;
-// 		return result;
-// 	}
-// 	Span result = {NULL, SIZE_MAX};
-// 	return result;
-// }
+// Searches for \n without \r prefix
+BUFFER_INL
+(Span) find_cgi_line_end() {
+	u8 tmp = data[writePos];
+	data[writePos] = '\n';
+	while (data[scanPos] != '\n')
+		scanPos++;
+	data[writePos] = tmp;
+	if (scanPos < writePos) {
+		usize lineEnd = scanPos;
+		if (lineEnd > readPos && data[lineEnd - 1] == '\r')
+			lineEnd--;
+		Span result = {(char*)data + readPos, lineEnd - readPos};
+		scanPos++;
+		return result;
+	}
+	Span result = {NULL, SIZE_MAX};
+	return result;
+}
 
-// BUFFER_INL
-// (Span) find_header_end() {
-// 	u8 tmp[3];
-// 	MEMCPY_INLINE(tmp, data + writePos, 3);
-// 	MEMCPY_INLINE(data + writePos, "\n\n\n", 3);
-// 	while (data[scanPos] != '\n' || (data[scanPos + 1] != '\n' && MEMCMP(data + scanPos + 1, "\r\n", 2) != 0))
-// 		scanPos++;
-// 	const usize nextPos = scanPos + (data[scanPos + 1] == '\n' ? 2 : 3);
-// 	MEMCPY_INLINE(data + writePos, tmp, 3);
-// 	if (nextPos <= writePos) {
-// 		const usize headerEnd = scanPos - (scanPos > readPos && data[scanPos - 1] == '\r');
-// 		Span result = {(char*)data + readPos, headerEnd - readPos};
-// 		scanPos = nextPos;
-// 		return result;
-// 	}
-// 	scanPos -= MIN(scanPos - readPos, (usize)2);
-// 	Span result = {NULL, SIZE_MAX};
-// 	return result;
-// }
+// Searches for \r\n\r\n, \n\r\n and \n\n
+BUFFER_INL
+(Span) find_cgi_header_end() {
+	u8 tmp[3];
+	MEMCPY_INLINE(tmp, data + writePos, 3);
+	MEMCPY_INLINE(data + writePos, "\n\n\n", 3);
+	while (data[scanPos] != '\n' || (data[scanPos + 1] != '\n' && MEMCMP(data + scanPos + 1, "\r\n", 2) != 0))
+		scanPos++;
+	const usize nextPos = scanPos + (data[scanPos + 1] == '\n' ? 2 : 3);
+	MEMCPY_INLINE(data + writePos, tmp, 3);
+	if (nextPos <= writePos) {
+		const usize headerEnd = scanPos - (scanPos > readPos && data[scanPos - 1] == '\r');
+		Span result = {(char*)data + readPos, headerEnd - readPos};
+		scanPos = nextPos;
+		return result;
+	}
+	scanPos -= MIN(scanPos - readPos, (usize)2);
+	Span result = {NULL, SIZE_MAX};
+	return result;
+}
 
 // This is a find first
 BUFFER_INL

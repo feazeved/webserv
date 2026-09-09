@@ -23,6 +23,8 @@ CONNECTION_INL
 	}
 	else
 		return Status::i501;
+	if (targetStart >= targetEnd)
+		return Status::i400;		// Review
 	if (LITCMP(targetEnd, " HTTP/1.1\r\n") != 0)
 		return Status::i505;
 	parseBuffer.readPos = parseBuffer.scanPos;	//
@@ -57,8 +59,8 @@ CONNECTION_INL
 		case Field::CONTENT_LENGTH:
 			if (options & (Options::CHUNKED_LENGTH | Options::FIXED_LENGTH))
 				return Status::i400; // ERROR: bad request, transfer method had already been set
-			bodySize = fn::strtol10(value.ptr, value.size, value.size);
-			if (bodySize == SIZE_MAX)
+			bodySize = fn::strtol10(value.ptr, value.size);
+			if (bodySize > LONG_MAX)		// Review
 				return Status::i400;
 			if (bodySize > cfg->maxBodySize)
 				return Status::i413;
