@@ -34,7 +34,7 @@ void s_directive_listen(Arena &arena, const Span &value, VirtualServer &server) 
 		port = separator + 1;
 		portLength -= hostLength + 1;
 	}
-	server.port = fn::strtol10(port, portLength, portLength);
+	server.port = fn::strtol10(port, portLength);
 	if (server.port < 1 || server.port > 65535)
 		PERR_EXIT(1, "Error: Invalid port");
 }
@@ -61,7 +61,7 @@ void s_directive_body_size(const Span &value, usize &bodySize) {
 	}
 	if (digitLength == 0)
 		PERR_EXIT(1, "Error: Invalid max body size");
-	const usize bytes = fn::strtol10(str, digitLength, digitLength);
+	const usize bytes = fn::strtol10(str, digitLength);
 	if (bytes > ((usize)LONG_MAX >> factor))
 		PERR_EXIT(1, "Error: Invalid max body size");
 	bodySize = bytes << factor;
