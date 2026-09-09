@@ -43,7 +43,7 @@ CONNECTION_INL
 
 CONNECTION_INL
 (isize) cgi(Epoll &epoll) {
-	isize bytesRead = sendBuffer.read_compact(readFd, ATOMIC_IOSIZE);
+	isize bytesRead = sendBuffer.read(readFd, ATOMIC_IOSIZE);
 	if (bytesRead == 0) {
 		close(readFd);
 		readFd = -1;
