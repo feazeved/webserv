@@ -130,24 +130,67 @@ h1, p {
 }
 
 .penguin {
-	/*margin-left: 320px;*/
 	position: absolute;
-	/*right: 20px;*/
 	width: 60px;
-	/*background-color: green;*/
-	margin: 0px;
 	height: 80px;
-	font-size: 50px;
+	margin: 0px;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	p {
-		position: absolute;
-		font-size: 14px;
-		text-wrap: nowrap;
-		bottom: -10px;
-	}
+	transition: top 0.12s linear, left 0.12s linear;
 }
+
+.penguin-sprite {
+	width: 60px;
+	height: 60px;
+	background-image: url('/images/penguin-sprites.png');
+	background-repeat: no-repeat;
+	background-position: 0 0;
+	image-rendering: pixelated;
+}
+
+.penguin[data-facing="s"] .penguin-sprite { background-position:    0 0; }
+.penguin[data-facing="w"] .penguin-sprite { background-position: -60px 0; }
+.penguin[data-facing="n"] .penguin-sprite { background-position: -120px 0; }
+.penguin[data-facing="e"] .penguin-sprite { background-position: -180px 0; }
+
+.penguin-name {
+	position: absolute;
+	bottom: -4px;
+	font-size: 13px;
+	line-height: 1;
+	white-space: nowrap;
+	color: #fff;
+	background: rgba(1, 57, 104, 0.85);
+	border-radius: 10px;
+	padding: 2px 8px;
+	margin: 0;
+}
+
+.penguin.is-me .penguin-name {
+	background: #ff9923;
+	color: #013968;
+	font-weight: 700;
+}
+
+#hud {
+	display: flex;
+	gap: 1.25rem;
+	justify-content: center;
+	align-items: center;
+	color: #fff;
+	font-size: 15px;
+	margin-top: 0.75rem;
+	text-shadow: none;
+}
+
+#hud .hud-item {
+	background: rgba(1, 57, 104, 0.85);
+	border-radius: 12px;
+	padding: 0.35rem 0.9rem;
+}
+
+#hud .hud-warn { background: #a12; }
 
 nav{
 	background-color: #013968;

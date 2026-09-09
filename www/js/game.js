@@ -1,36 +1,26 @@
-/*
-	Talks to the Rust CGI at /game/state.penguin
-
-	GET -> { you, players: [{ username, x, y, direction }] }
-	POST -> { x, y, direction } moves yourself
-			[ leave: true ] to exit
-
-*/
-
-const ENDPOINT	= "/game/state.penguin";
-const POLL_MS	= 200;
-const SEND_MS	= 80;
-const BEAT_MS	= 3000;
-const STEP		= 20;
+const ENDPOINT = "/game/state.penguin";
+const POLL_MS  = 200;
+const SEND_MS  = 80;
+const STEP     = 20;
 
 const MAX_X = 500 - 60;
 const MAX_Y = 300 - 80;
 
-const REGION_PORT = {
+const REGION_BY_PORT = {
 	"8001": "America",
 	"8002": "Africa",
 	"8003": "Europe",
 	"8004": "Oceania",
-}
+};
 
-const arena		= document.getElementById("arena");
-const hudWho	= document.getElementById("hud-who");
-const hudCount	= document.getElementById("hud_count");
-const hudRegion	= document.getElementById("hud-region");
-const hudStatus	= document.getElementById("hud-status");
+const arena     = document.getElementById("arena");
+const hudWho    = document.getElementById("hud-who");
+const hudCount  = document.getElementById("hud-count");
+const hudRegion = document.getElementById("hud-region");
+const hudStatus = document.getElementById("hud-status");
 
 function getCookie(name) {
-	const parts = "; ${document.cookie}".split("; ${name}=");
+	const parts = `; ${document.cookie}`.split(`; ${name}=`);
 	if (parts.length !== 2) return null;
 	try {
 		return decodeURIComponent(parts.pop().split(";").shift());
@@ -39,13 +29,33 @@ function getCookie(name) {
 	}
 }
 
+function savedPosition() {
+	const raw = getCookie("cp_pos");
+	if (raw) {
+		const f = raw.split(".");
+		if (f.length === 3) {
+			const x = parseInt(f[0], 10);
+			const y = parseInt(f[1], 10);
+			if (!isNaN(x) && !isNaN(y)) {
+				return {
+					x: Math.min(MAX_X, Math.max(0, x)),
+					y: Math.min(MAX_Y, Math.max(0, y)),
+					facing: "nsew".includes(f[2]) ? f[2] : "s",
+				};
+			}
+		}
+	}
+	return { x: 220, y: 110, facing: "s" };
+}
+
+const start = savedPosition();
 const me = {
 	name: getCookie("cp_session") || "",
-	x: 200,
-	y: 110,
-	facing: "s",
+	x: start.x,
+	y: start.y,
+	facing: start.facing,
 	synced: false,
-}
+};
 
 let sendTimer = null;
 let inFlight = false;
@@ -60,7 +70,6 @@ function makePenguin(username, isMe) {
 
 	const tag = document.createElement("p");
 	tag.className = "penguin-name";
-
 	tag.textContent = username;
 
 	el.append(sprite, tag);
@@ -75,7 +84,7 @@ function setStatus(message) {
 }
 
 function renderState(state) {
-    if (!state || !Array.isArray(state.players)) return;
+	if (!state || !Array.isArray(state.players)) return;
 
 	const seen = new Set();
 
@@ -85,7 +94,7 @@ function renderState(state) {
 		const isMe = p.username === state.you;
 		seen.add(p.username);
 
-		let el = arena.querySelector('[data-name="${CSS.escape(p.username)}"]');
+		let el = arena.querySelector(`[data-name="${CSS.escape(p.username)}"]`);
 		if (!el) {
 			el = makePenguin(p.username, isMe);
 			arena.append(el);
@@ -95,8 +104,8 @@ function renderState(state) {
 		const y = isMe ? me.y : p.y;
 		const facing = isMe ? me.facing : p.facing;
 
-		el.style.left = "${x}px";
-		el.style.top = "${y}px";
+		el.style.left = `${x}px`;
+		el.style.top = `${y}px`;
 		el.dataset.facing = facing || "s";
 		el.style.zIndex = String(100 + Math.round(y));
 	}
@@ -107,25 +116,24 @@ function renderState(state) {
 
 	if (hudCount) {
 		const n = state.players.length;
-		hudCount.textContent = n === 1 ? "1 penguin online" : "${n} penguins online";
+		hudCount.textContent = n === 1 ? "1 penguin online" : `${n} penguins online`;
 	}
-
 	if (hudWho && state.you) hudWho.textContent = state.you;
 	setStatus(null);
 }
 
-async function call(method, body) {
+async function call(method, formBody) {
 	const options = { method, cache: "no-store" };
-	if (body !== undefined) {
-		options.headers = { "Content-Type": "application/json" };
-		options.body = JSON.stringify(body);
+	if (formBody !== undefined) {
+		options.headers = { "Content-Type": "application/x-www-form-urlencoded" };
+		options.body = formBody;
 	}
 	const res = await fetch(ENDPOINT, options);
 	if (res.status === 401) {
 		window.location.href = "/login.html";
 		throw new Error("unauthorized");
 	}
-	if (!res.ok) throw new Error("HTTP ${res.status}");
+	if (!res.ok) throw new Error(`HTTP ${res.status}`);
 	return res.json();
 }
 
@@ -134,7 +142,6 @@ async function poll() {
 		const state = await call("GET");
 		if (!me.synced && state.you) {
 			const mine = state.players.find((p) => p.username === state.you);
-
 			if (mine) {
 				me.x = mine.x;
 				me.y = mine.y;
@@ -145,7 +152,7 @@ async function poll() {
 		}
 		renderState(state);
 	} catch (e) {
-		if (e.message !== "unauthorized") setStatus("Reconnecting...");
+		if (e.message !== "unauthorized") setStatus("reconnecting...");
 	}
 }
 
@@ -157,9 +164,10 @@ async function flushMove() {
 	}
 	inFlight = true;
 	try {
-		renderState(await call("POST", { x: me.x, y: me.y, facing: me.facing }));
+		const body = `x=${me.x}&y=${me.y}&facing=${me.facing}`;
+		renderState(await call("POST", body));
 	} catch (e) {
-		if (e.message !== "unauthorized") setStatus("Reconnecting...");
+		if (e.message !== "unauthorized") setStatus("reconnecting...");
 	} finally {
 		inFlight = false;
 	}
@@ -169,13 +177,24 @@ function scheduleSend() {
 	if (sendTimer === null) sendTimer = setTimeout(flushMove, SEND_MS);
 }
 
-function leave() {
-	const payload = JSON.stringify({ leave: true });
+let leftAlready = false;
 
+function leave() {
+	if (leftAlready) return;
+	leftAlready = true;
+	const body = "leave=1";
 	if (navigator.sendBeacon) {
-		navigator.sendBeacon(ENDPOINT, new Blob([payload], { type: "application/json" }));
+		navigator.sendBeacon(
+			ENDPOINT,
+			new Blob([body], { type: "application/x-www-form-urlencoded" })
+		);
 	} else {
-		fetch(ENDPOINT, { method: "POST", body: payload, keepalive: true }).catch(() => { });
+		fetch(ENDPOINT, {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: body,
+			keepalive: true,
+		}).catch(() => {});
 	}
 }
 
@@ -199,35 +218,37 @@ document.addEventListener("keydown", (event) => {
 
 	if (nx === me.x && ny === me.y && facing === me.facing) return;
 
-		me.x = nx;
-		me.y = ny;
-		me.facing = facing;
+	me.x = nx;
+	me.y = ny;
+	me.facing = facing;
 
-		const self = arena.querySelector(".penguin.is-me");
-		if (self) {
-			self.style.left = `${me.x}px`;
-			self.style.top = `${me.y}px`;
-			self.dataset.facing = me.facing;
-			self.style.zIndex = String(100 + Math.round(me.y));
-		}
+	const self = arena.querySelector(".penguin.is-me");
+	if (self) {
+		self.style.left = `${me.x}px`;
+		self.style.top = `${me.y}px`;
+		self.dataset.facing = me.facing;
+		self.style.zIndex = String(100 + Math.round(me.y));
+	}
 
-		scheduleSend();
-})
+	scheduleSend();
+});
 
 const logoutButton = document.getElementById("logoutButton");
 if (logoutButton) {
-	logoutButton.addEventListener("click", () => {
+	logoutButton.addEventListener("click", (event) => {
+		event.preventDefault();
 		leave();
-		window.location.href = "/cgi-bin/logout.py";
-	})
+		setTimeout(() => {
+			window.location.href = "/cgi-bin/logout.py";
+		}, 60);
+	});
 }
 
 window.addEventListener("pagehide", leave);
 
 if (hudRegion) {
-	hudRegion.textContent = REGION_PORT[window.location.port] || "Local";
+	hudRegion.textContent = REGION_BY_PORT[window.location.port] || "Local";
 }
 
 poll();
 setInterval(poll, POLL_MS);
-setInterval(scheduleSend(), BEAT_MS);
