@@ -6,7 +6,8 @@
 */
 CONNECTION_INL
 (Status::Code) parse_cgi_line(Buffer64 &dst) {
-	const char* const lineEnd = (char*)sendBuffer.sptr() - 2;
+	const char* lineEnd = (char*)sendBuffer.sptr() - 1;
+	lineEnd -= lineEnd[-1] == '\r';
 	const usize totalLength = (usize)(lineEnd - (char*)sendBuffer.rptr());
 
 	const usize readEnd = sendBuffer.readPos + totalLength;
@@ -15,6 +16,8 @@ CONNECTION_INL
 		return Status::ixxx;
 
 	const isize fieldIndex = fn::match_field(field);
+	if (fieldIndex == Field::CONNECTION)
+		return Status::ok;
 	if (fieldIndex != Field::STATUS) {
 		dst.append(field.ptr, totalLength);
 		dst.append("\r\n");
@@ -40,9 +43,8 @@ CONNECTION_INL
 	sendBuffer.scanPos = sendBuffer.readPos;
 
 	while (sendBuffer.readPos < headerEnd) {
-		const Span line = sendBuffer.find_line_end();
-		if (line.ptr == NULL)
-			return Status::ixxx;
+		const Span line = sendBuffer.find_cgi_line_end();
+		ASSERT(line.ptr != NULL, "Complete CGI header contained an incomplete line");
 		if (line.size == 0) {
 			sendBuffer.readPos = sendBuffer.scanPos;
 			break;
@@ -54,8 +56,7 @@ CONNECTION_INL
 			code = lineCode;
 		sendBuffer.readPos = sendBuffer.scanPos;
 	}
-	if (sendBuffer.readPos != headerEnd)
-		return Status::ixxx;
+	ASSERT(sendBuffer.readPos == headerEnd, "CGI header ended at an unexpected offset");
 
 	Span statusStr = Status::s_status_str(code);
 	
@@ -66,7 +67,7 @@ CONNECTION_INL
 	tmpBuffer.prepend("HTTP/1.1 ");
 	if (tmpBuffer.size() > sendBuffer.capacity())
 		return Status::ixxx;
-	sendBuffer.clear();	// TODO: THIS IS VERY WRONG
+	sendBuffer.clear();
 	sendBuffer.append(tmpBuffer.rptr(), tmpBuffer.size());
 	options &= ~(u16)Options::KEEP_ALIVE;
 	return code;

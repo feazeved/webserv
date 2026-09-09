@@ -4,12 +4,14 @@ Clobberable padding:	Will permanently modify
 
 POST/PRE refer to the location of the padding. [PRE] [DATA] [POST]
 
-1) Prepending QUERY_TARGET= in cgi setup depends on the buffer being pre-clobberable-padded with 8 bytes, because QUERY_TARGET= is 13 bytes, and the minimum valid response is GET \?, which is a 6 bytes guarantee
+1) Prepending QUERY_STRING= in cgi setup depends on the buffer being pre-clobberable-padded with 8 bytes. QUERY_STRING= is 13 bytes
 (PRE 8 Clobberable padding)
 2) Most find algorithms depend on the buffer being padded with at least 4 bytes to insert a sentinel like \r\n\r\n
 (POST 8 bytes OOB padding because it is restored)
 3) Match algorithms require 24 bytes OOB padding
 (POST 24 bytes OOB padding)
+
+Buffer has 8 clobberable bytes before data and 8 after it. The three size counters provide another 24 readable bytes after data, for 32 bytes of physical trailing storage. Sentinel writes use only the first 8 bytes and restore them; the counters must never be clobbered
 
 ## Memory Layout
 A single connection uses 16kb of space, of which 64 bytes is used by metadata, and the rest by buffers
@@ -34,16 +36,17 @@ For temporary things that aren't going to be used by the program later like toke
 #### Limits
 * Each server block is at maximum MAX_SERVER_BLOCK_SIZE (64KB)
 * Each location block is at maximum MAX_LOCATION_BLOCK_SIZE (32KB)
-* Number of locations is at maximum MAX_LOCATION_COUNT (32KB)
+* Number of locations is at maximum MAX_LOCATION_COUNT (32767 locations)
 * Each error page cached is at maximum MAX_ERROR_PAGE_SIZE (HTTP_BUFFERSIZE - 512B)
 
 #### Location Invariants
 * All stored location strings are null terminated and 0 <= length <= MAX_PATH_SIZE
 * 0 length strings still point to empty data
 * There are no duplicates of any kind
+* CGI blocks are length-prefixed binary records. Each record stores two u16 lengths, extension bytes without a terminator, and interpreter bytes with a terminator. The interpreter length includes its terminator
 * A configured redirect status is a supported 3xx status
 * There is at least one allowed method
-* A server root always exists
+* A server root span always exists
 * A server root and a location root never end with a "/"
 * An upload store always ends with a "/"
 * An index always starts with "/"
