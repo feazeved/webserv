@@ -59,6 +59,10 @@ run: re
 	clear
 	./$(BIN) $(ARG)
 
+drun: debug
+	clear
+	./$(BIN) $(ARG)
+
 vrun: re
 	clear
 	valgrind ./$(BIN) $(ARG)

@@ -36,7 +36,7 @@ typedef unsigned long		ulong;
 #define WORD_SIZE	sizeof(size_t)
 #define WORD_BITS	(WORD_SIZE * CHAR_BIT)
 
-#define PRINT_LN(fd, str)		((void)!write(fd, str "\n", sizeof(str)))
+#define PRINT_LN(fd, str)		((void)!::write(fd, str "\n", sizeof(str)))
 #define PERR_RETURN(value, str)	return (PRINT_LN(2, str), (value))
 #include <cstdlib>	// TODO: Review these macros
 #define PERR_EXIT(value, str)	std::exit((PRINT_LN(2, str), (value)))
